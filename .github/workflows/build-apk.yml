@@ -1,0 +1,135 @@
+# Build the Flutter Android APK and attach it to a rolling `latest`
+# release so the user can sideload by visiting /releases/latest on
+# their phone.
+#
+# Triggers:
+#   - Every push to `main`        → rebuilds + overwrites `latest`
+#   - Version tag push (vX.Y.Z)   → permanent versioned release
+#   - Manual run                  → same as a push to main
+#
+# Signing: a release-build keystore is generated on every CI run with
+# a hard-coded password — the APK is installable as "from unknown
+# source" but the signature is not stable across runs. Once we're
+# closer to a real release we'll switch to a persistent keystore via
+# ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD secrets, same
+# pattern as vault-wallet's build-apk.yml.
+
+name: Build & release APK
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*.*.*'
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.41.9'
+          cache: true
+
+      - run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Unit tests
+        run: flutter test
+
+      - name: Generate dev release keystore
+        working-directory: android
+        run: |
+          # Throwaway keystore — fine for sideload dev builds. Will
+          # switch to ANDROID_KEYSTORE_BASE64 secret once we have a
+          # persistent release key.
+          keytool -genkey -v \
+            -keystore app/dev.keystore \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias peek-dev \
+            -storepass peek-dev-password -keypass peek-dev-password \
+            -dname "CN=PeekWallet Dev, O=Self, C=US"
+
+      - name: Wire keystore into Gradle
+        run: |
+          cat >> android/key.properties <<EOF
+          storePassword=peek-dev-password
+          keyPassword=peek-dev-password
+          keyAlias=peek-dev
+          storeFile=dev.keystore
+          EOF
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Locate built APK
+        id: apk
+        run: |
+          APK=$(find build/app/outputs/flutter-apk -name '*-release.apk' | head -1)
+          if [ -z "$APK" ]; then
+            echo "::error::No release APK found"
+            ls -R build/app/outputs/ || true
+            exit 1
+          fi
+          cp "$APK" peek-wallet.apk
+          echo "path=peek-wallet.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: peek-wallet-apk
+          path: peek-wallet.apk
+          retention-days: 30
+
+      - name: Attach APK to versioned release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.path }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+
+      - name: Update rolling `latest` release
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build (auto)
+          body: |
+            🤖 Auto-built from `main` on every push.
+
+            **Commit:** `${{ github.sha }}`
+            **Build:**  #${{ github.run_number }}
+            **Built:**  ${{ github.event.head_commit.timestamp || github.run_started_at }}
+
+            Download **`peek-wallet.apk`** below and sideload to your Android device.
+
+            ⚠️ Bundle ID is `com.vault.cryptowallet.dev` during the rewrite — installs side-by-side with the current Vault app (`com.vault.cryptowallet`). Both can coexist on the same phone.
+
+            ⚠️ Dev keystore changes every CI build, so reinstalling looks like a brand-new app to Android. Real persistent signing will land before any release tag.
+          files: ${{ steps.apk.outputs.path }}
+          fail_on_unmatched_files: true
+          prerelease: false
+          make_latest: true

@@ -33,6 +33,11 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Android signing — local + CI keystore configs are throwaway, never commit
+android/key.properties
+android/app/*.keystore
+android/app/*.jks
+
 # Symbolication related
 app.*.symbols
 
