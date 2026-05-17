@@ -35,6 +35,20 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # BIP39 12/24-word seed generation + validation. Pure Dart, no
+  # native deps — same algorithm as vault-wallet so the seeds are
+  # interoperable across the two apps.
+  bip39: ^1.0.6
+
+  # OS-backed encrypted storage (iOS Keychain / Android Keystore).
+  # Holds the AES-GCM ciphertext of the seed; the password decrypts.
+  flutter_secure_storage: ^9.2.4
+
+  # AES-GCM + PBKDF2-HMAC-SHA256 for the password-derived seed
+  # encryption. Pure Dart fallback so it works in tests without
+  # platform channels.
+  cryptography: ^2.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
