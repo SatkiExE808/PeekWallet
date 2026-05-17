@@ -49,6 +49,27 @@ dependencies:
   # platform channels.
   cryptography: ^2.7.0
 
+  # Keccak-256, AES, modular arithmetic primitives. Used by the pure
+  # Dart Monero key derivation (port of vault-wallet/js/coins/monero.js).
+  # Pinned to ^3 because bip39 1.0.6 transitively requires it.
+  pointycastle: ^3.9.1
+
+  # QR rendering for receive addresses.
+  qr_flutter: ^4.1.0
+
+  # Native Monero wallet via monero_c. We rely on the pre-generated FFI
+  # bindings here; the native library (libmonero_wallet2_api_c.so) gets
+  # placed in android/app/src/main/jniLibs/<abi>/ by CI's prepare_monero
+  # step. At runtime the wallet code lazily DynamicLibrary.open()s it.
+  monero:
+    git:
+      url: https://github.com/mrcyjanek/monero_c
+      ref: bc8d1a0b75b97156d71579581b4cdfe58c777ed2
+      path: impls/monero.dart
+
+  # FFI helpers used by the monero bindings.
+  ffi: ^2.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
