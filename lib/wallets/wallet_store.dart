@@ -91,6 +91,13 @@ class WalletStore extends ChangeNotifier {
     return (_cache ?? []).isNotEmpty;
   }
 
+  /// Generate a fresh wallet id without committing it. The caller
+  /// can pre-assign this to a coin-module's create flow so on-disk
+  /// wallet files land at the final path immediately (no rename step
+  /// after WalletStore.create). When the caller passes the id back
+  /// to [create] via [withId], it's used instead of a fresh one.
+  String generateId() => 'w_${DateTime.now().microsecondsSinceEpoch}';
+
   /// Add a new wallet. Encrypts [seedMaterial] with the master
   /// [password] and persists. Returns the new meta.
   Future<WalletMeta> create({
@@ -101,10 +108,11 @@ class WalletStore extends ChangeNotifier {
     required String password,
     String? primaryAddress,
     int? restoreHeight,
+    String? withId,
   }) async {
     if (!_loaded) await _load();
 
-    final id = 'w_${DateTime.now().microsecondsSinceEpoch}';
+    final id = withId ?? generateId();
     final salt = _randomBytes(_saltLen);
     final nonce = _randomBytes(_nonceLen);
     final key = await _deriveKey(password, salt);

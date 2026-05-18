@@ -38,10 +38,17 @@ abstract class CoinModule {
   /// May involve calling into native code (e.g., monero_c's
   /// `WalletManager_createWallet` mints a 25-word seed).
   ///
+  /// [walletId] is the id WalletStore will eventually assign — the
+  /// caller pre-allocates it via [WalletStore.generateId] so the
+  /// on-disk wallet file lands at its final path immediately,
+  /// avoiding a rename after store-create. Pass the same id to
+  /// WalletStore.create's `withId` parameter.
+  ///
   /// Returns the persistable seedMaterial map + the user-facing seed
   /// presentation (words to write down, or keys to record for the
   /// keysOnly flow).
   Future<NewWalletMaterial> generateNew({
+    required String walletId,
     required SeedFormat format,
     required String walletFilePassword,
     String passphrase = '',
@@ -52,6 +59,7 @@ abstract class CoinModule {
   /// Throws [CoinModuleError] on invalid input (wrong-length phrase,
   /// failed checksum, etc.) — caller surfaces the message verbatim.
   Future<RestoredWalletMaterial> restoreFrom({
+    required String walletId,
     required SeedFormat format,
     required Map<String, String> input,
     required String walletFilePassword,

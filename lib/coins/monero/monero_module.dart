@@ -63,6 +63,7 @@ class MoneroModule implements CoinModule {
 
   @override
   Future<NewWalletMaterial> generateNew({
+    required String walletId,
     required SeedFormat format,
     required String walletFilePassword,
     String passphrase = '',
@@ -94,10 +95,16 @@ class MoneroModule implements CoinModule {
         );
 
       case SeedFormat.monero25:
-        return _generateNativeMonero(walletFilePassword: walletFilePassword);
+        return _generateNativeMonero(
+          walletId: walletId,
+          walletFilePassword: walletFilePassword,
+        );
 
       case SeedFormat.moneroPolyseed:
-        return _generatePolyseed(walletFilePassword: walletFilePassword);
+        return _generatePolyseed(
+          walletId: walletId,
+          walletFilePassword: walletFilePassword,
+        );
 
       case SeedFormat.keysOnly:
         throw const CoinModuleError(
@@ -107,6 +114,7 @@ class MoneroModule implements CoinModule {
 
   @override
   Future<RestoredWalletMaterial> restoreFrom({
+    required String walletId,
     required SeedFormat format,
     required Map<String, String> input,
     required String walletFilePassword,
@@ -141,6 +149,7 @@ class MoneroModule implements CoinModule {
 
       case SeedFormat.monero25:
         return _restoreNativeMonero(
+          walletId: walletId,
           seed: input['seed'] ?? '',
           seedOffset: input['seedOffset'] ?? '',
           walletFilePassword: walletFilePassword,
@@ -149,6 +158,7 @@ class MoneroModule implements CoinModule {
 
       case SeedFormat.moneroPolyseed:
         return _restorePolyseed(
+          walletId: walletId,
           seed: input['seed'] ?? '',
           seedOffset: input['seedOffset'] ?? '',
           walletFilePassword: walletFilePassword,
@@ -156,6 +166,7 @@ class MoneroModule implements CoinModule {
 
       case SeedFormat.keysOnly:
         return _restoreFromKeys(
+          walletId: walletId,
           address: input['address'] ?? '',
           spendKey: input['spendKey'] ?? '',
           viewKey: input['viewKey'] ?? '',
@@ -175,20 +186,13 @@ class MoneroModule implements CoinModule {
     required int restoreHeight,
     void Function(String stage)? onStage,
   }) async {
-    // Map each format back to its on-disk wallet file path. The path
-    // is derived from the wallet id (stable per-wallet directory)
-    // rather than the address — same id always opens the same file
-    // even if we rotate keys / migrate someday.
-    final docs = await getApplicationDocumentsDirectory();
-    final walletDir = Directory('${docs.path}/peek_xmr/$walletId');
-    if (!walletDir.existsSync()) walletDir.createSync(recursive: true);
-    // walletPath is `${walletDir.path}/wallet` — set per-format below
-    // when the open path is wired up in P2-D.
+    final walletPath = await _walletPathFor(walletId);
 
-    // We delegate to MoneroWallet.open for the bip39 + keysOnly path
-    // (both ultimately use WalletManager_createWalletFromKeys). For
-    // monero25 / polyseed, we need to construct from the native seed
-    // first because the on-disk wallet file IS the source of truth.
+    // BIP39 wallets keep using the existing MoneroWallet.open() —
+    // its address-mismatch recovery is invaluable for migrating
+    // legacy users from vault-wallet. The path it computes from
+    // the BIP39-derived address won't collide with the walletId-
+    // based path used by non-BIP39 wallets, so they coexist.
     switch (format) {
       case SeedFormat.bip39_12:
       case SeedFormat.bip39_24:
@@ -204,36 +208,35 @@ class MoneroModule implements CoinModule {
       case SeedFormat.monero25:
       case SeedFormat.moneroPolyseed:
       case SeedFormat.keysOnly:
-        // These wallets have an on-disk monero_c wallet file already
-        // (created during restoreFrom / generateNew). The simplest
-        // path: open that file directly via Wallet_openWallet. The
-        // current MoneroWallet.open() doesn't support that flow — it
-        // always tries createWalletFromKeys first — so we'd need a
-        // small refactor there OR a parallel open path here.
-        //
-        // For this commit we wire only the data + restore-time
-        // creation. Runtime open path lands in P2-D when the UI
-        // actually navigates to a non-bip39 wallet.
-        throw const CoinModuleError(
-            'Opening non-BIP39 wallets via the new path lands in the next commit; '
-            'use the legacy bip39-only flow for now.');
+        // The on-disk wallet was already created during
+        // generateNew / restoreFrom — just open it.
+        return MoneroWallet.openFromPath(
+          walletPath: walletPath,
+          walletPassword: walletFilePassword,
+          daemonUri: daemonUri,
+          restoreHeight: restoreHeight,
+          onStage: onStage,
+        );
     }
   }
 
   // ── Native 25-word seed (monero_c WalletManager_createWallet) ─────
 
+  /// Resolve the on-disk wallet path for [walletId]. Used by every
+  /// generate/restore variant so wallet files land at a stable
+  /// location known to MoneroWallet.openFromPath at runtime.
+  Future<String> _walletPathFor(String walletId) async {
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/peek_xmr/$walletId');
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    return '${dir.path}/wallet';
+  }
+
   Future<NewWalletMaterial> _generateNativeMonero({
+    required String walletId,
     required String walletFilePassword,
   }) async {
-    final docs = await getApplicationDocumentsDirectory();
-    // Temporary location to mint the wallet; the WalletStore.create
-    // call gives us the real wallet id, at which point we'll rename
-    // the dir. Use a microsecond-timestamped name to avoid collision
-    // with a concurrent mint.
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final tmpDir = Directory('${docs.path}/peek_xmr/_minting_$stamp');
-    if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
-    final walletPath = '${tmpDir.path}/wallet';
+    final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
     final w = monero.WalletManager_createWallet(
@@ -265,7 +268,7 @@ class MoneroModule implements CoinModule {
       seedMaterial: {
         'seed': seedPhrase,
         'seedOffset': '',
-        'mintedAt': stamp,
+        'mintedAt': DateTime.now().toIso8601String(),
       },
       revealableSeed: seedPhrase,
       primaryAddress: address,
@@ -274,6 +277,7 @@ class MoneroModule implements CoinModule {
   }
 
   Future<RestoredWalletMaterial> _restoreNativeMonero({
+    required String walletId,
     required String seed,
     required String seedOffset,
     required String walletFilePassword,
@@ -284,11 +288,7 @@ class MoneroModule implements CoinModule {
       throw CoinModuleError(
           'Monero seed is 25 words; got ${words.length}. (For 14-word polyseed, use that option.)');
     }
-    final docs = await getApplicationDocumentsDirectory();
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final tmpDir = Directory('${docs.path}/peek_xmr/_restoring_$stamp');
-    if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
-    final walletPath = '${tmpDir.path}/wallet';
+    final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
     final w = monero.WalletManager_recoveryWallet(
@@ -328,17 +328,14 @@ class MoneroModule implements CoinModule {
   // ── Polyseed (14 words, encodes restoreHeight) ─────────────────
 
   Future<NewWalletMaterial> _generatePolyseed({
+    required String walletId,
     required String walletFilePassword,
   }) async {
     // monero_c doesn't expose a direct "generate polyseed" — we have
     // to use WalletManager_createWallet then convert via Wallet_-
     // getPolyseed, which reads back the equivalent 14-word polyseed
     // representation of the freshly-minted wallet.
-    final docs = await getApplicationDocumentsDirectory();
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final tmpDir = Directory('${docs.path}/peek_xmr/_minting_$stamp');
-    if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
-    final walletPath = '${tmpDir.path}/wallet';
+    final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
     final w = monero.WalletManager_createWallet(
@@ -381,6 +378,7 @@ class MoneroModule implements CoinModule {
   }
 
   Future<RestoredWalletMaterial> _restorePolyseed({
+    required String walletId,
     required String seed,
     required String seedOffset,
     required String walletFilePassword,
@@ -390,11 +388,7 @@ class MoneroModule implements CoinModule {
       throw CoinModuleError(
           'Polyseed is 14 (or 16, with encryption) words; got ${words.length}.');
     }
-    final docs = await getApplicationDocumentsDirectory();
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final tmpDir = Directory('${docs.path}/peek_xmr/_restoring_$stamp');
-    if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
-    final walletPath = '${tmpDir.path}/wallet';
+    final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
     final w = monero.WalletManager_createWalletFromPolyseed(
@@ -436,6 +430,7 @@ class MoneroModule implements CoinModule {
   // ── Keys-only restore ──────────────────────────────────────────
 
   Future<RestoredWalletMaterial> _restoreFromKeys({
+    required String walletId,
     required String address,
     required String spendKey,
     required String viewKey,
@@ -457,11 +452,7 @@ class MoneroModule implements CoinModule {
       throw const CoinModuleError('Private view key must be 64 hex chars.');
     }
 
-    final docs = await getApplicationDocumentsDirectory();
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final tmpDir = Directory('${docs.path}/peek_xmr/_restoring_$stamp');
-    if (!tmpDir.existsSync()) tmpDir.createSync(recursive: true);
-    final walletPath = '${tmpDir.path}/wallet';
+    final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
     final w = monero.WalletManager_createWalletFromKeys(

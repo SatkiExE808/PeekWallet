@@ -59,6 +59,134 @@ class MoneroWallet {
     }
   }
 
+  /// Shared by [open] and [openFromPath] — runs the candidate-daemon
+  /// init loop, optionally clamps restoreHeight against the daemon's
+  /// real tip on freshly-created wallets, then kicks off
+  /// Wallet_startRefresh. Returns once refresh is running; balance /
+  /// sync % poll from there.
+  static Future<void> _initDaemonAndStart(
+    dynamic w,
+    String daemonUri,
+    void Function(String) stage, {
+    required bool justCreated,
+  }) async {
+    final candidates = <String>[daemonUri, ...kMoneroFallbackNodes];
+    final seen = <String>{};
+    String? activeHostPort;
+    bool activeSsl = false;
+    String lastError = '';
+    for (final url in candidates) {
+      final ep = MoneroDaemonEndpoint.parse(url);
+      final key = '${ep.hostPort}|${ep.useSsl}';
+      if (!seen.add(key)) continue;
+      stage('init ${ep.hostPort} (ssl=${ep.useSsl})');
+      final ok = monero.Wallet_init(
+        w,
+        daemonAddress: ep.hostPort,
+        useSsl: ep.useSsl,
+      );
+      if (ok) {
+        activeHostPort = ep.hostPort;
+        activeSsl = ep.useSsl;
+        break;
+      }
+      lastError = monero.Wallet_errorString(w);
+      stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
+    }
+    if (activeHostPort == null) {
+      throw Exception(
+          'Wallet_init rejected every candidate. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
+    }
+    stage('attached $activeHostPort (ssl=$activeSsl)');
+
+    // For freshly-created wallets only: ask the daemon what the real
+    // chain tip is and adjust where scanning starts. The hint passed
+    // in by the caller is necessarily a baked-in compile-time guess
+    // — if it's higher than today's tip the wallet skips every real
+    // block. Same logic as the original open() path; extracted so
+    // openFromPath shares it.
+    if (justCreated) {
+      stage('querying daemon tip…');
+      int observedTip = 0;
+      for (var i = 0; i < 30; i++) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        observedTip = monero.Wallet_daemonBlockChainHeight(w);
+        if (observedTip > 1000000) break;
+      }
+      if (observedTip > 1000000) {
+        final adjusted = observedTip - 5000;
+        stage('clamp restoreHeight -> $adjusted (tip=$observedTip)');
+        try {
+          monero.Wallet_setRefreshFromBlockHeight(
+            w,
+            refresh_from_block_height: adjusted,
+          );
+        } catch (e) {
+          stage('setRefreshFromBlockHeight failed: $e');
+        }
+      } else {
+        stage('daemon tip not reported in 15s — using existing setting');
+      }
+    }
+
+    stage('starting refresh');
+    monero.Wallet_startRefresh(w);
+    stage('ready');
+  }
+
+  /// Open an already-created on-disk wallet by absolute path. Used
+  /// by [MoneroModule.open] for non-BIP39 wallets where the wallet
+  /// file was minted during create / restore and the seed material
+  /// alone isn't enough to reconstruct it (Monero-native 25-word
+  /// seeds, polyseed, and keys-only restores).
+  ///
+  /// Throws if the file doesn't exist OR the password doesn't open it
+  /// OR Wallet_status reports a non-zero code post-open. The caller
+  /// surfaces the error to the user — there's no recovery path here
+  /// because we don't have the seed material to recreate the wallet
+  /// from (that's what [open] does for BIP39 wallets).
+  static Future<MoneroWallet> openFromPath({
+    required String walletPath,
+    required String walletPassword,
+    required String daemonUri,
+    required int restoreHeight,
+    void Function(String stage)? onStage,
+  }) async {
+    void stage(String s) {
+      // ignore: avoid_print
+      print('[xmr] $s');
+      onStage?.call(s);
+    }
+
+    final file = File(walletPath);
+    final keysFile = File('$walletPath.keys');
+    if (!file.existsSync() && !keysFile.existsSync()) {
+      throw Exception('Wallet file not found: $walletPath');
+    }
+
+    stage('opening on-disk wallet at $walletPath');
+    final wm = monero.WalletManagerFactory_getWalletManager();
+    final w = monero.WalletManager_openWallet(
+      wm,
+      path: walletPath,
+      password: walletPassword,
+    );
+    final status = monero.Wallet_status(w);
+    if (status != 0) {
+      final err = monero.Wallet_errorString(w);
+      try {
+        monero.WalletManager_closeWallet(wm, w, false);
+      } catch (_) {/* best effort */}
+      throw Exception(
+          'Failed to open wallet: ${err.isEmpty ? "status $status" : err}');
+    }
+    final address = monero.Wallet_address(w, accountIndex: 0, addressIndex: 0);
+    stage('opened address ${address.substring(0, 12)}…');
+
+    await _initDaemonAndStart(w, daemonUri, stage, justCreated: false);
+    return MoneroWallet._(w, address);
+  }
+
   /// Boots a wallet from a BIP39 phrase and points it at the daemon.
   /// The first call after install will write a wallet file to
   /// `<docs>/peek_xmr/` and begin scanning from `restoreHeight`.
@@ -203,87 +331,9 @@ class MoneroWallet {
       );
     }
 
-    // Try the user's daemon first, then known-good public nodes. We
-    // only gate on Wallet_init's return value — earlier attempts to
-    // verify the daemon's reported tip at boot ran into monero_c's
-    // approximate-tip fallback (it returns a compile-time constant
-    // until a real RPC succeeds, which on slow / roaming networks
-    // can take longer than any reasonable boot timeout). Heights are
-    // surfaced in the UI so a stale daemon is visible to the user —
-    // we don't need to refuse to connect over it.
-    // Dedup by parsed (hostPort, ssl) so "https://host" and
-    // "https://host:443" don't both burn ~15s on the same endpoint.
-    final candidates = <String>[daemonUri, ...kMoneroFallbackNodes];
-    final seen = <String>{};
-    String? activeHostPort;
-    bool activeSsl = false;
-    String lastError = '';
-    for (final url in candidates) {
-      final ep = MoneroDaemonEndpoint.parse(url);
-      final key = '${ep.hostPort}|${ep.useSsl}';
-      if (!seen.add(key)) continue;
-      stage('init ${ep.hostPort} (ssl=${ep.useSsl})');
-      final ok = monero.Wallet_init(
-        w,
-        daemonAddress: ep.hostPort,
-        useSsl: ep.useSsl,
-      );
-      if (ok) {
-        activeHostPort = ep.hostPort;
-        activeSsl = ep.useSsl;
-        break;
-      }
-      lastError = monero.Wallet_errorString(w);
-      stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
-    }
-
-    if (activeHostPort == null) {
-      throw Exception(
-          'Wallet_init rejected every candidate. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
-    }
-
-    stage('attached $activeHostPort (ssl=$activeSsl)');
-
-    // For freshly-created wallets only: ask the daemon what the real
-    // chain tip is and adjust where scanning starts. The hint passed
-    // in by the caller is necessarily a baked-in compile-time guess —
-    // if it's higher than today's tip the wallet skips every real
-    // block (which is exactly what happened in peek_xmr_v2); if it's
-    // much lower the user wastes time scanning months of empty
-    // history. Clamp to (real tip - 5000) so we cover ~1 week of
-    // recent receives without burning hours of decryption.
-    //
-    // Wallet_daemonBlockChainHeight populates ~5–15s after Wallet_init
-    // succeeds (it takes one real /get_height RPC to fill in). Poll
-    // up to 15s; if we never get a value, fall back to the caller's
-    // hint — slow but bounded.
-    if (justCreated) {
-      stage('querying daemon tip…');
-      int observedTip = 0;
-      for (var i = 0; i < 30; i++) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        observedTip = monero.Wallet_daemonBlockChainHeight(w);
-        if (observedTip > 1000000) break;
-      }
-      if (observedTip > 1000000) {
-        final adjusted = observedTip - 5000;
-        stage('clamp restoreHeight $restoreHeight -> $adjusted (tip=$observedTip)');
-        try {
-          monero.Wallet_setRefreshFromBlockHeight(
-            w,
-            refresh_from_block_height: adjusted,
-          );
-        } catch (e) {
-          stage('setRefreshFromBlockHeight failed: $e — using $restoreHeight');
-        }
-      } else {
-        stage('daemon tip not reported in 15s — using hint $restoreHeight');
-      }
-    }
-
-    stage('starting refresh');
-    monero.Wallet_startRefresh(w);
-    stage('ready');
+    // Daemon connection + refresh kicked off via the shared helper,
+    // identical to the openFromPath() path.
+    await _initDaemonAndStart(w, daemonUri, stage, justCreated: justCreated);
 
     return MoneroWallet._(w, keys.primaryAddress);
   }
