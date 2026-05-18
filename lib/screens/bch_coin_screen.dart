@@ -35,6 +35,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
   String? _err;
   int _balanceSat = 0;
   List<BchTx> _txes = const [];
+  DateTime? _balanceFromCacheAt;
   Timer? _poll;
   bool _refreshing = false;
 
@@ -53,6 +54,21 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
 
   Future<void> _open() async {
     setState(() => _err = null);
+    // Pre-fill from BalanceCache so the user sees a real balance
+    // before the live fetch returns (or fails — Blockchair can
+    // take 30+ s under load).
+    final cached = await BalanceCache.I.get(widget.walletMeta.id);
+    if (cached != null && mounted) {
+      final m =
+          RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
+      if (m != null) {
+        final coins = double.tryParse(m.group(1)!) ?? 0;
+        setState(() {
+          _balanceSat = (coins * 100000000).round();
+          _balanceFromCacheAt = cached.updatedAt;
+        });
+      }
+    }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
       setState(() => _err = 'Vault is locked.');
@@ -104,12 +120,23 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
         fiatCurrency: PriceFeed.I.currency,
         updatedAt: DateTime.now(),
       )));
+      if (mounted) setState(() => _balanceFromCacheAt = null);
     } catch (e) {
       if (!mounted) return;
+      // Keep the cached balance displayed; just note the live fetch
+      // failed. Common with Blockchair on the free tier.
       setState(() => _err = e.toString());
     } finally {
       if (mounted) setState(() => _refreshing = false);
     }
+  }
+
+  String _relTime(DateTime then) {
+    final d = DateTime.now().difference(then);
+    if (d.inSeconds < 60) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    return '${d.inDays}d ago';
   }
 
   String _balanceText() {
@@ -279,6 +306,16 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                     );
                   },
                 ),
+                if (_balanceFromCacheAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '⚠ Cached value (${_relTime(_balanceFromCacheAt!)}). '
+                      'Live fetch failed — retry or set a Custom RPC.',
+                      style: const TextStyle(
+                          color: PeekColors.accent, fontSize: 11),
+                    ),
+                  ),
                 if (_err != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),

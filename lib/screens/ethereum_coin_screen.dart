@@ -34,6 +34,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   EthereumWallet? _wallet;
   String? _err;
   BigInt _balanceWei = BigInt.zero;
+  DateTime? _balanceFromCacheAt;
   List<EthereumTx> _txes = const [];
   /// Token balances keyed by contract address. Populated on each
   /// _refresh() so the UI can show USDT/USDC/DAI rows under the
@@ -63,6 +64,20 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
 
   Future<void> _open() async {
     setState(() => _err = null);
+    // Pre-fill from BalanceCache so users see a balance instantly
+    // even if the RPC takes a moment.
+    final cached = await BalanceCache.I.get(widget.walletMeta.id);
+    if (cached != null && mounted) {
+      final m =
+          RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
+      if (m != null) {
+        final coins = double.tryParse(m.group(1)!) ?? 0;
+        setState(() {
+          _balanceWei = BigInt.from(coins * 1e18);
+          _balanceFromCacheAt = cached.updatedAt;
+        });
+      }
+    }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
       setState(() => _err = 'Vault is locked.');
@@ -155,8 +170,10 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         fiatCurrency: PriceFeed.I.currency,
         updatedAt: DateTime.now(),
       )));
+      if (mounted) setState(() => _balanceFromCacheAt = null);
     } catch (e) {
       if (!mounted) return;
+      // Keep cached balance on screen; flag the live-fetch error.
       setState(() => _err = e.toString());
     } finally {
       if (mounted) setState(() => _refreshing = false);
@@ -165,6 +182,14 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
 
   String get _symbol => _wallet?.network.symbol ?? widget.walletMeta.coinId;
   String get _coinName => _wallet?.network.name ?? 'Ethereum';
+
+  String _relTime(DateTime then) {
+    final d = DateTime.now().difference(then);
+    if (d.inSeconds < 60) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    return '${d.inDays}d ago';
+  }
 
   String _balanceText() {
     if (_wallet == null) return '… $_symbol';
@@ -466,6 +491,16 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                     );
                   },
                 ),
+                if (_balanceFromCacheAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '⚠ Cached value (${_relTime(_balanceFromCacheAt!)}). '
+                      'Live fetch failed — retry or set a Custom RPC.',
+                      style: const TextStyle(
+                          color: PeekColors.accent, fontSize: 11),
+                    ),
+                  ),
                 if (_err != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),

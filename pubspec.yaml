@@ -106,8 +106,16 @@ dependencies:
   url_launcher: ^6.3.1
 
   # SVG renderer for the per-coin avatars. The bundled SVGs live in
-  # assets/coins/. Pure-Dart parser/painter — no native deps.
+  # assets/coins/ as the offline fallback. Pure-Dart parser/painter —
+  # no native deps.
   flutter_svg: ^2.0.10
+
+  # On-disk-cached network image loader. We use it to pull the actual
+  # CoinGecko coin logos (assets.coingecko.com/coins/images/<id>/large/…)
+  # at first run so the in-app icons match the price feed source. The
+  # bundled assets/coins/*.svg stay as the offline fallback via the
+  # errorWidget on CachedNetworkImage.
+  cached_network_image: ^3.4.1
 
   # Bitcoin support — BIP32 hierarchical key derivation + bech32
   # encoding for BIP84 native SegWit addresses. Pure-Dart, no native

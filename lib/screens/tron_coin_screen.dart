@@ -35,6 +35,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
   TronWallet? _wallet;
   String? _err;
   int _balanceSun = 0;
+  DateTime? _balanceFromCacheAt;
   List<TronTx> _txes = const [];
   /// TRC-20 balances keyed by base58 contract address. Populated
   /// in _refresh() alongside the native TRX balance.
@@ -59,6 +60,21 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
 
   Future<void> _open() async {
     setState(() => _err = null);
+    // Pre-fill from BalanceCache so the user sees a number before
+    // the TronGrid balance call completes (or fails — public TronGrid
+    // is rate-limited and 429s under contention).
+    final cached = await BalanceCache.I.get(widget.walletMeta.id);
+    if (cached != null && mounted) {
+      final m =
+          RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
+      if (m != null) {
+        final trx = double.tryParse(m.group(1)!) ?? 0;
+        setState(() {
+          _balanceSun = (trx * 1000000).round();
+          _balanceFromCacheAt = cached.updatedAt;
+        });
+      }
+    }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
       setState(() => _err = 'Vault is locked.');
@@ -135,8 +151,12 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
         fiatCurrency: PriceFeed.I.currency,
         updatedAt: DateTime.now(),
       )));
+      if (mounted) setState(() => _balanceFromCacheAt = null);
     } catch (e) {
       if (!mounted) return;
+      // Keep the cached balance visible — TronGrid is rate-limited
+      // and transient failures are common. Surface the error but
+      // don't wipe _balanceSun.
       setState(() => _err = e.toString());
     } finally {
       if (mounted) setState(() => _refreshing = false);
@@ -147,6 +167,14 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
     if (_wallet == null) return '… TRX';
     final trx = _balanceSun / 1000000.0;
     return '${trx.toStringAsFixed(6)} TRX';
+  }
+
+  static String _relTime(DateTime then) {
+    final d = DateTime.now().difference(then);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min';
+    if (d.inHours < 24) return '${d.inHours} hr';
+    return '${d.inDays} d';
   }
 
   /// Native TRX + TRC-20 transfer history merged into a single
@@ -328,6 +356,15 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                     );
                   },
                 ),
+                if (_balanceFromCacheAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '⚠ Cached value (${_relTime(_balanceFromCacheAt!)} ago)',
+                      style: const TextStyle(
+                          color: PeekColors.text3, fontSize: 11),
+                    ),
+                  ),
                 if (_err != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),

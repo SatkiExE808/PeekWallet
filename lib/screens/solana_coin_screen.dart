@@ -33,6 +33,7 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
   SolanaWallet? _wallet;
   String? _err;
   int _balanceLamports = 0;
+  DateTime? _balanceFromCacheAt;
   List<SolanaTxDetail> _txes = const [];
   /// SPL token balances keyed by mint address. Populated alongside
   /// the native SOL balance during each refresh.
@@ -60,6 +61,21 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
 
   Future<void> _open() async {
     setState(() => _err = null);
+    // Pre-fill from BalanceCache so the user sees a number before
+    // mainnet-beta's RPC finishes (or fails, the public node is
+    // commonly rate-limited).
+    final cached = await BalanceCache.I.get(widget.walletMeta.id);
+    if (cached != null && mounted) {
+      final m =
+          RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
+      if (m != null) {
+        final sol = double.tryParse(m.group(1)!) ?? 0;
+        setState(() {
+          _balanceLamports = (sol * 1000000000).round();
+          _balanceFromCacheAt = cached.updatedAt;
+        });
+      }
+    }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
       setState(() => _err = 'Vault is locked.');
@@ -138,8 +154,12 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
         fiatCurrency: PriceFeed.I.currency,
         updatedAt: DateTime.now(),
       )));
+      if (mounted) setState(() => _balanceFromCacheAt = null);
     } catch (e) {
       if (!mounted) return;
+      // Keep the cached balance visible — mainnet-beta's public RPC
+      // is rate-limited and transient failures are common. Surface
+      // the error but don't wipe _balanceLamports.
       setState(() => _err = e.toString());
     } finally {
       if (mounted) setState(() => _refreshing = false);
@@ -150,6 +170,14 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
     if (_wallet == null) return '… SOL';
     final sol = _balanceLamports / 1000000000.0;
     return '${sol.toStringAsFixed(6)} SOL';
+  }
+
+  static String _relTime(DateTime then) {
+    final d = DateTime.now().difference(then);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min';
+    if (d.inHours < 24) return '${d.inHours} hr';
+    return '${d.inDays} d';
   }
 
   Future<void> _openSendScreen(SolanaWallet w) async {
@@ -346,6 +374,15 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                     );
                   },
                 ),
+                if (_balanceFromCacheAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '⚠ Cached value (${_relTime(_balanceFromCacheAt!)} ago)',
+                      style: const TextStyle(
+                          color: PeekColors.text3, fontSize: 11),
+                    ),
+                  ),
                 if (_err != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),

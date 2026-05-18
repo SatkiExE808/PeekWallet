@@ -32,7 +32,7 @@ class BlockchairBchClient {
 
     final r = await _http
         .get(Uri.parse('$_base/dashboards/address/$stripped?limit=1'))
-        .timeout(const Duration(seconds: 10));
+        .timeout(const Duration(seconds: 25));
     if (r.statusCode == 404) return 0; // brand-new address
     if (r.statusCode != 200) {
       throw Exception('Blockchair API returned ${r.statusCode}');
@@ -56,7 +56,7 @@ class BlockchairBchClient {
 
     final r = await _http
         .get(Uri.parse('$_base/dashboards/address/$stripped?limit=$limit'))
-        .timeout(const Duration(seconds: 12));
+        .timeout(const Duration(seconds: 30));
     if (r.statusCode == 404) return const [];
     if (r.statusCode != 200) {
       throw Exception('Blockchair API returned ${r.statusCode}');
@@ -92,7 +92,7 @@ class BlockchairBchClient {
 
     final r = await _http
         .get(Uri.parse('$_base/dashboards/address/$stripped?limit=0,100'))
-        .timeout(const Duration(seconds: 10));
+        .timeout(const Duration(seconds: 25));
     if (r.statusCode == 404) return const [];
     if (r.statusCode != 200) {
       throw Exception('Blockchair API returned ${r.statusCode}');
