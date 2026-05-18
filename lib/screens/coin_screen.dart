@@ -10,6 +10,7 @@ import '../coins/monero/monero_engine.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
 import '../prices/price_feed.dart';
+import '../util/explorer_links.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
@@ -833,16 +834,40 @@ class _TxRow extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: tx.hash));
-                if (!ctx.mounted) return;
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('TX ID copied')),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy TX ID'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: tx.hash));
+                      if (!ctx.mounted) return;
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('TX ID copied')),
+                      );
+                    },
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('Copy'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final url = explorerTxUrl(
+                          coinId: 'XMR', txid: tx.hash);
+                      if (url == null) return;
+                      final ok = await openExplorerUrl(url);
+                      if (!ok && ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(
+                                content: Text('Could not open browser')));
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 16),
+                    label: const Text('Explorer'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

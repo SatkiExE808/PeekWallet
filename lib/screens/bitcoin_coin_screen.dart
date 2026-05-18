@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../util/explorer_links.dart';
 import 'send_bitcoin_screen.dart';
 
 /// Bitcoin coin page. Separate from CoinScreen (which is Monero-
@@ -493,15 +494,40 @@ class _BtcTxRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: tx.txid));
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('TX ID copied')),
-                  );
-                },
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy TX ID'),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: tx.txid));
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('TX ID copied')),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final url = explorerTxUrl(
+                            coinId: symbol, txid: tx.txid);
+                        if (url == null) return;
+                        final ok = await openExplorerUrl(url);
+                        if (!ok && ctx.mounted) {
+                          messenger.showSnackBar(const SnackBar(
+                              content: Text(
+                                  'Could not open browser')));
+                        }
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Explorer'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -100,6 +100,11 @@ dependencies:
   # in bug reports.
   package_info_plus: ^9.0.0
 
+  # Opens block-explorer URLs in the OS browser. Used by the "View in
+  # explorer" button on transaction-detail sheets. No PII sent through
+  # this — we only construct deeplinks from public txids.
+  url_launcher: ^6.3.1
+
   # Bitcoin support — BIP32 hierarchical key derivation + bech32
   # encoding for BIP84 native SegWit addresses. Pure-Dart, no native
   # libs needed (unlike monero_c). Balance + history fetched live

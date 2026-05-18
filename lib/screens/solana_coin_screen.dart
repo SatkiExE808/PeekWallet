@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../util/explorer_links.dart';
 import 'send_solana_screen.dart';
 
 /// Solana coin page. Receive + balance + history; send is a follow-up
@@ -462,16 +463,40 @@ class _SolTxRow extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 11, fontFamily: 'monospace')),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy signature'),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: tx.signature));
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Signature copied')),
-                  );
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy'),
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: tx.signature));
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Signature copied')),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Explorer'),
+                      onPressed: () async {
+                        final url = explorerTxUrl(
+                            coinId: 'SOL', txid: tx.signature);
+                        if (url == null) return;
+                        final ok = await openExplorerUrl(url);
+                        if (!ok && ctx.mounted) {
+                          messenger.showSnackBar(const SnackBar(
+                              content: Text('Could not open browser')));
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../util/explorer_links.dart';
 import 'send_ethereum_screen.dart';
 
 /// Ethereum coin page. Lighter than the Bitcoin one because we don't
@@ -486,16 +487,40 @@ class _EthTxRow extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 11, fontFamily: 'monospace')),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy hash'),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: tx.hash));
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Hash copied')),
-                  );
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy'),
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: tx.hash));
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Hash copied')),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Explorer'),
+                      onPressed: () async {
+                        final url = explorerTxUrl(
+                            coinId: symbol, txid: tx.hash);
+                        if (url == null) return;
+                        final ok = await openExplorerUrl(url);
+                        if (!ok && ctx.mounted) {
+                          messenger.showSnackBar(const SnackBar(
+                              content: Text('Could not open browser')));
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
