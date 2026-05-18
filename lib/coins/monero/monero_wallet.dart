@@ -676,25 +676,53 @@ class MoneroTx {
 /// Process-wide singleton holding the current wallet (if any).
 /// `MoneroSession.I.start(mnemonic)` is called once after unlock; the
 /// UI then polls `MoneroSession.I.wallet?.balanceXmr` etc.
+/// Per-wallet runtime handle. Holds the live MoneroWallet plus the
+/// boot-stage label so the UI can render "Boot: connecting…" while
+/// open() is in flight.
+class _ActiveMoneroWallet {
+  MoneroWallet? wallet;
+  String? lastError;
+  String? stage;
+  Future<MoneroWallet?>? inFlight;
+}
+
+/// Process-wide registry of open Monero wallets, keyed by wallet id.
+/// Replaces the old single-instance MoneroSession.I singleton — needed
+/// for the Cake-style multi-wallet model where multiple Monero wallets
+/// can be open concurrently.
+///
+/// The legacy entrypoint `MoneroSession.I.start(mnemonic: …)` still
+/// works — it's mapped to the synthetic wallet id `legacy:bip39` so
+/// the existing CoinScreen path keeps functioning during the
+/// transition. New code should use [startFor] with a real walletId
+/// from WalletStore.
 class MoneroSession {
   MoneroSession._();
   static final I = MoneroSession._();
 
-  MoneroWallet? _wallet;
-  String? _lastError;
-  String? _stage;
-  Future<MoneroWallet?>? _inFlight;
+  /// Sentinel walletId used by the legacy single-seed `start()` path.
+  /// Any walletId starting with `legacy:` is treated as the old
+  /// vault-wallet–compatible BIP39 flow.
+  static const String legacyWalletId = 'legacy:bip39';
 
-  MoneroWallet? get wallet => _wallet;
-  String? get lastError => _lastError;
-  bool get isStarting => _inFlight != null;
-  /// Last stage label emitted by MoneroWallet.open — surfaced in the
-  /// UI so the user can see what part of the boot is taking time.
-  String? get stage => _stage;
+  final Map<String, _ActiveMoneroWallet> _sessions = {};
 
-  /// Idempotent — concurrent callers share the same in-flight Future
-  /// instead of one of them getting a spurious null. Calling after the
-  /// wallet is already open returns the existing instance.
+  MoneroWallet? walletFor(String walletId) =>
+      _sessions[walletId]?.wallet;
+  String? lastErrorFor(String walletId) =>
+      _sessions[walletId]?.lastError;
+  String? stageFor(String walletId) => _sessions[walletId]?.stage;
+  bool isStartingFor(String walletId) =>
+      _sessions[walletId]?.inFlight != null;
+
+  // ── Legacy single-wallet API (unchanged for existing callers) ─
+
+  /// Legacy: identifies as the single-bip39 wallet.
+  MoneroWallet? get wallet => _sessions[legacyWalletId]?.wallet;
+  String? get lastError => _sessions[legacyWalletId]?.lastError;
+  String? get stage => _sessions[legacyWalletId]?.stage;
+  bool get isStarting => _sessions[legacyWalletId]?.inFlight != null;
+
   Future<MoneroWallet?> start({
     required String mnemonic,
     required int restoreHeight,
@@ -702,46 +730,92 @@ class MoneroSession {
     required String walletPassword,
     String passphrase = '',
   }) {
-    if (_wallet != null) return Future.value(_wallet);
-    return _inFlight ??= _doStart(
+    final s = _sessions.putIfAbsent(legacyWalletId, _ActiveMoneroWallet.new);
+    if (s.wallet != null) return Future.value(s.wallet);
+    return s.inFlight ??= _doStartLegacy(
+      session: s,
       mnemonic: mnemonic,
       restoreHeight: restoreHeight,
       daemonUri: daemonUri,
       walletPassword: walletPassword,
       passphrase: passphrase,
-    ).whenComplete(() => _inFlight = null);
+    ).whenComplete(() => s.inFlight = null);
   }
 
-  Future<MoneroWallet?> _doStart({
+  Future<MoneroWallet?> _doStartLegacy({
+    required _ActiveMoneroWallet session,
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
     required String walletPassword,
     required String passphrase,
   }) async {
-    _lastError = null;
+    session.lastError = null;
     try {
-      _wallet = await MoneroWallet.open(
+      session.wallet = await MoneroWallet.open(
         mnemonic: mnemonic,
         passphrase: passphrase,
         restoreHeight: restoreHeight,
         daemonUri: daemonUri,
         walletPassword: walletPassword,
-        onStage: (s) => _stage = s,
+        onStage: (s) => session.stage = s,
       );
-      return _wallet;
+      return session.wallet;
     } catch (e, st) {
-      _lastError = e.toString();
+      session.lastError = e.toString();
       // ignore: avoid_print
       print('MoneroSession.start failed: $e\n$st');
       return null;
     }
   }
 
+  /// Stop every open Monero wallet — closes the native side and drops
+  /// the entry. Called from VaultState.lock so locked state means
+  /// "no live wallets".
   void stop() {
-    _wallet?.close();
-    _wallet = null;
-    _stage = null;
+    for (final s in _sessions.values) {
+      s.wallet?.close();
+    }
+    _sessions.clear();
+  }
+
+  // ── Multi-wallet API (new architecture) ──────────────────────
+
+  /// Boot a wallet by id via CoinModule.open (handles non-bip39
+  /// formats). Idempotent per id — concurrent callers share the
+  /// same future.
+  Future<MoneroWallet?> startFor({
+    required String walletId,
+    required Future<MoneroWallet?> Function(
+      void Function(String stage) onStage,
+    ) opener,
+  }) {
+    final s = _sessions.putIfAbsent(walletId, _ActiveMoneroWallet.new);
+    if (s.wallet != null) return Future.value(s.wallet);
+    return s.inFlight ??= _doStartFor(s, opener)
+        .whenComplete(() => s.inFlight = null);
+  }
+
+  Future<MoneroWallet?> _doStartFor(
+    _ActiveMoneroWallet session,
+    Future<MoneroWallet?> Function(void Function(String stage)) opener,
+  ) async {
+    session.lastError = null;
+    try {
+      session.wallet = await opener((s) => session.stage = s);
+      return session.wallet;
+    } catch (e, st) {
+      session.lastError = e.toString();
+      // ignore: avoid_print
+      print('MoneroSession.startFor failed: $e\n$st');
+      return null;
+    }
+  }
+
+  /// Close a single wallet by id (delete + lock workflows).
+  void stopFor(String walletId) {
+    final s = _sessions.remove(walletId);
+    s?.wallet?.close();
   }
 }
 

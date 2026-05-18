@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
+import '../coins/monero/monero_keys.dart';
 import '../util/sensitive_clipboard.dart';
+import '../wallets/seed_format.dart';
+import '../wallets/wallet_store.dart';
 import 'biometric_auth.dart';
 import 'vault_storage.dart';
 
@@ -59,13 +62,49 @@ class VaultState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Decrypts the stored seed and unlocks the session.
+  /// Decrypts the stored seed and unlocks the session. Also runs a
+  /// one-time migration: when WalletStore is empty but the legacy
+  /// single-seed blob is present, silently re-encode the BIP39 seed
+  /// as the first WalletStore entry. After this runs, every read
+  /// elsewhere in the app can use WalletStore as the source of
+  /// truth.
   Future<void> unlock(String password) async {
     final seed = await _storage.unlock(password);
     _mnemonic = seed.mnemonic;
     _passphrase = seed.passphrase;
     _walletFilePassword = seed.walletFilePassword;
+    await _maybeMigrateLegacyWallet(password, seed);
     notifyListeners();
+  }
+
+  /// Idempotent: if WalletStore is empty AND we just unlocked a
+  /// legacy single-seed vault, fold the legacy seed into a new
+  /// WalletStore entry. The legacy VaultStorage blob stays put — old
+  /// builds of the app would still want to unlock from it, and the
+  /// data is the same.
+  Future<void> _maybeMigrateLegacyWallet(
+      String password, DecryptedSeed seed) async {
+    if (await WalletStore.I.hasAny()) return;
+    try {
+      final keys = deriveMoneroKeys(seed.mnemonic, passphrase: seed.passphrase);
+      await WalletStore.I.create(
+        name: 'My Monero',
+        coinId: 'XMR',
+        format: SeedFormat.bip39_12,
+        seedMaterial: {
+          'mnemonic': seed.mnemonic,
+          'passphrase': seed.passphrase,
+        },
+        password: password,
+        primaryAddress: keys.primaryAddress,
+      );
+    } catch (e) {
+      // Migration is best-effort — if it fails the user still has
+      // their legacy single-seed wallet working. They can manually
+      // add a new wallet later via the "+ Add wallet" flow.
+      // ignore: avoid_print
+      print('VaultState: legacy → WalletStore migration failed: $e');
+    }
   }
 
   /// True when the user has previously opted in to biometric unlock.

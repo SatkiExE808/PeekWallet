@@ -5,19 +5,34 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../coins/coin.dart';
+import '../coins/module_registry.dart';
 import '../coins/monero/monero_engine.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
+import '../wallets/wallet_meta.dart';
+import '../wallets/wallet_store.dart';
 import 'send_xmr_screen.dart';
 
 /// Coin detail page. For Monero, shows the live native-engine balance
 /// + sync progress; other coins still show placeholder text until
 /// their own backends land.
+///
+/// Two modes:
+///   - Legacy (walletMeta == null): boots via the single-wallet
+///     MoneroSession.I.start path using VaultState.mnemonic.
+///   - Multi-wallet (walletMeta provided): opens that specific wallet
+///     via MoneroSession.I.startFor + CoinModule.open. Cached
+///     primary address in meta avoids re-derivation.
 class CoinScreen extends StatefulWidget {
-  const CoinScreen({super.key, required this.coin});
+  const CoinScreen({
+    super.key,
+    required this.coin,
+    this.walletMeta,
+  });
   final Coin coin;
+  final WalletMeta? walletMeta;
 
   @override
   State<CoinScreen> createState() => _CoinScreenState();
@@ -88,6 +103,21 @@ class _CoinScreenState extends State<CoinScreen> {
   }
 
   Future<void> _load() async {
+    if (widget.walletMeta != null) {
+      // Multi-wallet mode — use the cached address; skip derivation.
+      setState(() => _address = widget.walletMeta!.primaryAddress ?? '');
+      if (widget.walletMeta!.coinId == 'XMR' && moneroNativeAvailable()) {
+        final engine = MoneroEngine.I.status();
+        if (!engine.loaded) {
+          setState(() => _engineError = engine.error);
+          return;
+        }
+        await _bootMoneroFromMeta(widget.walletMeta!);
+      }
+      return;
+    }
+
+    // Legacy single-wallet mode (vault-wallet-style unified seed).
     final mn = VaultState.I.mnemonic;
     if (mn == null) {
       setState(() => _error = 'Wallet is locked');
@@ -108,6 +138,137 @@ class _CoinScreenState extends State<CoinScreen> {
       }
       await _bootMonero(mn);
     }
+  }
+
+  Future<void> _bootMoneroFromMeta(WalletMeta meta) async {
+    final stageTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+
+    final walletFilePassword = VaultState.I.walletFilePassword;
+    if (walletFilePassword == null) {
+      stageTicker.cancel();
+      setState(() => _engineError = 'Vault locked — wallet password unavailable');
+      return;
+    }
+
+    // Ask the user for their password to decrypt the wallet-specific
+    // seed material. Re-using the legacy walletFilePassword is wrong
+    // here because each WalletStore entry has its own salt — call
+    // WalletStore.open with the master password instead.
+    //
+    // We treat VaultState.I as the master-password authority: the
+    // legacy unlock that put us here proved the user knows the
+    // password. So we don't re-prompt; we lift the password from
+    // the password field… except VaultState doesn't keep the master
+    // password in memory (only the seed). We can't re-derive without
+    // it.
+    //
+    // Workaround for this commit: prompt once when the user navigates
+    // to a non-legacy wallet. Future work: cache the master password
+    // securely in memory after unlock (matching biometric storage's
+    // model) so subsequent wallet opens don't re-prompt.
+    final password = await _promptPasswordOnce(context);
+    if (password == null) {
+      stageTicker.cancel();
+      setState(() => _engineError = 'Password required to open this wallet');
+      return;
+    }
+
+    final DecryptedWallet decrypted;
+    try {
+      decrypted = await WalletStore.I.open(
+        walletId: meta.id,
+        password: password,
+      );
+    } catch (e) {
+      stageTicker.cancel();
+      setState(() => _engineError = 'Could not open wallet: $e');
+      return;
+    }
+
+    final coin = coinModuleFor(meta.coinId);
+    if (coin == null) {
+      stageTicker.cancel();
+      setState(() => _engineError = 'Unknown coin: ${meta.coinId}');
+      return;
+    }
+
+    final daemonUri =
+        await Prefs.I.moneroDaemonUri() ?? kDefaultMoneroDaemon;
+    final w = await MoneroSession.I.startFor(
+      walletId: meta.id,
+      opener: (onStage) async {
+        final result = await coin.open(
+          walletId: meta.id,
+          format: meta.format,
+          seedMaterial: decrypted.seedMaterial,
+          walletFilePassword: decrypted.walletFilePassword,
+          daemonUri: daemonUri,
+          restoreHeight: meta.restoreHeight ?? 0,
+          onStage: onStage,
+        );
+        return result as MoneroWallet?;
+      },
+    );
+    stageTicker.cancel();
+    if (w == null) {
+      setState(() =>
+          _engineError = MoneroSession.I.lastErrorFor(meta.id) ?? 'unknown');
+      return;
+    }
+    _moneroWallet = w;
+    var lastHistoryPoll = DateTime.now();
+    _poll = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      List<MoneroTx>? newTx;
+      final now = DateTime.now();
+      if (now.difference(lastHistoryPoll).inSeconds >= 5) {
+        lastHistoryPoll = now;
+        try {
+          newTx = w.transactions();
+        } catch (_) {/* ignore */}
+      }
+      setState(() {
+        _syncPct = w.syncProgressPct;
+        _balanceXmr = w.balanceXmr;
+        _currentHeight = w.currentHeight;
+        _tipHeight = w.daemonTipHeight;
+        _daemonConnected = w.isDaemonConnected;
+        _isSynced = w.isSynced;
+        _daemonError = w.daemonError;
+        if (newTx != null) _transactions = newTx;
+      });
+    });
+  }
+
+  Future<String?> _promptPasswordOnce(BuildContext context) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unlock wallet'),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'App password'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+            child: const Text('Open'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return (result == null || result.isEmpty) ? null : result;
   }
 
   Future<void> _bootMonero(String mnemonic) async {
