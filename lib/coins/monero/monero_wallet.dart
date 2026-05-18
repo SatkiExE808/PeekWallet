@@ -265,16 +265,17 @@ class MoneroWallet {
   }
 
   /// 0–100 percentage based on `current / tip`. Returns 0 while we're
-  /// still waiting for the daemon to respond with the tip. Rounds —
-  /// not truncates — and snaps to 100 when we're caught up, so a 1-
-  /// block lag against a 3.7M-block tip doesn't park us at 99 forever
-  /// (it would otherwise compute to 99.99997…% and `.toInt()` to 99).
+  /// still waiting for the daemon to respond with the tip. Floors —
+  /// not rounds — so a ratio of 99.88% reports as 99 instead of 100;
+  /// otherwise the label would read "Syncing 100%" for several blocks
+  /// before isSynced actually flips. The cur >= tip early-return
+  /// covers the truly-caught-up case.
   int get syncProgressPct {
     final tip = monero.Wallet_daemonBlockChainHeight(_ptr);
     if (tip <= 0) return 0;
     final cur = monero.Wallet_blockChainHeight(_ptr);
     if (cur >= tip) return 100;
-    return ((cur / tip) * 100).clamp(0.0, 100.0).round();
+    return ((cur / tip) * 100).clamp(0.0, 100.0).floor();
   }
 
   /// Close the wallet, flushing the wallet file to disk. Call from
