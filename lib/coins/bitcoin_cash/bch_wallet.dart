@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
 import 'bch_keys.dart';
 import 'bch_tx_builder.dart';
@@ -14,7 +15,8 @@ class BitcoinCashWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  }) : _client = BlockchairBchClient();
+  }) : _client = BlockchairBchClient(
+            baseUrl: RpcOverrides.I.get('BCH', 'explorer'));
 
   factory BitcoinCashWallet.open({
     required String mnemonic,

@@ -5,6 +5,7 @@ import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:crypto/crypto.dart';
 
+import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
 import 'trc20.dart';
 import 'tron_keys.dart';
@@ -19,7 +20,8 @@ class TronWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  }) : _client = TronGridClient();
+  }) : _client = TronGridClient(
+            baseUrl: RpcOverrides.I.get('TRX', 'explorer'));
 
   factory TronWallet.open({
     required String mnemonic,

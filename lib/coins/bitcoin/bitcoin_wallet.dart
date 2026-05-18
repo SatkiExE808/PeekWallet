@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
 import 'bitcoin_keys.dart';
 import 'bitcoin_tx_builder.dart';
@@ -29,7 +30,10 @@ class BitcoinWallet {
     required this.gapLimit,
     required this.addresses,
     required this.params,
-  }) : _client = MempoolClient(baseUrl: params.mempoolBaseUrl);
+  }) : _client = MempoolClient(
+            baseUrl:
+                RpcOverrides.I.get(params.id, 'mempool') ??
+                    params.mempoolBaseUrl);
 
   /// Open a Bitcoin (or Litecoin / any BIP143-compatible chain) wallet
   /// for the given seed. Derives [gapLimit] addresses on the external

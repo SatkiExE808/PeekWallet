@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'prefs/prefs.dart';
+import 'prefs/rpc_overrides.dart';
 import 'prices/price_feed.dart';
 import 'theme.dart';
 import 'shell.dart';
@@ -15,6 +16,13 @@ void main() {
   // Boot the price feed BEFORE runApp so the first frame has cached
   // prices (or an empty cache if the user has it disabled).
   unawaited(PriceFeed.I.start());
+  // Load per-chain RPC overrides synchronously-ish — fires in
+  // parallel with first-frame layout so by the time the user picks
+  // a wallet to open, RpcOverrides.I.get() returns their endpoint
+  // rather than the public default. If load() loses the race, the
+  // wallet just uses defaults that first time; user-visible diff
+  // is one extra network call to the default endpoint.
+  unawaited(RpcOverrides.I.load());
   runApp(const PeekWalletApp());
 }
 

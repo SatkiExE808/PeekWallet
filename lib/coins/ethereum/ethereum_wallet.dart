@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
 
+import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
 import 'custom_token_store.dart';
 import 'erc20.dart';
@@ -30,8 +31,12 @@ class EthereumWallet {
     required this.passphrase,
     required this.address,
     required this.network,
-  })  : _client = EtherscanClient(baseUrl: network.blockscoutBaseUrl),
-        _rpc = EthRpcClient(endpoint: network.rpcUrl);
+  })  : _client = EtherscanClient(
+            baseUrl: RpcOverrides.I.get(network.id, 'explorer') ??
+                network.blockscoutBaseUrl),
+        _rpc = EthRpcClient(
+            endpoint: RpcOverrides.I.get(network.id, 'rpc') ??
+                network.rpcUrl);
 
   /// Open an EVM wallet for the given seed + network. Defaults to
   /// Ethereum mainnet; pass [kPolygonMainnet] (or any other

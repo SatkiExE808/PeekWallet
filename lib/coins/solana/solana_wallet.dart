@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
 import 'sol_tx_builder.dart';
 import 'solana_keys.dart';
@@ -19,7 +20,8 @@ class SolanaWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  }) : _rpc = SolanaRpcClient();
+  }) : _rpc = SolanaRpcClient(
+            endpoint: RpcOverrides.I.get('SOL', 'rpc'));
 
   static Future<SolanaWallet> open({
     required String mnemonic,

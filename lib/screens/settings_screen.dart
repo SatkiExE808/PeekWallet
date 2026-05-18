@@ -9,6 +9,7 @@ import '../util/peek_logger.dart';
 import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
 import 'about_screen.dart';
+import 'rpc_overrides_screen.dart';
 import 'address_book_screen.dart';
 import 'reveal_seed_screen.dart';
 
@@ -564,6 +565,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       trailing: const Icon(Icons.chevron_right,
                           color: PeekColors.text3),
                       onTap: _exportLogs,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.lan_outlined,
+                          color: PeekColors.text2),
+                      title: const Text('Custom RPC endpoints'),
+                      subtitle: const Text(
+                        'Point BTC/LTC/BCH/ETH/MATIC/SOL/TRX at your '
+                        'own nodes instead of public defaults.',
+                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: PeekColors.text3),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const RpcOverridesScreen()),
+                      ),
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
