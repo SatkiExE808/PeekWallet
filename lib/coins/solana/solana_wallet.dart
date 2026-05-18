@@ -150,6 +150,41 @@ class SolanaWallet {
   /// extend this per-wallet.
   List<SplToken> get defaultTokens => kDefaultSplTokens;
 
+  /// SPL token transfers for every default token, merged into a
+  /// single newest-first list. Each token costs O(limit) RPC calls
+  /// (one signatures + N parsed-transaction lookups) so this is
+  /// the most expensive method on the wallet — but we only run it
+  /// during the periodic 30s refresh, and the result is much more
+  /// useful than the bare native-only history.
+  Future<List<SolanaTokenTx>> splTransfers({int limit = 15}) async {
+    if (_closed) return const [];
+    final out = <SolanaTokenTx>[];
+    for (final token in defaultTokens) {
+      try {
+        final ata = await _rpc.firstTokenAccountAddress(
+          ownerBase58: address.address,
+          mintBase58: token.mint,
+        );
+        if (ata == null) continue; // user has no account for this mint
+        final txs = await _rpc.tokenTransfers(
+          tokenAccountAddress: ata,
+          mintAddress: token.mint,
+          tokenSymbol: token.symbol,
+          tokenDecimals: token.decimals,
+          walletOwnerAddress: address.address,
+          limit: limit,
+        );
+        out.addAll(txs);
+      } catch (e) {
+        PeekLogger.I.log('sol',
+            '${token.symbol} history fetch failed: $e');
+        // Continue to the next token rather than failing the whole
+        // history fetch.
+      }
+    }
+    return out;
+  }
+
   /// Build, sign and broadcast an SPL token transfer. Returns the
   /// transaction signature (the on-chain id) on success.
   ///

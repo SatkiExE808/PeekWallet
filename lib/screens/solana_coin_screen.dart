@@ -36,6 +36,11 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
   /// SPL token balances keyed by mint address. Populated alongside
   /// the native SOL balance during each refresh.
   Map<String, BigInt> _tokenBalances = const {};
+  /// SPL token transfer history. Each entry is a parsed Token
+  /// Program transfer — direction (incoming/outgoing) is inferred
+  /// from whether our wallet owner address is the authority on
+  /// the source ATA.
+  List<SolanaTokenTx> _tokenTxes = const [];
   Timer? _poll;
   bool _refreshing = false;
 
@@ -105,11 +110,21 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
           }
         }
       }
+      // SPL token transfer history — fetched in parallel with the
+      // native side. Errors are swallowed (the wallet's splTransfers
+      // catches per-token failures and continues), so the worst
+      // case is an empty token-tx list this cycle.
+      List<SolanaTokenTx> splTxes = const [];
+      try {
+        splTxes = await w.splTransfers();
+      } catch (_) {/* keep empty */}
+
       if (!mounted) return;
       setState(() {
         _balanceLamports = balance;
         _txes = txes;
         _tokenBalances = tokenResults;
+        _tokenTxes = splTxes;
         _err = null;
       });
       final sol = balance / 1000000000.0;
@@ -145,6 +160,26 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
     if (didSend == true) {
       unawaited(_refresh());
     }
+  }
+
+  /// Native SOL + SPL transfers merged into one newest-first list.
+  /// Token entries pass through unchanged; the row branching at the
+  /// callsite picks the right widget per type.
+  List<Object> _mergedSolHistory() {
+    final merged = <Object>[
+      ..._txes,
+      ..._tokenTxes,
+    ];
+    merged.sort((a, b) {
+      final ta = a is SolanaTxDetail
+          ? a.timestampSec
+          : (a as SolanaTokenTx).timestampSec;
+      final tb = b is SolanaTxDetail
+          ? b.timestampSec
+          : (b as SolanaTokenTx).timestampSec;
+      return tb.compareTo(ta);
+    });
+    return merged;
   }
 
   Future<void> _openSplSendScreen(SolanaWallet w, SplToken token) async {
@@ -380,16 +415,16 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                             TextStyle(color: PeekColors.text2, fontSize: 12),
                       ),
                     ),
-                    if (_txes.isNotEmpty)
+                    if (_txes.isNotEmpty || _tokenTxes.isNotEmpty)
                       Text(
-                        '${_txes.length} total',
+                        '${_txes.length + _tokenTxes.length} total',
                         style: const TextStyle(
                             color: PeekColors.text3, fontSize: 11),
                       ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                if (_txes.isEmpty)
+                if (_txes.isEmpty && _tokenTxes.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
@@ -397,13 +432,17 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                           ? 'Loading…'
                           : 'No transactions yet — give your receive '
                               'address to a sender, refresh, and incoming '
-                              'SOL appears here.',
+                              'SOL or tokens appear here.',
                       style: const TextStyle(
                           color: PeekColors.text3, fontSize: 12),
                     ),
                   )
                 else
-                  for (final tx in _txes) _SolTxRow(tx: tx),
+                  for (final row in _mergedSolHistory())
+                    if (row is SolanaTxDetail)
+                      _SolTxRow(tx: row)
+                    else
+                      _SolTokenTxRow(tx: row as SolanaTokenTx),
               ],
             ),
           ),
@@ -492,6 +531,80 @@ class _SplRow extends StatelessWidget {
     if (v == 0) return '0';
     if (v < 0.0001) return v.toStringAsExponential(2);
     return v.toStringAsFixed(digits);
+  }
+}
+
+/// One row for an SPL token transfer. Visually distinguished from
+/// native SOL rows by a token-symbol chip in the leading icon —
+/// same convention as the ETH/MATIC and Tron screens.
+class _SolTokenTxRow extends StatelessWidget {
+  const _SolTokenTxRow({required this.tx});
+  final SolanaTokenTx tx;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
+    final sign = tx.isIncoming ? '+' : '−';
+    final digits = tx.tokenDecimals == 6 ? 2 : 4;
+    final amount =
+        '$sign${tx.displayAmount.toStringAsFixed(digits)} ${tx.tokenSymbol}';
+    final subtitle =
+        '${_fmtDate(tx.timestamp.toLocal())} · Confirmed';
+    return InkWell(
+      onTap: () async {
+        final url = explorerTxUrl(coinId: 'SOL', txid: tx.signature);
+        if (url == null) return;
+        await openExplorerUrl(url);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: PeekColors.surface2,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  tx.tokenSymbol.length >= 4
+                      ? tx.tokenSymbol.substring(0, 4)
+                      : tx.tokenSymbol,
+                  style: const TextStyle(
+                      color: PeekColors.text2, fontSize: 9),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(amount,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          color: PeekColors.text3, fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.open_in_new,
+                color: PeekColors.text3, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _fmtDate(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${d.year}-${two(d.month)}-${two(d.day)} '
+        '${two(d.hour)}:${two(d.minute)}';
   }
 }
 

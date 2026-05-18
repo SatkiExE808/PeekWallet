@@ -111,6 +111,61 @@ class SolanaRpcClient {
   /// transfer will cost ~0.000005 SOL".
   static const int defaultTransferFeeLamports = 5000;
 
+  /// Fetch the SPL token transfers involving [tokenAccountAddress]
+  /// (the user's ATA for the mint we care about). Returns the
+  /// transfers newest-first, decoded from the parsed-transaction
+  /// payloads.
+  ///
+  /// Solana doesn't have an "ERC-20 tokentx" endpoint like Etherscan-
+  /// compat does, so this is N+1 round-trips: one
+  /// getSignaturesForAddress + one getTransaction per signature.
+  /// At [limit]=15 that's 16 RPC calls per token; bounded and
+  /// acceptable for a periodic refresh.
+  Future<List<SolanaTokenTx>> tokenTransfers({
+    required String tokenAccountAddress,
+    required String mintAddress,
+    required String tokenSymbol,
+    required int tokenDecimals,
+    required String walletOwnerAddress,
+    int limit = 15,
+  }) async {
+    final sigsRes = await _rpc('getSignaturesForAddress', [
+      tokenAccountAddress,
+      {'limit': limit},
+    ]) as List;
+    if (sigsRes.isEmpty) return const [];
+
+    final out = <SolanaTokenTx>[];
+    for (final sigEntry in sigsRes) {
+      final sigMap = sigEntry as Map<String, dynamic>;
+      final sig = sigMap['signature'] as String?;
+      if (sig == null) continue;
+      // Skip failed transactions — they don't move money.
+      if (sigMap['err'] != null) continue;
+
+      final tx = await _rpc('getTransaction', [
+        sig,
+        {
+          'commitment': 'finalized',
+          'maxSupportedTransactionVersion': 0,
+          'encoding': 'jsonParsed',
+        },
+      ]);
+      if (tx == null) continue;
+
+      final parsed = SolanaTokenTx.fromParsedTransaction(
+        json: tx as Map<String, dynamic>,
+        signature: sig,
+        mintAddress: mintAddress,
+        tokenSymbol: tokenSymbol,
+        tokenDecimals: tokenDecimals,
+        walletOwnerAddress: walletOwnerAddress,
+      );
+      if (parsed != null) out.add(parsed);
+    }
+    return out;
+  }
+
   /// Broadcast a base64-encoded signed transaction. Returns the
   /// signature (Solana's tx id).
   Future<String> sendTransaction(String base64Tx) async {
@@ -220,6 +275,143 @@ class SolanaTxSummary {
   bool get confirmed => err == null;
   DateTime get timestamp =>
       DateTime.fromMillisecondsSinceEpoch(blockTimeSec * 1000);
+}
+
+/// One SPL token transfer involving our wallet, decoded from a
+/// jsonParsed transaction. The wire layout is:
+///
+///   tx.transaction.message.instructions[i] = {
+///     program: "spl-token",
+///     programId: "Tokenkeg…",
+///     parsed: {
+///       type: "transfer" OR "transferChecked",
+///       info: {
+///         amount: "1234567",     // base units, string
+///         source: sourceATA pubkey,
+///         destination: destATA pubkey,
+///         authority: owner pubkey,
+///         // transferChecked also has tokenAmount.{amount,decimals,uiAmount,uiAmountString} and mint
+///       },
+///     },
+///   }
+///
+/// We accept both "transfer" and "transferChecked"; the latter is
+/// the post-2021 default and carries the mint inline.
+class SolanaTokenTx {
+  const SolanaTokenTx({
+    required this.signature,
+    required this.mintAddress,
+    required this.tokenSymbol,
+    required this.tokenDecimals,
+    required this.rawAmount,
+    required this.timestampSec,
+    required this.from,
+    required this.to,
+    required this.isIncoming,
+  });
+
+  /// Decode an SPL transfer from a getTransaction (jsonParsed)
+  /// payload. Returns null if no spl-token transfer matches our
+  /// mint (the tx might be unrelated activity that happened to
+  /// touch our ATA — rare but possible).
+  static SolanaTokenTx? fromParsedTransaction({
+    required Map<String, dynamic> json,
+    required String signature,
+    required String mintAddress,
+    required String tokenSymbol,
+    required int tokenDecimals,
+    required String walletOwnerAddress,
+  }) {
+    final blockTime = (json['blockTime'] as num?)?.toInt() ?? 0;
+    final tx = json['transaction'] as Map<String, dynamic>?;
+    final message = tx?['message'] as Map<String, dynamic>?;
+    final instructions = (message?['instructions'] as List?) ?? const [];
+
+    // Find the spl-token transfer instruction that touches our mint.
+    for (final instr in instructions) {
+      final m = instr as Map<String, dynamic>?;
+      if (m == null) continue;
+      if (m['program'] != 'spl-token') continue;
+      final parsed = m['parsed'] as Map<String, dynamic>?;
+      if (parsed == null) continue;
+      final type = parsed['type'] as String?;
+      if (type != 'transfer' && type != 'transferChecked') continue;
+
+      final info = parsed['info'] as Map<String, dynamic>?;
+      if (info == null) continue;
+
+      // For transferChecked the mint is explicit; for the older
+      // "transfer" type we have to trust that the source ATA we
+      // looked up actually points at our mint (the caller filtered
+      // by ATA, so this should always be the case).
+      if (type == 'transferChecked') {
+        final txMint = info['mint'] as String?;
+        if (txMint != null && txMint != mintAddress) continue;
+      }
+
+      String s(dynamic v) => v?.toString() ?? '';
+      final source = s(info['source']);
+      final destination = s(info['destination']);
+      final authority = s(info['authority']);
+
+      // Amount: legacy "transfer" puts it in info.amount as a
+      // base-units string; transferChecked puts it under
+      // info.tokenAmount.amount.
+      String? rawStr;
+      if (type == 'transferChecked') {
+        final tokenAmount = info['tokenAmount'] as Map<String, dynamic>?;
+        rawStr = tokenAmount?['amount'] as String?;
+      } else {
+        rawStr = info['amount'] as String?;
+      }
+      final raw = BigInt.tryParse(rawStr ?? '') ?? BigInt.zero;
+      if (raw == BigInt.zero) continue;
+
+      // Direction: the user's WALLET address is the signer/authority
+      // for outgoing transfers (their own ATA's authority is the
+      // wallet pubkey). For incoming, the source ATA's authority
+      // is someone else and the destination's authority would be
+      // ours — but we don't have that without an extra account
+      // lookup, so we infer direction from whether the OUR ATA is
+      // the source (out) or the destination (in).
+      //
+      // Approximation: if the authority matches our wallet owner
+      // address, it's outgoing. Otherwise it's incoming.
+      final isIncoming = authority != walletOwnerAddress;
+
+      return SolanaTokenTx(
+        signature: signature,
+        mintAddress: mintAddress,
+        tokenSymbol: tokenSymbol,
+        tokenDecimals: tokenDecimals,
+        rawAmount: raw,
+        timestampSec: blockTime,
+        from: source,
+        to: destination,
+        isIncoming: isIncoming,
+      );
+    }
+    return null;
+  }
+
+  final String signature;
+  final String mintAddress;
+  final String tokenSymbol;
+  final int tokenDecimals;
+  final BigInt rawAmount;
+  final int timestampSec;
+  /// Source token account address (the ATA, not the wallet owner).
+  final String from;
+  /// Destination token account address.
+  final String to;
+  final bool isIncoming;
+
+  DateTime get timestamp =>
+      DateTime.fromMillisecondsSinceEpoch(timestampSec * 1000);
+
+  double get displayAmount =>
+      rawAmount.toDouble() /
+      BigInt.from(10).pow(tokenDecimals).toDouble();
 }
 
 /// Full tx with the per-account balance delta worked out for our
