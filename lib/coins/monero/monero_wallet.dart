@@ -51,8 +51,8 @@ class MoneroWallet {
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
+    required String walletPassword,
     String passphrase = '',
-    String walletPassword = 'peek-monero-internal',
     void Function(String stage)? onStage,
   }) async {
     void stage(String s) {
@@ -72,15 +72,39 @@ class MoneroWallet {
     stage('getting wallet manager');
     final wm = monero.WalletManagerFactory_getWalletManager();
 
-    final dynamic w;
-    if (monero.WalletManager_walletExists(wm, walletPath)) {
+    dynamic w;
+    var fileExists = monero.WalletManager_walletExists(wm, walletPath);
+
+    if (fileExists) {
       stage('opening existing wallet file');
       w = monero.WalletManager_openWallet(
         wm,
         path: walletPath,
         password: walletPassword,
       );
-    } else {
+      // Wallet file could be from a previous build that used a
+      // different (hardcoded) password. Status != 0 after open is the
+      // signal — the wallet file is just a cache of state regenerable
+      // from the seed, so wipe + recreate is safe.
+      final status = monero.Wallet_status(w);
+      if (status != 0) {
+        final err = monero.Wallet_errorString(w);
+        stage('open failed (status=$status${err.isEmpty ? "" : ", $err"}) '
+            '— wiping cache and recreating from keys');
+        try {
+          monero.WalletManager_closeWallet(wm, w, false);
+        } catch (_) {/* best effort */}
+        // Delete every file the previous wallet wrote, not just the
+        // main file, so createWalletFromKeys can start clean.
+        try {
+          walletDir.deleteSync(recursive: true);
+        } catch (_) {/* best effort */}
+        walletDir.createSync(recursive: true);
+        fileExists = false;
+      }
+    }
+
+    if (!fileExists) {
       stage('creating new wallet from keys');
       w = monero.WalletManager_createWalletFromKeys(
         wm,
@@ -212,6 +236,7 @@ class MoneroSession {
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
+    required String walletPassword,
     String passphrase = '',
   }) {
     if (_wallet != null) return Future.value(_wallet);
@@ -219,6 +244,7 @@ class MoneroSession {
       mnemonic: mnemonic,
       restoreHeight: restoreHeight,
       daemonUri: daemonUri,
+      walletPassword: walletPassword,
       passphrase: passphrase,
     ).whenComplete(() => _inFlight = null);
   }
@@ -227,6 +253,7 @@ class MoneroSession {
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
+    required String walletPassword,
     required String passphrase,
   }) async {
     _lastError = null;
@@ -236,6 +263,7 @@ class MoneroSession {
         passphrase: passphrase,
         restoreHeight: restoreHeight,
         daemonUri: daemonUri,
+        walletPassword: walletPassword,
         onStage: (s) => _stage = s,
       );
       return _wallet;

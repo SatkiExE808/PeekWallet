@@ -85,11 +85,17 @@ class _CoinScreenState extends State<CoinScreen> {
       if (!mounted) return;
       setState(() {});
     });
+    final walletPwd = VaultState.I.walletFilePassword;
+    if (walletPwd == null) {
+      setState(() => _engineError = 'Vault locked — wallet password unavailable');
+      return;
+    }
     final w = await MoneroSession.I.start(
       mnemonic: mnemonic,
       passphrase: VaultState.I.passphrase,
       restoreHeight: restoreHeight,
       daemonUri: kDefaultMoneroDaemon,
+      walletPassword: walletPwd,
     );
     stageTicker.cancel();
     if (w == null) {
