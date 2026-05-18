@@ -93,6 +93,37 @@ class SolanaRpcClient {
     return res as String;
   }
 
+  /// Most recent blockhash. Solana transactions include this as anti-
+  /// replay protection; the hash expires after ~150 slots (~60 s) so
+  /// we fetch it right before signing.
+  Future<String> latestBlockhash() async {
+    final res = await _rpc('getLatestBlockhash', [
+      {'commitment': 'finalized'},
+    ]) as Map<String, dynamic>;
+    final v = res['value'] as Map<String, dynamic>;
+    return v['blockhash'] as String;
+  }
+
+  /// Approximate transfer fee (5000 lamports / signature on mainnet
+  /// historically). We expose this for the UI's send preview rather
+  /// than calling the fee oracle every time — Solana fees are fixed
+  /// enough that the static value is fine for showing the user "this
+  /// transfer will cost ~0.000005 SOL".
+  static const int defaultTransferFeeLamports = 5000;
+
+  /// Broadcast a base64-encoded signed transaction. Returns the
+  /// signature (Solana's tx id).
+  Future<String> sendTransaction(String base64Tx) async {
+    final res = await _rpc('sendTransaction', [
+      base64Tx,
+      {
+        'encoding': 'base64',
+        'preflightCommitment': 'finalized',
+      },
+    ]);
+    return res as String;
+  }
+
   void close() => _http.close();
 }
 

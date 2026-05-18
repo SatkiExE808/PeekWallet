@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import 'send_solana_screen.dart';
 
 /// Solana coin page. Receive + balance + history; send is a follow-up
 /// (we need SystemProgram.transfer build + ed25519 signing + base64
@@ -102,6 +103,17 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
     if (_wallet == null) return '… SOL';
     final sol = _balanceLamports / 1000000000.0;
     return '${sol.toStringAsFixed(6)} SOL';
+  }
+
+  Future<void> _openSendScreen(SolanaWallet w) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendSolanaScreen(wallet: w),
+      ),
+    );
+    if (didSend == true) {
+      unawaited(_refresh());
+    }
   }
 
   void _showReceiveSheet() {
@@ -282,7 +294,9 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: null,
+                          onPressed: _balanceLamports == 0
+                              ? null
+                              : () => _openSendScreen(w),
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           label: const Text('Send'),
                         ),
@@ -292,9 +306,9 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                 if (w != null) ...[
                   const SizedBox(height: 6),
                   const Text(
-                    'Send isn\'t enabled yet — SystemProgram.transfer '
-                    'build + ed25519 sign + base64 serialize + '
-                    'sendTransaction RPC land in a follow-up.',
+                    'Send is experimental — the SystemProgram.transfer '
+                    'encoder is unit-tested but the end-to-end flow '
+                    'has not been audited. Test with small amounts.',
                     style:
                         TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../util/peek_logger.dart';
+import 'sol_tx_builder.dart';
 import 'solana_keys.dart';
 import 'solana_rpc_client.dart';
 
@@ -73,6 +74,47 @@ class SolanaWallet {
       PeekLogger.I.log('sol', 'history fetch failed: $e');
       return const [];
     }
+  }
+
+  /// Build, sign, and broadcast a SystemProgram.transfer.
+  ///
+  /// Returns the tx signature (the same value the explorer shows as
+  /// "Tx Hash"). On failure throws the upstream RPC error.
+  Future<BuiltSolanaTransaction> sendSol({
+    required String destAddress,
+    required int lamports,
+  }) async {
+    if (_closed) throw StateError('Wallet is closed');
+
+    final blockhashStr = await _rpc.latestBlockhash();
+    final blockhash = base58Decode(blockhashStr);
+    if (blockhash == null || blockhash.length != 32) {
+      throw StateError(
+          'Unexpected blockhash from RPC: $blockhashStr');
+    }
+
+    PeekLogger.I.log(
+      'sol',
+      'send requested: $lamports lamports to '
+          '${destAddress.length >= 12 ? '${destAddress.substring(0, 10)}…' : destAddress}',
+    );
+
+    final built = await buildAndSignTransfer(
+      fromPubkey: address.publicKey,
+      fromPrivateSeed: address.privateSeed,
+      toAddress: destAddress,
+      lamports: lamports,
+      recentBlockhash: blockhash,
+    );
+
+    final sigFromRpc = await _rpc.sendTransaction(built.rawBase64);
+    if (sigFromRpc != built.signature) {
+      PeekLogger.I.log('sol',
+          'WARNING: RPC returned signature $sigFromRpc but we computed ${built.signature}');
+    }
+    PeekLogger.I.log('sol',
+        'broadcast tx ${built.signature} ($lamports lamports)');
+    return built;
   }
 
   void close() {
