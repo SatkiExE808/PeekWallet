@@ -11,16 +11,17 @@
 // Flow:
 //   1. deriveMoneroKeys()           — pure Dart, gives us the spend/
 //                                      view keys + primary address.
-//   2. WalletManager_createWalletFromKeys()
+//   2. WalletManager_createWalletFromKeys() / openWallet()
 //                                   — hands keys to the native wallet,
 //                                      which writes a wallet file to
-//                                      `walletDir`.
-//   3. Wallet_init(daemonAddress)   — points the wallet at our
-//                                      CORS-friendly xmr-rpc.iamhch.com
-//                                      proxy.
+//                                      `walletDir` (or reopens it).
+//   3. Wallet_init(host:port, ssl)  — try the user's daemon first,
+//                                      then kMoneroFallbackNodes. First
+//                                      one accepted by Wallet_init wins.
 //   4. Wallet_startRefresh()         — background sync. Balance ticks
-//                                      up as blocks scan.
-//   5. balanceXmr / syncProgressPct  — UI polls these.
+//                                      up as blocks scan; daemonTipHeight
+//                                      goes >0 once the daemon responds.
+//   5. balanceXmr / syncProgressPct / isSynced — UI polls these.
 //
 // Lifecycle is single-instance per app session (see MoneroSession).
 // The native side is happy with multiple instances, but managing
@@ -163,13 +164,16 @@ class MoneroWallet {
   bool get isSynced => monero.Wallet_synchronized(_ptr);
 
   /// 0–100 percentage based on `current / tip`. Returns 0 while we're
-  /// still waiting for the daemon to respond with the tip.
+  /// still waiting for the daemon to respond with the tip. Rounds —
+  /// not truncates — and snaps to 100 when we're caught up, so a 1-
+  /// block lag against a 3.7M-block tip doesn't park us at 99 forever
+  /// (it would otherwise compute to 99.99997…% and `.toInt()` to 99).
   int get syncProgressPct {
     final tip = monero.Wallet_daemonBlockChainHeight(_ptr);
     if (tip <= 0) return 0;
     final cur = monero.Wallet_blockChainHeight(_ptr);
-    final pct = ((cur / tip) * 100).clamp(0, 100);
-    return pct.toInt();
+    if (cur >= tip) return 100;
+    return ((cur / tip) * 100).clamp(0.0, 100.0).round();
   }
 
   /// Close the wallet, flushing the wallet file to disk. Call from

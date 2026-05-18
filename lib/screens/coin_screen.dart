@@ -31,6 +31,7 @@ class _CoinScreenState extends State<CoinScreen> {
   int? _syncPct;
   double? _balanceXmr;
   bool _daemonConnected = false;
+  bool _isSynced = false;
   String? _daemonError;
   String? _engineError;
 
@@ -70,9 +71,14 @@ class _CoinScreenState extends State<CoinScreen> {
   }
 
   Future<void> _bootMonero(String mnemonic) async {
-    // Recent tip - 5000 ≈ ~1 week of history. Fast first sync, won't
-    // miss recent deposits. Settings UI for tweaking this lands later.
-    const restoreHeight = 3676000;
+    // Approximate Monero tip as of this build. Only used when creating
+    // a fresh wallet file — existing on-disk wallets keep whatever
+    // restoreHeight they were originally created with. Picked a few
+    // thousand blocks below tip so a new install on a slow connection
+    // still catches very recent deposits without scanning ~2 years of
+    // empty history. Bump on each release; replace with a Settings UI
+    // (or a daemon /get_height probe at create time) when wired up.
+    const restoreHeight = 3788000;
     // Repaint while open() is still streaming stage updates so the
     // user sees progress instead of just a blank '…XMR'.
     final stageTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
@@ -96,6 +102,7 @@ class _CoinScreenState extends State<CoinScreen> {
         _syncPct = w.syncProgressPct;
         _balanceXmr = w.balanceXmr;
         _daemonConnected = w.isDaemonConnected;
+        _isSynced = w.isSynced;
         _daemonError = w.daemonError;
       });
     });
@@ -109,8 +116,11 @@ class _CoinScreenState extends State<CoinScreen> {
       return s == null ? '… ${widget.coin.symbol}' : 'Boot: $s';
     }
     if (!_daemonConnected) return 'Connecting to daemon…';
-    final synced = (_syncPct ?? 0) >= 100;
-    if (!synced) return 'Syncing ${_syncPct ?? 0}%';
+    // monero_c's Wallet_synchronized is the authoritative "done" flag.
+    // We can't rely on syncProgressPct alone — the daemon's tip keeps
+    // advancing while we scan, so the ratio asymptotes at 99-something
+    // forever. isSynced flips once the wallet decides it's caught up.
+    if (!_isSynced) return 'Syncing ${_syncPct ?? 0}%';
     return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
   }
 
