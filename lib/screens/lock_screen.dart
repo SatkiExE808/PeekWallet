@@ -14,11 +14,32 @@ class _LockScreenState extends State<LockScreen> {
   final _pwd = TextEditingController();
   String? _err;
   bool _busy = false;
+  bool _biometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeTryBiometric();
+  }
 
   @override
   void dispose() {
     _pwd.dispose();
     super.dispose();
+  }
+
+  /// On launch, if the user previously opted in to biometric unlock,
+  /// surface the system prompt immediately. Failure / cancel falls
+  /// through silently to the password field — no error toast, since
+  /// "I want to type my password instead" is a normal flow.
+  Future<void> _maybeTryBiometric() async {
+    final enabled = await VaultState.I.biometricEnabled();
+    if (!mounted) return;
+    setState(() => _biometricEnabled = enabled);
+    if (!enabled) return;
+    await VaultState.I.unlockBiometric();
+    // VaultState notifyListeners → main.dart router → AppShell;
+    // nothing for us to do here on success.
   }
 
   Future<void> _unlock() async {
@@ -83,6 +104,16 @@ class _LockScreenState extends State<LockScreen> {
                       )
                     : const Text('Unlock'),
               ),
+              if (_biometricEnabled) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () => VaultState.I.unlockBiometric(),
+                  icon: const Icon(Icons.fingerprint, size: 18),
+                  label: const Text('Use biometric'),
+                ),
+              ],
               const Spacer(),
             ],
           ),

@@ -25,6 +25,7 @@ class VaultStorage {
             );
 
   static const _blobKey = 'vault.encrypted_seed.v2';
+  static const _biometricPasswordKey = 'vault.biometric_password.v1';
   static const _iterations = 200000;
   static const _saltLen = 16;
   static const _nonceLen = 12;
@@ -106,8 +107,34 @@ class VaultStorage {
     }
   }
 
-  /// Permanently removes the encrypted seed.
-  Future<void> wipe() async => _storage.delete(key: _blobKey);
+  /// Permanently removes the encrypted seed AND any biometric stash.
+  Future<void> wipe() async {
+    await _storage.delete(key: _blobKey);
+    await _storage.delete(key: _biometricPasswordKey);
+  }
+
+  /// Stash the master password in OS-backed secure storage so a
+  /// biometric prompt can later release it. The password isn't
+  /// secret to the OS — it's already needed to write the seed blob —
+  /// but living in Keystore/Keychain means it survives reboots
+  /// without ever being on disk in cleartext outside that boundary.
+  Future<void> saveBiometricPassword(String password) =>
+      _storage.write(key: _biometricPasswordKey, value: password);
+
+  /// Read the biometric-stashed password. Returns null if biometric
+  /// unlock is disabled (key never written or explicitly cleared).
+  Future<String?> readBiometricPassword() =>
+      _storage.read(key: _biometricPasswordKey);
+
+  /// Disable biometric unlock by removing the stashed password.
+  /// The encrypted seed is untouched — the user can still unlock
+  /// with their password.
+  Future<void> clearBiometricPassword() =>
+      _storage.delete(key: _biometricPasswordKey);
+
+  /// Convenience: does this device have biometric unlock enabled?
+  Future<bool> biometricEnabled() async =>
+      await _storage.containsKey(key: _biometricPasswordKey);
 
   Future<SecretKey> _deriveKey(String password, List<int> salt) async {
     final pbkdf2 = Pbkdf2(

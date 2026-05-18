@@ -71,6 +71,11 @@ dependencies:
   ffi: ^2.1.4
   path_provider: ^2.1.5
 
+  # Biometric unlock (fingerprint / face). Reads / writes against the
+  # OS auth surface; the stored master password lives in
+  # flutter_secure_storage already, this just gates access to it.
+  local_auth: ^2.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
