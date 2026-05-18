@@ -164,12 +164,17 @@ class MoneroWallet {
     // can take longer than any reasonable boot timeout). Heights are
     // surfaced in the UI so a stale daemon is visible to the user —
     // we don't need to refuse to connect over it.
-    final candidates = <String>{daemonUri, ...kMoneroFallbackNodes}.toList();
+    // Dedup by parsed (hostPort, ssl) so "https://host" and
+    // "https://host:443" don't both burn ~15s on the same endpoint.
+    final candidates = <String>[daemonUri, ...kMoneroFallbackNodes];
+    final seen = <String>{};
     String? activeHostPort;
     bool activeSsl = false;
     String lastError = '';
     for (final url in candidates) {
       final ep = MoneroDaemonEndpoint.parse(url);
+      final key = '${ep.hostPort}|${ep.useSsl}';
+      if (!seen.add(key)) continue;
       stage('init ${ep.hostPort} (ssl=${ep.useSsl})');
       final ok = monero.Wallet_init(
         w,
@@ -289,19 +294,34 @@ class MoneroWallet {
     return (tip - currentHeight) <= 5;
   }
 
-  /// 0–100 percentage based on `current / tip`. Returns 0 while we're
-  /// still waiting for the daemon to respond with the tip. Floors —
-  /// not rounds — so a ratio of 99.88% reports as 99 instead of 100;
-  /// otherwise the label would read "Syncing 100%" for several blocks
-  /// before isSynced actually flips. The cur >= tip early-return
-  /// covers the truly-caught-up case.
+  /// 0–100 percentage of how far through the work-to-do the sync is.
+  /// Computed as `(current - restore) / (tip - restore)` so a fresh
+  /// wallet doesn't jump straight to 99% the moment the daemon
+  /// responds (which is what a naive `current / tip` does when the
+  /// scan range starts at ~99% of the chain).
+  ///
+  /// Floors so a ratio of 99.88% reports as 99 — keeps "Syncing 100%"
+  /// from being shown before [isSynced] flips.
   int get syncProgressPct {
     if (_closed) return 0;
     final tip = monero.Wallet_daemonBlockChainHeight(_ptr);
     if (tip <= 0) return 0;
     final cur = monero.Wallet_blockChainHeight(_ptr);
     if (cur >= tip) return 100;
-    return ((cur / tip) * 100).clamp(0.0, 100.0).floor();
+
+    // restoreHeight is the wallet's scan-start point. monero_c
+    // surfaces it via Wallet_getRefreshFromBlockHeight; if for some
+    // reason that returns 0 (older monero_c builds, freshly-created
+    // wallet before the height was applied), fall back to the old
+    // current / tip math so we degrade to "looks reasonable".
+    final restore = monero.Wallet_getRefreshFromBlockHeight(_ptr);
+    if (restore <= 0 || restore >= tip) {
+      return ((cur / tip) * 100).clamp(0.0, 100.0).floor();
+    }
+    if (cur <= restore) return 0;
+    final done = cur - restore;
+    final total = tip - restore;
+    return ((done / total) * 100).clamp(0.0, 100.0).floor();
   }
 
   /// Number of subaddresses currently generated under account 0
@@ -656,7 +676,12 @@ class MoneroDaemonEndpoint {
     final hasScheme = raw.contains('://');
     final uri = Uri.parse(hasScheme ? raw : 'tcp://$raw');
     final ssl = uri.scheme == 'https';
-    final host = uri.host;
+    // Uri.host strips the brackets from "[::1]" — we need to put them
+    // back for IPv6 literals so monero_c's URL parser doesn't read
+    // the colons inside the address as the port separator.
+    final hostRaw = uri.host;
+    final isIPv6 = hostRaw.contains(':');
+    final host = isIPv6 ? '[$hostRaw]' : hostRaw;
     final port = uri.hasPort ? uri.port : (ssl ? 443 : 18081);
     return MoneroDaemonEndpoint('$host:$port', ssl);
   }

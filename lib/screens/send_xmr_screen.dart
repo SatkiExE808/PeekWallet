@@ -371,11 +371,28 @@ class _ConfirmRow extends StatelessWidget {
 }
 
 bool _isLikelyXmrAddress(String s) {
-  if (s.length != 95 && s.length != 106) return false;
-  // 95: standard / subaddress (start 4 or 8)
-  // 106: integrated address (start 4)
+  // Quick pre-validation before monero_c parses it for real in
+  // createTransaction. Catches obvious paste-typos at the form layer
+  // so the user sees "looks wrong" before "wallet couldn't build".
+  //
+  // 95-char primary addresses start with '4' (network byte 0x12).
+  // 95-char subaddresses start with '8' (network byte 0x2A).
+  // 106-char integrated addresses start with '4' (network byte 0x13).
+  if (s.isEmpty) return false;
   final first = s.codeUnitAt(0);
-  if (first != 0x34 /* '4' */ && first != 0x38 /* '8' */) return false;
+  final isFour = first == 0x34; // '4'
+  final isEight = first == 0x38; // '8'
+  switch (s.length) {
+    case 95:
+      if (!isFour && !isEight) return false;
+      break;
+    case 106:
+      if (!isFour) return false; // 8-prefix is only valid at 95 chars
+      break;
+    default:
+      return false;
+  }
+  // Monero base58 alphabet (no 0, O, I, l).
   return RegExp(r'^[1-9A-HJ-NP-Za-km-z]+$').hasMatch(s);
 }
 
