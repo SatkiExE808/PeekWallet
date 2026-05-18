@@ -7,12 +7,21 @@
 #   - Version tag push (vX.Y.Z)   → permanent versioned release
 #   - Manual run                  → same as a push to main
 #
-# Signing: a release-build keystore is generated on every CI run with
-# a hard-coded password — the APK is installable as "from unknown
-# source" but the signature is not stable across runs. Once we're
-# closer to a real release we'll switch to a persistent keystore via
-# ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD secrets, same
-# pattern as vault-wallet's build-apk.yml.
+# Signing: uses a persistent keystore stashed in repo secrets so APKs
+# from successive builds upgrade cleanly over each other. Required
+# secrets (Settings → Secrets and variables → Actions):
+#
+#   ANDROID_KEYSTORE_BASE64    base64-encoded keystore (.jks/.keystore)
+#                              $ base64 -i peek-release.jks | pbcopy
+#   ANDROID_KEYSTORE_PASSWORD  keystore password
+#   ANDROID_KEY_ALIAS          key alias inside the keystore
+#   ANDROID_KEY_PASSWORD       key password (often equal to keystore pw)
+#
+# Falls back to a throwaway generated keystore (with all secrets unset)
+# so the workflow still runs on forks and PRs that don't have access
+# to the secrets. APKs from those runs are NOT installable over a
+# real release build (signature mismatch) — fine for smoke-testing.
+# See docs/building.md for the one-time keystore-generation steps.
 
 name: Build & release APK
 
@@ -70,27 +79,44 @@ jobs:
       - name: Fetch monero_c native libraries
         run: ./scripts/prepare_monero.sh
 
-      - name: Generate dev release keystore
-        working-directory: android
+      - name: Decode persistent release keystore (if secrets available)
+        id: ks
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PWD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PWD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          # Throwaway keystore — fine for sideload dev builds. Will
-          # switch to ANDROID_KEYSTORE_BASE64 secret once we have a
-          # persistent release key.
-          keytool -genkey -v \
-            -keystore app/dev.keystore \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias peek-dev \
-            -storepass peek-dev-password -keypass peek-dev-password \
-            -dname "CN=PeekWallet Dev, O=Self, C=US"
-
-      - name: Wire keystore into Gradle
-        run: |
-          cat >> android/key.properties <<EOF
+          set -e
+          if [ -n "$KS_B64" ] && [ -n "$KS_PWD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PWD" ]; then
+            echo "$KS_B64" | base64 -d > android/app/release.keystore
+            cat > android/key.properties <<EOF
+          storePassword=$KS_PWD
+          keyPassword=$KEY_PWD
+          keyAlias=$KEY_ALIAS
+          storeFile=release.keystore
+          EOF
+            echo "persistent=true" >> "$GITHUB_OUTPUT"
+            echo "Using persistent release keystore (stable signature)"
+          else
+            # Fallback for forks / PRs without secret access.
+            # Throwaway keystore — APK still installs, but signature
+            # changes every build so installs can't upgrade in place.
+            keytool -genkey -v \
+              -keystore android/app/release.keystore \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -alias peek-dev \
+              -storepass peek-dev-password -keypass peek-dev-password \
+              -dname "CN=PeekWallet Dev, O=Self, C=US"
+            cat > android/key.properties <<EOF
           storePassword=peek-dev-password
           keyPassword=peek-dev-password
           keyAlias=peek-dev
-          storeFile=dev.keystore
+          storeFile=release.keystore
           EOF
+            echo "persistent=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Using throwaway keystore — signature won't match official releases"
+          fi
 
       - name: Build release APK
         run: flutter build apk --release
@@ -139,7 +165,7 @@ jobs:
 
             ⚠️ Bundle ID is `com.vault.cryptowallet.dev` during the rewrite — installs side-by-side with the current Vault app (`com.vault.cryptowallet`). Both can coexist on the same phone.
 
-            ⚠️ Dev keystore changes every CI build, so reinstalling looks like a brand-new app to Android. Real persistent signing will land before any release tag.
+            ${{ steps.ks.outputs.persistent == 'true' && '✓ Signed with the persistent release keystore — installs upgrade cleanly over previous builds.' || '⚠️ Throwaway keystore (no secrets available in this run). Signature won''t match other builds.' }}
           files: ${{ steps.apk.outputs.path }}
           fail_on_unmatched_files: true
           prerelease: false
