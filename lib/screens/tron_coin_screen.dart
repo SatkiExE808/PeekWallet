@@ -8,6 +8,7 @@ import '../coins/tron/trc20.dart';
 import '../coins/tron/tron_module.dart';
 import '../coins/tron/tron_wallet.dart';
 import '../coins/tron/trongrid_client.dart';
+import 'send_tron_screen.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/explorer_links.dart';
@@ -133,6 +134,17 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
     if (_wallet == null) return '… TRX';
     final trx = _balanceSun / 1000000.0;
     return '${trx.toStringAsFixed(6)} TRX';
+  }
+
+  Future<void> _openSendScreen(TronWallet w, Trc20Token? token) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendTronScreen(wallet: w, token: token),
+      ),
+    );
+    if (didSend == true) {
+      unawaited(_refresh());
+    }
   }
 
   void _showReceiveSheet() {
@@ -310,7 +322,9 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: null,
+                          onPressed: _balanceSun == 0
+                              ? null
+                              : () => _openSendScreen(w, null),
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           label: const Text('Send'),
                         ),
@@ -320,9 +334,10 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                 if (w != null) ...[
                   const SizedBox(height: 6),
                   const Text(
-                    'Send isn\'t enabled yet — protobuf-encoded '
-                    'TransferContract + secp256k1 sign + broadcast '
-                    'land in a follow-up.',
+                    'Send is experimental — Tron tx is built by the '
+                    'RPC and signed locally with a txid-hash check. '
+                    'Test with small amounts. TRC-20 sends need a '
+                    'small TRX balance for bandwidth/energy.',
                     style: TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
@@ -338,6 +353,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                         token: token,
                         rawBalance: _tokenBalances[token.contract]!,
                         wallet: w,
+                        onTap: () => _openSendScreen(w, token),
                       ),
                 ],
                 const SizedBox(height: 20),
@@ -394,15 +410,19 @@ class _Trc20Row extends StatelessWidget {
     required this.token,
     required this.rawBalance,
     required this.wallet,
+    required this.onTap,
   });
   final Trc20Token token;
   final BigInt rawBalance;
   final TronWallet wallet;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final display = wallet.tokenBalanceDisplay(rawBalance, token);
-    return Padding(
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: AnimatedBuilder(
         animation: PriceFeed.I,
@@ -454,6 +474,7 @@ class _Trc20Row extends StatelessWidget {
             ],
           );
         },
+      ),
       ),
     );
   }

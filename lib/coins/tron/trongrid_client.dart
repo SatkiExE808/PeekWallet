@@ -104,7 +104,172 @@ class TronGridClient {
     return (result.first as String?) ?? '';
   }
 
+  /// Have TronGrid build an UNSIGNED native-TRX transfer transaction.
+  /// Returns the parsed response — caller signs raw_data_hex locally,
+  /// then submits the signed payload to /wallet/broadcasttransaction.
+  ///
+  /// All addresses passed here are 41-prefixed hex form.
+  Future<TronUnsignedTx> createNativeTransaction({
+    required String ownerHexAddress,
+    required String toHexAddress,
+    required int amountSun,
+  }) async {
+    final body = jsonEncode({
+      'owner_address': ownerHexAddress,
+      'to_address': toHexAddress,
+      'amount': amountSun,
+      'visible': false,
+    });
+    final r = await _http
+        .post(
+          Uri.parse('$_base/wallet/createtransaction'),
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        )
+        .timeout(const Duration(seconds: 12));
+    if (r.statusCode != 200) {
+      throw Exception(
+          'TronGrid createtransaction returned ${r.statusCode}: ${r.body.trim()}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    if (json['Error'] != null) {
+      throw Exception('TronGrid: ${json['Error']}');
+    }
+    return TronUnsignedTx.fromJson(json);
+  }
+
+  /// Have TronGrid build an UNSIGNED TRC-20 transfer transaction.
+  /// Same hosted-build, local-sign, hosted-broadcast pattern as
+  /// [createNativeTransaction] — only the underlying contract call
+  /// differs.
+  Future<TronUnsignedTx> createTrc20Transfer({
+    required String ownerHexAddress,
+    required String contractHexAddress,
+    required String toHexAddress,
+    required BigInt amountBaseUnits,
+    int feeLimit = 100000000, // 100 TRX fee cap; way more than needed
+  }) async {
+    // ABI parameter for transfer(address,uint256):
+    //   [32-byte padded to-address][32-byte padded amount]
+    final toPadded = ('0' * 24) + toHexAddress.substring(2); // strip 41 prefix
+    final amountHex = amountBaseUnits.toRadixString(16);
+    final amountPadded = amountHex.padLeft(64, '0');
+    final parameter = '$toPadded$amountPadded';
+
+    final body = jsonEncode({
+      'owner_address': ownerHexAddress,
+      'contract_address': contractHexAddress,
+      'function_selector': 'transfer(address,uint256)',
+      'parameter': parameter,
+      'fee_limit': feeLimit,
+      'call_value': 0,
+      'visible': false,
+    });
+    final r = await _http
+        .post(
+          Uri.parse('$_base/wallet/triggersmartcontract'),
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        )
+        .timeout(const Duration(seconds: 12));
+    if (r.statusCode != 200) {
+      throw Exception(
+          'TronGrid triggersmartcontract returned ${r.statusCode}: ${r.body.trim()}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    // The contract trigger response wraps the tx in a "transaction"
+    // field rather than at the top level.
+    final tx = json['transaction'] as Map<String, dynamic>?;
+    if (tx == null) {
+      final err = json['result']?['message'] ?? json['Error'] ?? 'unknown';
+      throw Exception('TronGrid trc20 build failed: $err');
+    }
+    return TronUnsignedTx.fromJson(tx);
+  }
+
+  /// Broadcast a signed transaction. Returns the txid on success.
+  Future<String> broadcastTransaction(TronSignedTx signed) async {
+    final r = await _http
+        .post(
+          Uri.parse('$_base/wallet/broadcasttransaction'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(signed.toJson()),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (r.statusCode != 200) {
+      throw Exception(
+          'TronGrid broadcast returned ${r.statusCode}: ${r.body.trim()}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    if (json['result'] != true) {
+      final msg = json['message']?.toString() ?? json.toString();
+      // The error message is sometimes a hex-encoded UTF-8 string —
+      // try to decode it for the user, fall back to the raw form.
+      String pretty = msg;
+      try {
+        if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(msg)) {
+          final bytes = <int>[];
+          for (var i = 0; i < msg.length; i += 2) {
+            bytes.add(int.parse(msg.substring(i, i + 2), radix: 16));
+          }
+          pretty = String.fromCharCodes(bytes);
+        }
+      } catch (_) {/* keep raw */}
+      throw Exception('Tron broadcast rejected: $pretty');
+    }
+    return signed.txid;
+  }
+
   void close() => _http.close();
+}
+
+/// Parsed response from /wallet/createtransaction or the wrapped
+/// "transaction" sub-object of /wallet/triggersmartcontract. Holds
+/// just enough to sign + rebroadcast.
+class TronUnsignedTx {
+  const TronUnsignedTx({
+    required this.txid,
+    required this.rawData,
+    required this.rawDataHex,
+  });
+
+  factory TronUnsignedTx.fromJson(Map<String, dynamic> json) {
+    return TronUnsignedTx(
+      txid: json['txID'] as String? ?? '',
+      rawData: json['raw_data'] as Map<String, dynamic>,
+      rawDataHex: json['raw_data_hex'] as String? ?? '',
+    );
+  }
+
+  /// The txid TronGrid computed for the unsigned bytes. We re-validate
+  /// this client-side after signing (sha256 of raw_data_hex should
+  /// match) so a malicious node can't trick us into broadcasting
+  /// against a forged txid.
+  final String txid;
+  final Map<String, dynamic> rawData;
+  final String rawDataHex;
+}
+
+class TronSignedTx {
+  const TronSignedTx({
+    required this.txid,
+    required this.rawData,
+    required this.rawDataHex,
+    required this.signatureHex,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'txID': txid,
+        'raw_data': rawData,
+        'raw_data_hex': rawDataHex,
+        'signature': [signatureHex],
+      };
+
+  final String txid;
+  final Map<String, dynamic> rawData;
+  final String rawDataHex;
+  /// 65-byte (r||s||v) compact signature, hex-encoded.
+  final String signatureHex;
 }
 
 /// One on-chain Tron transaction, simplified for the UI. We extract
