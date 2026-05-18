@@ -53,34 +53,48 @@ class BlockchairExplorer implements BitcoinExplorer {
     if (addresses.isEmpty) {
       return MultiAddressBalance(perAddress: const {}, totalSat: 0);
     }
-    final perAddr = await _dashboardAddresses(addresses);
+    // Blockchair's multi-address dashboard endpoint
+    // (/dashboards/addresses/<a>,<b>,...) is paywalled on the free
+    // tier as of 2026 ("402 This function requires an API token").
+    // The per-address dashboard endpoint is still free, so fan out
+    // sequentially. Slow with a 20-address gap-limit window but only
+    // hit when the primary mempool.space mirror is down, and short-
+    // circuited individually by the cached-balance fallback in the
+    // UI if any single call times out.
     final map = <String, AddressBalance>{};
+    var anySuccess = false;
+    Object? lastErr;
     for (final addr in addresses) {
-      final entry = perAddr[addr];
-      if (entry == null) {
-        // Blockchair omits empty addresses entirely on the multi-
-        // address endpoint. Treat that as zero balance, which is what
-        // a brand-new derivation index is.
-        map[addr] = const AddressBalance(
-          confirmedReceivedSat: 0,
-          confirmedSpentSat: 0,
+      try {
+        final info = await _singleAddressInfo(addr, swallow: false);
+        if (info == null) {
+          map[addr] = const AddressBalance(
+            confirmedReceivedSat: 0,
+            confirmedSpentSat: 0,
+            mempoolReceivedSat: 0,
+            mempoolSpentSat: 0,
+          );
+          anySuccess = true;
+          continue;
+        }
+        final received = (info['received'] as num?)?.toInt() ?? 0;
+        final spent = (info['spent'] as num?)?.toInt() ?? 0;
+        map[addr] = AddressBalance(
+          confirmedReceivedSat: received,
+          confirmedSpentSat: spent,
           mempoolReceivedSat: 0,
           mempoolSpentSat: 0,
         );
-        continue;
+        anySuccess = true;
+      } catch (e) {
+        lastErr = e;
+        // Keep iterating — a transient per-address failure shouldn't
+        // doom the whole refresh; below we throw if NONE succeeded so
+        // the wallet's cached-balance fallback engages cleanly.
       }
-      final received = (entry['received'] as num?)?.toInt() ?? 0;
-      final spent = (entry['spent'] as num?)?.toInt() ?? 0;
-      // Blockchair lumps unconfirmed mempool activity into the
-      // address.balance field; we approximate confirmed = received -
-      // spent (chain stats) and pending = 0 for now. The wallet only
-      // looks at totalSat anyway, so the split is cosmetic.
-      map[addr] = AddressBalance(
-        confirmedReceivedSat: received,
-        confirmedSpentSat: spent,
-        mempoolReceivedSat: 0,
-        mempoolSpentSat: 0,
-      );
+    }
+    if (!anySuccess) {
+      throw lastErr ?? Exception('Blockchair: every address fetch failed');
     }
     final total = map.values.fold<int>(0, (s, b) => s + b.totalSat);
     return MultiAddressBalance(perAddress: map, totalSat: total);
@@ -168,21 +182,27 @@ class BlockchairExplorer implements BitcoinExplorer {
     return hash;
   }
 
-  Future<Map<String, Map<String, dynamic>>> _dashboardAddresses(
-      List<String> addresses) async {
-    final joined = addresses.join(',');
-    final body = await _get(
-      '/$_chain/dashboards/addresses/$joined?limit=0,0',
-      timeout: 12,
-    );
-    final json = jsonDecode(body) as Map<String, dynamic>;
-    final data = json['data'] as Map<String, dynamic>?;
-    if (data == null) return const {};
-    final addrMap = data['addresses'] as Map<String, dynamic>?;
-    if (addrMap == null) return const {};
-    return addrMap.map(
-      (k, v) => MapEntry(k, (v as Map<String, dynamic>?) ?? const {}),
-    );
+  /// Fetch the `address` sub-object from Blockchair's single-address
+  /// dashboard. Free on the public tier (unlike the multi-address
+  /// endpoint). If [swallow] is true, errors return null instead of
+  /// throwing — used by the history/utxo paths where one failed
+  /// address shouldn't kill the whole refresh.
+  Future<Map<String, dynamic>?> _singleAddressInfo(String addr,
+      {bool swallow = true}) async {
+    try {
+      final body = await _get(
+        '/$_chain/dashboards/address/$addr?limit=0,0',
+        timeout: 12,
+      );
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final data = json['data'] as Map<String, dynamic>?;
+      if (data == null || data.isEmpty) return null;
+      final entry = data.values.first as Map<String, dynamic>?;
+      return entry?['address'] as Map<String, dynamic>?;
+    } catch (_) {
+      if (swallow) return null;
+      rethrow;
+    }
   }
 
   Future<List<BitcoinTx>> _addressTransactions(String addr,
