@@ -11,6 +11,7 @@ import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
+import 'send_bch_screen.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -114,6 +115,17 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
     if (_wallet == null) return '… BCH';
     final bch = _balanceSat / 100000000.0;
     return '${bch.toStringAsFixed(8)} BCH';
+  }
+
+  Future<void> _openSendScreen(BitcoinCashWallet w) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendBchScreen(wallet: w),
+      ),
+    );
+    if (didSend == true) {
+      unawaited(_refresh());
+    }
   }
 
   void _showReceiveSheet() {
@@ -292,7 +304,9 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: null,
+                          onPressed: _balanceSat == 0
+                              ? null
+                              : () => _openSendScreen(w),
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           label: const Text('Send'),
                         ),
@@ -302,9 +316,8 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                 if (w != null) ...[
                   const SizedBox(height: 6),
                   const Text(
-                    'Send isn\'t enabled yet — BCH uses legacy P2PKH '
-                    'signing with SIGHASH_FORKID (distinct from BIP143). '
-                    'Send lands in a follow-up.',
+                    'Send is experimental — legacy P2PKH with '
+                    'SIGHASH_FORKID. Test with small amounts first.',
                     style: TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ],

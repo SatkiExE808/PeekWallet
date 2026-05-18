@@ -57,6 +57,54 @@ BitcoinCashAddressDerivation deriveBitcoinCashAddress({
   );
 }
 
+/// Like [BitcoinCashAddressDerivation] but ALSO holds the BIP32 node
+/// so the caller can sign. Receive-only callers stay on the public-
+/// key-only [deriveBitcoinCashAddress]; the send path materializes
+/// these only when needed and drops them when the wallet handle
+/// closes.
+class BitcoinCashSpendingKey {
+  BitcoinCashSpendingKey({
+    required this.address,
+    required this.path,
+    required this.node,
+  });
+  final String address;
+  final String path;
+  final bip32.BIP32 node;
+
+  Uint8List get publicKey => Uint8List.fromList(node.publicKey);
+  Uint8List get privateKey => Uint8List.fromList(node.privateKey!);
+  Uint8List get publicKeyHash {
+    final sha = sha256.convert(publicKey).bytes;
+    final rip = RIPEMD160Digest();
+    rip.update(Uint8List.fromList(sha), 0, sha.length);
+    final out = Uint8List(20);
+    rip.doFinal(out, 0);
+    return out;
+  }
+}
+
+/// Like [deriveBitcoinCashAddress] but with the bip32 node attached
+/// so the caller can sign with it. Send-path only.
+BitcoinCashSpendingKey deriveBitcoinCashSpendingKey({
+  required String mnemonic,
+  String passphrase = '',
+  int account = 0,
+  int addressIndex = 0,
+}) {
+  final seed = bip39.mnemonicToSeed(mnemonic, passphrase: passphrase);
+  final root = bip32.BIP32.fromSeed(Uint8List.fromList(seed));
+  final path = "m/44'/145'/$account'/0/$addressIndex";
+  final child = root.derivePath(path);
+  final pubKey = Uint8List.fromList(child.publicKey);
+  final h160 = _hash160(pubKey);
+  return BitcoinCashSpendingKey(
+    address: cashaddrEncode(hash160: h160),
+    path: path,
+    node: child,
+  );
+}
+
 Uint8List _hash160(Uint8List input) {
   final sha = sha256.convert(input).bytes;
   final rip = RIPEMD160Digest();

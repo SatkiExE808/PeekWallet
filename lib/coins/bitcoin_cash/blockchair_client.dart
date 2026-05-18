@@ -82,7 +82,82 @@ class BlockchairBchClient {
         .toList();
   }
 
+  /// UTXOs spendable by [cashaddrAddress]. Blockchair returns these
+  /// inside the dashboard response — we extract just the fields the
+  /// signer needs.
+  Future<List<BlockchairUtxo>> utxos(String cashaddrAddress) async {
+    final stripped = cashaddrAddress.contains(':')
+        ? cashaddrAddress.split(':').last
+        : cashaddrAddress;
+
+    final r = await _http
+        .get(Uri.parse('$_base/dashboards/address/$stripped?limit=0,100'))
+        .timeout(const Duration(seconds: 10));
+    if (r.statusCode == 404) return const [];
+    if (r.statusCode != 200) {
+      throw Exception('Blockchair API returned ${r.statusCode}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    final data = json['data'] as Map<String, dynamic>?;
+    if (data == null || data.isEmpty) return const [];
+    final entry = data.values.first as Map<String, dynamic>?;
+    final utxoList = (entry?['utxo'] as List?) ?? const [];
+    return utxoList.map((u) {
+      final m = u as Map<String, dynamic>;
+      return BlockchairUtxo(
+        txid: m['transaction_hash'] as String,
+        vout: (m['index'] as num).toInt(),
+        valueSat: (m['value'] as num).toInt(),
+        blockHeight: (m['block_id'] as num?)?.toInt() ?? 0,
+      );
+    }).toList();
+  }
+
+  /// Suggested fee rate in sat/byte. BCH fees are typically very low
+  /// (1-2 sat/byte clears quickly) so we just return a static value
+  /// rather than calling a fee oracle. Future Settings → Custom Fee
+  /// could expose this.
+  int suggestedFeeRateSatPerByte() => 2;
+
+  /// Broadcast a signed raw tx hex. Blockchair's broadcast endpoint
+  /// returns the transaction hash on success.
+  Future<String> broadcast(String rawHex) async {
+    final r = await _http
+        .post(
+          Uri.parse('$_base/push/transaction'),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: 'data=$rawHex',
+        )
+        .timeout(const Duration(seconds: 15));
+    if (r.statusCode != 200) {
+      throw Exception(
+          'BCH broadcast returned ${r.statusCode}: ${r.body.trim()}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    final data = json['data'] as Map<String, dynamic>?;
+    final hash = data?['transaction_hash'] as String?;
+    if (hash == null) {
+      throw Exception(
+          'BCH broadcast: unexpected response shape ${r.body.trim()}');
+    }
+    return hash;
+  }
+
   void close() => _http.close();
+}
+
+class BlockchairUtxo {
+  const BlockchairUtxo({
+    required this.txid,
+    required this.vout,
+    required this.valueSat,
+    required this.blockHeight,
+  });
+  final String txid;
+  final int vout;
+  final int valueSat;
+  final int blockHeight;
+  bool get confirmed => blockHeight > 0;
 }
 
 /// One BCH transaction, simplified for the UI. The first-commit
