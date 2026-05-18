@@ -9,6 +9,7 @@ import '../util/peek_logger.dart';
 import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
 import 'about_screen.dart';
+import 'restore_all_from_vault_screen.dart';
 import 'rpc_overrides_screen.dart';
 import 'address_book_screen.dart';
 import 'reveal_seed_screen.dart';
@@ -565,6 +566,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       trailing: const Icon(Icons.chevron_right,
                           color: PeekColors.text3),
                       onTap: _exportLogs,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.auto_awesome,
+                          color: PeekColors.accent),
+                      title: const Text(
+                          'Restore all coins from vault seed'),
+                      subtitle: const Text(
+                        'One-tap derive a wallet for every coin from '
+                        'your existing 12/24-word vault seed. Same '
+                        'addresses every restore.',
+                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: PeekColors.text3),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                const RestoreAllFromVaultScreen()),
+                      ),
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
