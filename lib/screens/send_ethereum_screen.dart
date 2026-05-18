@@ -8,6 +8,7 @@ import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/ethereum/etherscan_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
 import 'address_book_screen.dart';
@@ -198,12 +199,17 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     try {
+      final destAddress = _addrCtrl.text.trim();
       final built = await widget.wallet.sendEth(
-        destAddress: _addrCtrl.text.trim(),
+        destAddress: destAddress,
         valueWei: amount,
         maxPriorityFeeWei: fee.maxPriorityFeeWei,
         maxFeeWei: fee.maxFeeWei,
       );
+      unawaited(rememberRecipient(
+        coinId: widget.wallet.network.id,
+        address: destAddress,
+      ));
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(

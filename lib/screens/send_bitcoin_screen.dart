@@ -8,6 +8,7 @@ import '../coins/bitcoin/bitcoin_wallet.dart';
 import '../coins/bitcoin/mempool_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
 import 'address_book_screen.dart';
@@ -193,11 +194,16 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     try {
+      final destAddress = _addrCtrl.text.trim();
       final built = await widget.wallet.sendBitcoin(
-        destAddress: _addrCtrl.text.trim(),
+        destAddress: destAddress,
         amountSat: amount,
         feeRateSatPerVByte: _selectedFeeRate,
       );
+      unawaited(rememberRecipient(
+        coinId: widget.wallet.params.id,
+        address: destAddress,
+      ));
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(

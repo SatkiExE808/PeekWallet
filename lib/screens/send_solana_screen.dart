@@ -8,6 +8,7 @@ import '../coins/solana/solana_rpc_client.dart';
 import '../coins/solana/solana_wallet.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
 import 'address_book_screen.dart';
@@ -171,10 +172,15 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     try {
+      final destAddress = _addrCtrl.text.trim();
       final built = await widget.wallet.sendSol(
-        destAddress: _addrCtrl.text.trim(),
+        destAddress: destAddress,
         lamports: amount,
       );
+      unawaited(rememberRecipient(
+        coinId: 'SOL',
+        address: destAddress,
+      ));
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
