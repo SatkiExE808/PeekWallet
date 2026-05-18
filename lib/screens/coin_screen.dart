@@ -9,6 +9,7 @@ import '../coins/module_registry.dart';
 import '../coins/monero/monero_engine.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
+import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
@@ -405,6 +406,27 @@ class _CoinScreenState extends State<CoinScreen> {
               Text(
                 _balanceText(),
                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
+              ),
+              // Fiat conversion under the balance. Empty when the
+              // price feed hasn't fetched yet (or the user has it
+              // disabled). Rebuilds via the AnimatedBuilder.
+              AnimatedBuilder(
+                animation: PriceFeed.I,
+                builder: (_, _) {
+                  if (_balanceXmr == null || _balanceXmr == 0) {
+                    return const SizedBox.shrink();
+                  }
+                  final fiat = PriceFeed.I.formatFiat(widget.coin.id, _balanceXmr!);
+                  if (fiat.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '≈ $fiat',
+                      style:
+                          const TextStyle(color: PeekColors.text2, fontSize: 13),
+                    ),
+                  );
+                },
               ),
               if (widget.coin.id == 'XMR') const _EngineStatusBanner(),
               if (widget.coin.id == 'XMR' && _tipHeight > 0)

@@ -91,6 +91,10 @@ dependencies:
   mobile_scanner: ^7.0.0
   permission_handler: ^11.4.0
 
+  # HTTP client for the CoinGecko price oracle (and future BTC
+  # mempool / ETH RPC clients). Lighter than dio for our use.
+  http: ^1.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

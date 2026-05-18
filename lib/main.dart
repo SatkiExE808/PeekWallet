@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'prices/price_feed.dart';
 import 'theme.dart';
 import 'shell.dart';
 import 'screens/welcome_screen.dart';
@@ -9,6 +10,10 @@ import 'screens/lock_screen.dart';
 import 'vault/vault_state.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Boot the price feed BEFORE runApp so the first frame has cached
+  // prices (or an empty cache if the user has it disabled).
+  unawaited(PriceFeed.I.start());
   runApp(const PeekWalletApp());
 }
 

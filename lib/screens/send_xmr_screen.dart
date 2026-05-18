@@ -29,6 +29,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   final _amount = TextEditingController();
   int _priority = 2; // 1=slow, 2=normal, 4=fast
   bool _busy = false;
+  bool _sweepAll = false;
   String? _err;
   PendingMoneroTx? _pending;
   String? _broadcastTxid;
@@ -73,7 +74,6 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       _busy = true;
     });
     final addr = _addr.text.trim();
-    final amountText = _amount.text.trim();
     if (!_isLikelyXmrAddress(addr)) {
       setState(() {
         _err = 'That doesn\'t look like a Monero address (95 chars, starts with 4 or 8).';
@@ -82,8 +82,32 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       return;
     }
 
-    // Exact decimal-to-piconero parsing — never via `* 1e12` doubles,
-    // which silently loses precision once amounts exceed ~9007 XMR.
+    // Sweep-all path: skip the amount parsing entirely — monero_c
+    // computes "everything spendable minus fee" itself.
+    if (_sweepAll) {
+      try {
+        final pt = widget.wallet.buildMultiTransaction(
+          recipients: [TxRecipient(address: addr, amount: BigInt.zero)],
+          isSweepAll: true,
+          priority: _priority,
+        );
+        setState(() {
+          _pending = pt;
+          _busy = false;
+        });
+      } catch (e) {
+        setState(() {
+          _err = _humanizeError(e);
+          _busy = false;
+        });
+      }
+      return;
+    }
+
+    // Normal send: exact decimal-to-piconero parsing — never via
+    // `* 1e12` doubles, which silently loses precision once amounts
+    // exceed ~9007 XMR.
+    final amountText = _amount.text.trim();
     BigInt piconero;
     try {
       piconero = xmrDecimalToPiconero(amountText);
@@ -110,10 +134,6 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     }
 
     try {
-      // Run off the UI thread? Wallet_createTransaction is sync FFI;
-      // wrapping in Future.microtask doesn't move it off the main
-      // isolate but at least yields the event loop. Real off-thread
-      // would require Isolate.run, which is a bigger change.
       final pt = widget.wallet.buildTransaction(
         destAddress: addr,
         amountPiconero: piconero,
@@ -225,14 +245,33 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
         const SizedBox(height: 14),
         TextField(
           controller: _amount,
+          enabled: !_sweepAll,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
           ],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Amount (XMR)',
-            hintText: '0.0',
+            hintText: _sweepAll ? 'Sweep — amount set automatically' : '0.0',
           ),
+        ),
+        const SizedBox(height: 6),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          value: _sweepAll,
+          onChanged: (v) => setState(() {
+            _sweepAll = v ?? false;
+            _err = null;
+          }),
+          title: const Text('Send all', style: TextStyle(fontSize: 14)),
+          subtitle: const Text(
+            'Sweep every spendable output to the recipient — fee taken '
+            'from the swept amount. Useful when moving everything to '
+            'cold storage or a new wallet.',
+            style: TextStyle(color: PeekColors.text3, fontSize: 11),
+          ),
+          dense: true,
         ),
         const SizedBox(height: 18),
         const Text(

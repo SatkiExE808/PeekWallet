@@ -510,22 +510,60 @@ class MoneroWallet {
     int priority = 2,
     String paymentId = '',
   }) {
-    _ensureLive('buildTransaction');
-    // monero_c takes a signed 64-bit int. 2^63-1 piconero ≈ 9.22M XMR,
-    // larger than any realistic send. Anything over that means the
-    // caller's parser didn't validate range.
-    if (amountPiconero <= BigInt.zero) {
-      throw ArgumentError('Amount must be positive');
+    return buildMultiTransaction(
+      recipients: [TxRecipient(address: destAddress, amount: amountPiconero)],
+      priority: priority,
+      paymentId: paymentId,
+    );
+  }
+
+  /// Build a transaction with one or more recipients, or a sweep-all
+  /// transaction (every spendable output → a single address, fee
+  /// taken from the swept amount).
+  ///
+  /// [recipients] — non-empty. For sweep-all, pass exactly one
+  /// recipient and set [isSweepAll] = true; the recipient's amount
+  /// is ignored.
+  /// [priority] — 1 (slow/cheap) → 4 (fast).
+  PendingMoneroTx buildMultiTransaction({
+    required List<TxRecipient> recipients,
+    bool isSweepAll = false,
+    int priority = 2,
+    String paymentId = '',
+  }) {
+    _ensureLive('buildMultiTransaction');
+    if (recipients.isEmpty) {
+      throw ArgumentError('At least one recipient required');
     }
-    if (amountPiconero > BigInt.from(0x7FFFFFFFFFFFFFFF)) {
-      throw ArgumentError('Amount exceeds int64 max (9.22M XMR)');
+    if (isSweepAll && recipients.length != 1) {
+      throw ArgumentError('Sweep-all requires exactly one recipient');
     }
-    final pt = monero.Wallet_createTransaction(
+    final addresses = <String>[];
+    final amounts = <int>[];
+    for (final r in recipients) {
+      addresses.add(r.address);
+      if (isSweepAll) {
+        // Amount is ignored when isSweepAll=true, but monero_c still
+        // wants a parallel-length list. Use 0 as a placeholder.
+        amounts.add(0);
+        continue;
+      }
+      if (r.amount <= BigInt.zero) {
+        throw ArgumentError('Each recipient amount must be positive');
+      }
+      if (r.amount > BigInt.from(0x7FFFFFFFFFFFFFFF)) {
+        throw ArgumentError(
+            'Amount exceeds int64 max (9.22M XMR) for ${r.address.substring(0, 12)}…');
+      }
+      amounts.add(r.amount.toInt());
+    }
+    final pt = monero.Wallet_createTransactionMultDest(
       _ptr,
-      dst_addr: destAddress,
-      payment_id: paymentId,
-      amount: amountPiconero.toInt(),
-      mixin_count: 0, // ignored on v17+ (network enforces ring size)
+      dstAddr: addresses,
+      paymentId: paymentId,
+      isSweepAll: isSweepAll,
+      amounts: amounts,
+      mixinCount: 0, // ignored on v17+
       pendingTransactionPriority: priority,
       subaddr_account: 0,
     );
@@ -587,6 +625,16 @@ class MoneroWallet {
       monero.WalletManager_closeWallet(wm, _ptr, true);
     } catch (_) {/* best effort */}
   }
+}
+
+/// One destination of an outgoing transaction. For single-recipient
+/// sends this is constructed once; for multi-recipient or
+/// per-line splits the UI hands an array of these to
+/// [MoneroWallet.buildMultiTransaction].
+class TxRecipient {
+  const TxRecipient({required this.address, required this.amount});
+  final String address;
+  final BigInt amount;
 }
 
 /// A built-but-unbroadcast Monero transaction. Holds the C-side
