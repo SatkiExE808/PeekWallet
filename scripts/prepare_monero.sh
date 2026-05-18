@@ -60,8 +60,10 @@ for src_target in "${!ARCH_MAP[@]}"; do
   dst_dir="${JNI_BASE}/${abi}"
   mkdir -p "$dst_dir"
 
+  # No leading `*/` — the bundle extracts to a flat layout, the .so
+  # sits directly under <target>/ at the zip root.
   unzip -j -o -q "${CACHE_DIR}/release-bundle.zip" \
-    "*/${src_target}/libmonero_wallet2_api_c.so" \
+    "${src_target}/libmonero_wallet2_api_c.so" \
     -d "$WORK" || true
 
   if [[ -f "${WORK}/libmonero_wallet2_api_c.so" ]]; then
