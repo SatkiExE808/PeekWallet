@@ -9,6 +9,7 @@ import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import 'qr_scan_screen.dart';
 
 /// Bitcoin send screen — destination + amount + fee tier, then a
 /// confirm step that requires typing "SEND" before broadcast.
@@ -116,6 +117,30 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     return int.tryParse(raw);
   }
 
+  Future<void> _scanQr() async {
+    final scanned = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => QrScanScreen(
+          title: 'Scan ${widget.wallet.params.symbol} address',
+        ),
+      ),
+    );
+    if (scanned != null && scanned.isNotEmpty) {
+      _addrCtrl.text = scanned;
+    }
+  }
+
+  void _onMax() {
+    // "Send all" — fill the amount field with the available balance.
+    // The send path will recompute the fee and subtract it (rolling
+    // dust change into fee already handles the small leftover).
+    // We populate sat-form so there's no float rounding.
+    if (_availableSat <= 0) return;
+    setState(() {
+      _amountCtrl.text = _availableSat.toString();
+    });
+  }
+
   Future<void> _onContinue() async {
     setState(() => _error = null);
     final amount = _parseAmountSat();
@@ -214,24 +239,55 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
           controller: _addrCtrl,
           decoration: InputDecoration(
             hintText: '${widget.wallet.params.bech32Hrp}1q…',
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.paste, size: 18),
-              tooltip: 'Paste from clipboard',
-              onPressed: () async {
-                final data = await Clipboard.getData('text/plain');
-                if (data?.text != null) {
-                  _addrCtrl.text = data!.text!.trim();
-                }
-              },
+            // Two trailing icons: paste + QR scan. The QR path drops
+            // any bitcoin:/litecoin:/monero: scheme automatically so
+            // we get a bare address into the field.
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.qr_code_scanner, size: 18),
+                  tooltip: 'Scan QR',
+                  onPressed: _scanQr,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.paste, size: 18),
+                  tooltip: 'Paste from clipboard',
+                  onPressed: () async {
+                    final data = await Clipboard.getData('text/plain');
+                    if (data?.text != null) {
+                      _addrCtrl.text = data!.text!.trim();
+                    }
+                  },
+                ),
+              ],
             ),
           ),
           autocorrect: false,
           enableSuggestions: false,
         ),
         const SizedBox(height: 16),
-        Text('Amount (${widget.wallet.params.symbol} or sat)',
-            style: const TextStyle(
-                color: PeekColors.text2, fontSize: 12)),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Amount (${widget.wallet.params.symbol} or sat)',
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 12),
+              ),
+            ),
+            TextButton(
+              onPressed: _availableSat == 0 ? null : _onMax,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 0),
+                minimumSize: const Size(0, 24),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Max', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _amountCtrl,

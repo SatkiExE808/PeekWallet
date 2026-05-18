@@ -55,16 +55,20 @@ class _QrScanScreenState extends State<QrScanScreen> {
     }
   }
 
-  /// Strip the `monero:` URI scheme so callers get a bare address.
-  /// Drop any query parameters (`?tx_amount=...`) — the send screen
-  /// has its own amount field; we don't want pre-filling to surprise
+  /// Strip the BIP-21-style URI scheme (`monero:`, `bitcoin:`,
+  /// `litecoin:`) so callers get a bare address. Drop any query
+  /// parameters (`?tx_amount=…`, `?amount=…`) — every send screen has
+  /// its own amount field and we don't want pre-filling to surprise
   /// the user.
   String _normalise(String raw) {
     final s = raw.trim();
-    if (s.toLowerCase().startsWith('monero:')) {
-      final stripped = s.substring(7);
-      final qIx = stripped.indexOf('?');
-      return qIx >= 0 ? stripped.substring(0, qIx) : stripped;
+    final lower = s.toLowerCase();
+    for (final scheme in const ['monero:', 'bitcoin:', 'litecoin:']) {
+      if (lower.startsWith(scheme)) {
+        final stripped = s.substring(scheme.length);
+        final qIx = stripped.indexOf('?');
+        return qIx >= 0 ? stripped.substring(0, qIx) : stripped;
+      }
     }
     return s;
   }
