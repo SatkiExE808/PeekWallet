@@ -94,23 +94,46 @@ class MoneroWallet {
       );
     }
 
-    // monero_c's Wallet_init takes daemonAddress as host:port — NOT a
-    // URL with scheme. Passing 'https://host' makes the native side
-    // DNS-resolve the literal string 'https://host' and silently sit
-    // disconnected forever. Normalize first.
-    final daemon = _DaemonEndpoint.parse(daemonUri);
-    stage('attaching daemon ${daemon.hostPort} (ssl=${daemon.useSsl})');
-    final ok = monero.Wallet_init(
-      w,
-      daemonAddress: daemon.hostPort,
-      useSsl: daemon.useSsl,
-    );
-    if (!ok) {
-      final err = monero.Wallet_errorString(w);
-      throw Exception(
-          'Wallet_init failed for ${daemon.hostPort}: ${err.isEmpty ? "(no detail)" : err}');
+    // Try the user's daemon first, then known-good public nodes. A
+    // single proxy outage (or a wrong-format URL) shouldn't brick
+    // sync. monero_c's Wallet_init takes host:port — NOT a URL with
+    // scheme — and returns success even when the host is unreachable,
+    // so we have to call Wallet_connected to actually verify each one.
+    final candidates = <String>{daemonUri, ...kMoneroFallbackNodes}.toList();
+    String? activeHostPort;
+    String lastError = '';
+    for (final url in candidates) {
+      final ep = _DaemonEndpoint.parse(url);
+      stage('trying ${ep.hostPort} (ssl=${ep.useSsl})');
+      final ok = monero.Wallet_init(
+        w,
+        daemonAddress: ep.hostPort,
+        useSsl: ep.useSsl,
+      );
+      if (!ok) {
+        lastError = monero.Wallet_errorString(w);
+        stage('init failed on ${ep.hostPort}: $lastError');
+        continue;
+      }
+      // Wallet_connected makes an actual RPC call to /get_info; can
+      // block ~2-3s on a dead host. Acceptable here — we're already
+      // off the UI thread inside MoneroSession.start.
+      final status = monero.Wallet_connected(w);
+      if (status == 1) {
+        activeHostPort = ep.hostPort;
+        break;
+      }
+      lastError = monero.Wallet_errorString(w);
+      stage('${ep.hostPort} unreachable '
+          '(status=$status, ${lastError.isEmpty ? "no detail" : lastError})');
     }
-    stage('starting refresh');
+
+    if (activeHostPort == null) {
+      throw Exception(
+          'No Monero node reachable. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
+    }
+
+    stage('connected to $activeHostPort — starting refresh');
     monero.Wallet_startRefresh(w);
     stage('ready');
 
@@ -168,28 +191,40 @@ class MoneroSession {
 
   MoneroWallet? _wallet;
   String? _lastError;
-  bool _starting = false;
   String? _stage;
+  Future<MoneroWallet?>? _inFlight;
 
   MoneroWallet? get wallet => _wallet;
   String? get lastError => _lastError;
-  bool get isStarting => _starting;
+  bool get isStarting => _inFlight != null;
   /// Last stage label emitted by MoneroWallet.open — surfaced in the
   /// UI so the user can see what part of the boot is taking time.
   String? get stage => _stage;
 
-  /// Idempotent — calling twice with the same mnemonic returns the
-  /// existing instance. Different mnemonic closes the prior wallet
-  /// and opens a fresh one.
+  /// Idempotent — concurrent callers share the same in-flight Future
+  /// instead of one of them getting a spurious null. Calling after the
+  /// wallet is already open returns the existing instance.
   Future<MoneroWallet?> start({
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
     String passphrase = '',
+  }) {
+    if (_wallet != null) return Future.value(_wallet);
+    return _inFlight ??= _doStart(
+      mnemonic: mnemonic,
+      restoreHeight: restoreHeight,
+      daemonUri: daemonUri,
+      passphrase: passphrase,
+    ).whenComplete(() => _inFlight = null);
+  }
+
+  Future<MoneroWallet?> _doStart({
+    required String mnemonic,
+    required int restoreHeight,
+    required String daemonUri,
+    required String passphrase,
   }) async {
-    if (_wallet != null) return _wallet;
-    if (_starting) return null;
-    _starting = true;
     _lastError = null;
     try {
       _wallet = await MoneroWallet.open(
@@ -205,14 +240,13 @@ class MoneroSession {
       // ignore: avoid_print
       print('MoneroSession.start failed: $e\n$st');
       return null;
-    } finally {
-      _starting = false;
     }
   }
 
   void stop() {
     _wallet?.close();
     _wallet = null;
+    _stage = null;
   }
 }
 
@@ -220,6 +254,15 @@ class MoneroSession {
 /// in front of Cake's public node. Override per device via Settings →
 /// Monero Node (saved in shared prefs).
 const String kDefaultMoneroDaemon = 'https://xmr-rpc.iamhch.com';
+
+/// Public Monero RPC nodes we fall back to when the user's preferred
+/// daemon (or our own proxy) is unreachable. Order matters — first
+/// one to respond wins. All advertise SSL.
+const List<String> kMoneroFallbackNodes = [
+  'https://xmr-node.cakewallet.com:18081',
+  'https://nodes.hashvault.pro:18081',
+  'https://node.sethforprivacy.com:443',
+];
 
 /// Splits a user-friendly daemon URL into the host:port + useSsl pair
 /// that monero_c's Wallet_init expects. Accepts:
