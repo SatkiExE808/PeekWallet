@@ -124,6 +124,49 @@ class SolanaRpcClient {
     return res as String;
   }
 
+  /// Sum of SPL token balance for [owner] across all token accounts
+  /// holding [mint]. Most users have exactly one account per mint
+  /// (the associated token account), but the RPC can return multiple
+  /// if the user hand-created extras — we sum them so the wallet
+  /// shows the actual spendable total.
+  ///
+  /// Returns 0 if the user has no token accounts for this mint
+  /// (which is the case for a fresh wallet that has never received
+  /// the token).
+  Future<({BigInt rawAmount, int decimals})> splTokenBalance({
+    required String ownerBase58,
+    required String mintBase58,
+  }) async {
+    final res = await _rpc('getTokenAccountsByOwner', [
+      ownerBase58,
+      {'mint': mintBase58},
+      {'encoding': 'jsonParsed', 'commitment': 'finalized'},
+    ]) as Map<String, dynamic>;
+    final value = (res['value'] as List?) ?? const [];
+    if (value.isEmpty) {
+      // No token accounts yet — return zero balance. We can't infer
+      // decimals from nothing, so probe the mint separately. In
+      // practice the caller always knows the decimals from the
+      // SplToken catalog so this fallback is rarely hit.
+      return (rawAmount: BigInt.zero, decimals: 0);
+    }
+    var total = BigInt.zero;
+    var decimals = 0;
+    for (final entry in value) {
+      final account = (entry as Map?)?['account'] as Map?;
+      final data = account?['data'] as Map?;
+      final parsed = data?['parsed'] as Map?;
+      final info = parsed?['info'] as Map?;
+      final tokenAmount = info?['tokenAmount'] as Map?;
+      final amountStr = tokenAmount?['amount'] as String?;
+      final dec = (tokenAmount?['decimals'] as num?)?.toInt() ?? 0;
+      if (amountStr == null) continue;
+      total += BigInt.tryParse(amountStr) ?? BigInt.zero;
+      if (dec > 0) decimals = dec;
+    }
+    return (rawAmount: total, decimals: decimals);
+  }
+
   void close() => _http.close();
 }
 

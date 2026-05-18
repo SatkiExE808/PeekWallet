@@ -4,6 +4,7 @@ import '../../util/peek_logger.dart';
 import 'sol_tx_builder.dart';
 import 'solana_keys.dart';
 import 'solana_rpc_client.dart';
+import 'spl_tokens.dart';
 
 /// Runtime handle for a Solana wallet — derive address + poll
 /// mainnet-beta RPC for balance and history. Send (build/sign a
@@ -116,6 +117,35 @@ class SolanaWallet {
         'broadcast tx ${built.signature} ($lamports lamports)');
     return built;
   }
+
+  /// Raw SPL token balance (base units) summed across all token
+  /// accounts the user owns for this mint. Returns zero if the user
+  /// has no accounts yet.
+  Future<BigInt> tokenBalanceRaw(SplToken token) async {
+    if (_closed) return BigInt.zero;
+    try {
+      final result = await _rpc.splTokenBalance(
+        ownerBase58: address.address,
+        mintBase58: token.mint,
+      );
+      return result.rawAmount;
+    } catch (e) {
+      PeekLogger.I.log(
+          'sol', '${token.symbol} balance fetch failed: $e');
+      return BigInt.zero;
+    }
+  }
+
+  /// Raw → display unit conversion. SPL token decimals come from the
+  /// catalog (USDC/USDT = 6); returned as double for display only.
+  double tokenBalanceDisplay(BigInt raw, SplToken token) {
+    return raw.toDouble() /
+        BigInt.from(10).pow(token.decimals).toDouble();
+  }
+
+  /// Default SPL token list. Future Settings → Custom Tokens would
+  /// extend this per-wallet.
+  List<SplToken> get defaultTokens => kDefaultSplTokens;
 
   void close() {
     if (_closed) return;

@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../coins/solana/solana_module.dart';
 import '../coins/solana/solana_rpc_client.dart';
 import '../coins/solana/solana_wallet.dart';
+import '../coins/solana/spl_tokens.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
@@ -32,6 +33,9 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
   String? _err;
   int _balanceLamports = 0;
   List<SolanaTxDetail> _txes = const [];
+  /// SPL token balances keyed by mint address. Populated alongside
+  /// the native SOL balance during each refresh.
+  Map<String, BigInt> _tokenBalances = const {};
   Timer? _poll;
   bool _refreshing = false;
 
@@ -87,10 +91,25 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
     try {
       final balance = await w.balanceLamports();
       final txes = await w.transactions();
+      // Fan out SPL token balance fetches in parallel. Same pattern
+      // as the ERC-20 / TRC-20 paths — failures are quiet, missing
+      // tokens just don't appear.
+      final tokens = w.defaultTokens;
+      final tokenResults = <String, BigInt>{};
+      if (tokens.isNotEmpty) {
+        final balances = await Future.wait(
+            tokens.map((t) => w.tokenBalanceRaw(t)));
+        for (var i = 0; i < tokens.length; i++) {
+          if (balances[i] > BigInt.zero) {
+            tokenResults[tokens[i].mint] = balances[i];
+          }
+        }
+      }
       if (!mounted) return;
       setState(() {
         _balanceLamports = balance;
         _txes = txes;
+        _tokenBalances = tokenResults;
         _err = null;
       });
       final sol = balance / 1000000000.0;
@@ -325,6 +344,20 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                         TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
+                if (w != null && _tokenBalances.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  const Text('Tokens (SPL)',
+                      style: TextStyle(
+                          color: PeekColors.text2, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  for (final token in w.defaultTokens)
+                    if (_tokenBalances[token.mint] != null)
+                      _SplRow(
+                        token: token,
+                        rawBalance: _tokenBalances[token.mint]!,
+                        wallet: w,
+                      ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -365,6 +398,83 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Display row for one SPL token. Read-only for now — send is a
+/// follow-up that needs the Token Program transfer instruction +
+/// associated-token-account creation logic.
+class _SplRow extends StatelessWidget {
+  const _SplRow({
+    required this.token,
+    required this.rawBalance,
+    required this.wallet,
+  });
+  final SplToken token;
+  final BigInt rawBalance;
+  final SolanaWallet wallet;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = wallet.tokenBalanceDisplay(rawBalance, token);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: AnimatedBuilder(
+        animation: PriceFeed.I,
+        builder: (_, _) {
+          final fiat = PriceFeed.I.formatFiat(token.symbol, display);
+          return Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: PeekColors.surface2,
+                child: Text(
+                  token.symbol.substring(0, 1),
+                  style: const TextStyle(
+                      color: PeekColors.text, fontSize: 11),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(token.symbol,
+                        style: const TextStyle(
+                            color: PeekColors.text,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                    Text(token.name,
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _fmt(display, token.decimals == 6 ? 2 : 4),
+                    style: const TextStyle(
+                        color: PeekColors.text, fontSize: 13),
+                  ),
+                  if (fiat.isNotEmpty)
+                    Text('≈ $fiat',
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static String _fmt(double v, int digits) {
+    if (v == 0) return '0';
+    if (v < 0.0001) return v.toStringAsExponential(2);
+    return v.toStringAsFixed(digits);
   }
 }
 
