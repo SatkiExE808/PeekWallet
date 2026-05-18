@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import 'send_ethereum_screen.dart';
 
 /// Ethereum coin page. Lighter than the Bitcoin one because we don't
 /// yet have send (RLP + EIP-1559 land in a follow-up), so this is
@@ -100,6 +101,17 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     if (_wallet == null) return '… ETH';
     final eth = EthereumTx.weiToEth(_balanceWei);
     return '${eth.toStringAsFixed(6)} ETH';
+  }
+
+  Future<void> _openSendScreen(EthereumWallet w) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendEthereumScreen(wallet: w),
+      ),
+    );
+    if (didSend == true) {
+      unawaited(_refresh());
+    }
   }
 
   void _showReceiveSheet() {
@@ -280,7 +292,9 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: null,
+                          onPressed: _balanceWei == BigInt.zero
+                              ? null
+                              : () => _openSendScreen(w),
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           label: const Text('Send'),
                         ),
@@ -290,8 +304,9 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                 if (w != null) ...[
                   const SizedBox(height: 6),
                   const Text(
-                    'Send isn\'t enabled yet — RLP encoding + EIP-1559 '
-                    'fee market + nonce management land in a follow-up.',
+                    'Send is experimental — RLP + EIP-1559 sighash + '
+                    'ECDSA-recovery are unit-tested but the end-to-end '
+                    'flow has not been audited. Test with small amounts.',
                     style:
                         TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
