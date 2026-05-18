@@ -167,7 +167,8 @@ class WalletStore extends ChangeNotifier {
         secretKey: key,
       );
       final material = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
-      final walletFilePwd = await _deriveWalletFilePassword(password, salt);
+      final walletFilePwd =
+          await deriveWalletFilePassword(password, entry.meta.id);
       return DecryptedWallet(
         meta: entry.meta,
         seedMaterial: material,
@@ -320,20 +321,31 @@ class WalletStore extends ChangeNotifier {
     );
   }
 
-  /// Same derivation strategy as VaultStorage._deriveWalletFilePassword
-  /// so per-wallet file encryption (monero_c's password parameter)
-  /// stays deterministic across re-opens of the same wallet.
-  Future<String> _deriveWalletFilePassword(
-      String password, List<int> salt) async {
-    const ctxLabel = '|peek.wallet-file.v1';
+  /// Deterministic wallet-file password from (master password, walletId).
+  ///
+  /// Used in two places that MUST agree:
+  ///   1. add_wallet_flow at create/restore time — picks the password
+  ///      that monero_c will use to encrypt the wallet file.
+  ///   2. WalletStore.open() at runtime — recomputes the same value
+  ///      so we hand monero_c the right password to decrypt later.
+  ///
+  /// Keyed on walletId (stable across the wallet's lifetime) rather
+  /// than the per-wallet random salt so callers can compute it BEFORE
+  /// the wallet is committed to the store. Prior versions used the
+  /// salt and that worked for re-opens but couldn't be reproduced
+  /// at create-time, leading to a permanent password mismatch on
+  /// any non-BIP39 wallet (no address-mismatch recovery path).
+  Future<String> deriveWalletFilePassword(
+      String masterPassword, String walletId) async {
+    const ctxLabel = '|peek.wallet-file.v2';
     final pbkdf2 = Pbkdf2(
       macAlgorithm: Hmac.sha256(),
       iterations: 10000,
       bits: 32 * 8,
     );
     final key = await pbkdf2.deriveKey(
-      secretKey: SecretKey(utf8.encode(password + ctxLabel)),
-      nonce: salt,
+      secretKey: SecretKey(utf8.encode(masterPassword + ctxLabel)),
+      nonce: utf8.encode(walletId),
     );
     final bytes = await key.extractBytes();
     return base64Encode(bytes);

@@ -247,8 +247,12 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
       _busy = true;
       _err = null;
     });
-    final pwd = VaultState.I.walletFilePassword;
-    if (pwd == null) {
+    // The wallet-file password MUST be the same value that
+    // WalletStore.open() will compute later when reopening this
+    // wallet. Derive it from (master password, walletId) — both
+    // available here, both stable.
+    final cachedPwd = VaultState.I.cachedPassword;
+    if (cachedPwd == null) {
       setState(() {
         _err = 'Vault is locked — re-unlock and try again.';
         _busy = false;
@@ -256,6 +260,8 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
       return;
     }
     final id = WalletStore.I.generateId();
+    final pwd =
+        await WalletStore.I.deriveWalletFilePassword(cachedPwd, id);
     try {
       final mat = await widget.coin.generateNew(
         walletId: id,
@@ -554,8 +560,8 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
       _busy = true;
       _err = null;
     });
-    final pwd = VaultState.I.walletFilePassword;
-    if (pwd == null) {
+    final cachedPwd = VaultState.I.cachedPassword;
+    if (cachedPwd == null) {
       setState(() {
         _err = 'Vault is locked — re-unlock and try again.';
         _busy = false;
@@ -563,6 +569,13 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
       return;
     }
     final id = WalletStore.I.generateId();
+    // Same derivation WalletStore.open() will use when reopening
+    // this wallet later. Pre-fix, this was the legacy shared
+    // VaultState.I.walletFilePassword which didn't match what open
+    // returned — guaranteeing "invalid password" on any non-BIP39
+    // wallet (no address-mismatch recovery to bail us out).
+    final pwd =
+        await WalletStore.I.deriveWalletFilePassword(cachedPwd, id);
     try {
       final input = <String, String>{
         'seed': _seed.text,
@@ -738,8 +751,8 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
       _busy = true;
       _err = null;
     });
-    final pwd = VaultState.I.walletFilePassword;
-    if (pwd == null) {
+    final cachedPwd = VaultState.I.cachedPassword;
+    if (cachedPwd == null) {
       setState(() {
         _err = 'Vault is locked — re-unlock and try again.';
         _busy = false;
@@ -747,6 +760,8 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
       return;
     }
     final id = WalletStore.I.generateId();
+    final pwd =
+        await WalletStore.I.deriveWalletFilePassword(cachedPwd, id);
     try {
       final height = int.tryParse(_restoreHeight.text.trim()) ?? 0;
       final material = await widget.coin.restoreFrom(

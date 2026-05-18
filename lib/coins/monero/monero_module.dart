@@ -19,6 +19,7 @@
 
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bip39/bip39.dart' as bip39;
@@ -209,14 +210,113 @@ class MoneroModule implements CoinModule {
       case SeedFormat.moneroPolyseed:
       case SeedFormat.keysOnly:
         // The on-disk wallet was already created during
-        // generateNew / restoreFrom — just open it.
-        return MoneroWallet.openFromPath(
-          walletPath: walletPath,
-          walletPassword: walletFilePassword,
-          daemonUri: daemonUri,
+        // generateNew / restoreFrom — try to just open it.
+        try {
+          return await MoneroWallet.openFromPath(
+            walletPath: walletPath,
+            walletPassword: walletFilePassword,
+            daemonUri: daemonUri,
+            restoreHeight: restoreHeight,
+            onStage: onStage,
+          );
+        } catch (e) {
+          // Recovery path: pre-fix builds wrote the wallet file with
+          // a different password than WalletStore.open() now hands
+          // us. If we have the seed material we can blow the file
+          // away and re-create it with the right password — same
+          // self-healing the BIP39 path has had.
+          final msg = e.toString().toLowerCase();
+          final isPwdMismatch =
+              msg.contains('invalid password') || msg.contains('failed to open');
+          if (!isPwdMismatch) rethrow;
+          onStage?.call('wallet file password mismatch — re-creating from seed');
+          await _wipeWalletDir(walletPath);
+          await _recreateFromSeedMaterial(
+            walletId: walletId,
+            format: format,
+            seedMaterial: seedMaterial,
+            walletFilePassword: walletFilePassword,
+            restoreHeight: restoreHeight,
+          );
+          return MoneroWallet.openFromPath(
+            walletPath: walletPath,
+            walletPassword: walletFilePassword,
+            daemonUri: daemonUri,
+            restoreHeight: restoreHeight,
+            onStage: onStage,
+          );
+        }
+    }
+  }
+
+  /// Quarantine + delete the broken wallet directory so we can
+  /// recreate from seed. Best-effort: if the rename fails for any
+  /// reason we still try createSync() afterwards so the next step
+  /// doesn't crash on a missing parent.
+  Future<void> _wipeWalletDir(String walletPath) async {
+    final dir = Directory(walletPath).parent;
+    if (!dir.existsSync()) return;
+    try {
+      final quarantine = Directory('${dir.path}.broken-${DateTime.now().microsecondsSinceEpoch}');
+      dir.renameSync(quarantine.path);
+      // Best-effort async delete — don't block on it.
+      unawaited(Future(() {
+        try {
+          quarantine.deleteSync(recursive: true);
+        } catch (_) {/* leak the dir; next boot can clean it up */}
+      }));
+    } catch (_) {
+      // Rename failed (perhaps platform-specific). Fall back to a
+      // direct delete; if THAT fails we just continue and let the
+      // re-create overwrite or fail loudly.
+      try {
+        dir.deleteSync(recursive: true);
+      } catch (_) {/* best effort */}
+    }
+    dir.createSync(recursive: true);
+  }
+
+  /// Run the appropriate restore-from-seed monero_c call to
+  /// re-materialize a wallet file at the canonical path with the
+  /// CURRENT walletFilePassword.
+  Future<void> _recreateFromSeedMaterial({
+    required String walletId,
+    required SeedFormat format,
+    required Map<String, dynamic> seedMaterial,
+    required String walletFilePassword,
+    required int restoreHeight,
+  }) async {
+    switch (format) {
+      case SeedFormat.monero25:
+        await _restoreNativeMonero(
+          walletId: walletId,
+          seed: seedMaterial['seed'] as String? ?? '',
+          seedOffset: (seedMaterial['seedOffset'] as String?) ?? '',
+          walletFilePassword: walletFilePassword,
           restoreHeight: restoreHeight,
-          onStage: onStage,
         );
+        return;
+      case SeedFormat.moneroPolyseed:
+        await _restorePolyseed(
+          walletId: walletId,
+          seed: seedMaterial['seed'] as String? ?? '',
+          seedOffset: (seedMaterial['seedOffset'] as String?) ?? '',
+          walletFilePassword: walletFilePassword,
+        );
+        return;
+      case SeedFormat.keysOnly:
+        await _restoreFromKeys(
+          walletId: walletId,
+          address: seedMaterial['address'] as String? ?? '',
+          spendKey: seedMaterial['spendKey'] as String? ?? '',
+          viewKey: seedMaterial['viewKey'] as String? ?? '',
+          restoreHeight: restoreHeight,
+          walletFilePassword: walletFilePassword,
+        );
+        return;
+      default:
+        throw CoinModuleError(
+            'Cannot self-heal $format wallets — recovery requires the original seed');
     }
   }
 
