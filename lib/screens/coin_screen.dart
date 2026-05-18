@@ -10,6 +10,7 @@ import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
+import 'send_xmr_screen.dart';
 
 /// Coin detail page. For Monero, shows the live native-engine balance
 /// + sync progress; other coins still show placeholder text until
@@ -37,6 +38,8 @@ class _CoinScreenState extends State<CoinScreen> {
   bool _isSynced = false;
   String? _daemonError;
   String? _engineError;
+  List<MoneroTx> _transactions = const [];
+  MoneroWallet? _moneroWallet;
 
   @override
   void initState() {
@@ -107,8 +110,21 @@ class _CoinScreenState extends State<CoinScreen> {
       setState(() => _engineError = MoneroSession.I.lastError ?? 'unknown');
       return;
     }
+    _moneroWallet = w;
+    var lastHistoryPoll = DateTime.now();
     _poll = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
+      // Refresh the cached tx list every 5s — it's a native call
+      // that iterates the wallet's in-memory history vector, cheap
+      // but not free, no reason to do it once per second.
+      List<MoneroTx>? newTx;
+      final now = DateTime.now();
+      if (now.difference(lastHistoryPoll).inSeconds >= 5) {
+        lastHistoryPoll = now;
+        try {
+          newTx = w.transactions();
+        } catch (_) {/* leave old list in place */}
+      }
       setState(() {
         _syncPct = w.syncProgressPct;
         _balanceXmr = w.balanceXmr;
@@ -117,8 +133,84 @@ class _CoinScreenState extends State<CoinScreen> {
         _daemonConnected = w.isDaemonConnected;
         _isSynced = w.isSynced;
         _daemonError = w.daemonError;
+        if (newTx != null) _transactions = newTx;
       });
     });
+  }
+
+  void _showReceiveSheet() {
+    if (_address == null) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: PeekColors.bg2,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: PeekColors.border2,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Receive XMR',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                color: Colors.white,
+                child: QrImageView(
+                  data: _address!,
+                  version: QrVersions.auto,
+                  size: 240,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: PeekColors.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: PeekColors.border),
+              ),
+              child: SelectableText(
+                _address!,
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: _address!));
+                if (!ctx.mounted) return;
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Address copied')),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copy address'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _fmtHeight(int h) {
@@ -224,47 +316,284 @@ class _CoinScreenState extends State<CoinScreen> {
                   ),
                 )
               else ...[
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    color: Colors.white,
-                    child: QrImageView(
-                      data: _address!,
-                      version: QrVersions.auto,
-                      size: 240,
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: PeekColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: PeekColors.border),
-                  ),
-                  child: SelectableText(
-                    _address!,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: _address!));
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Address copied')),
+                if (widget.coin.id == 'XMR') _ActionRow(
+                  canSend: _moneroWallet != null &&
+                      _isSynced &&
+                      (_balanceXmr ?? 0) > 0,
+                  onSend: () {
+                    if (_moneroWallet == null) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SendXmrScreen(wallet: _moneroWallet!),
+                      ),
                     );
                   },
-                  icon: const Icon(Icons.copy, size: 16),
-                  label: const Text('Copy address'),
+                  onReceive: () => _showReceiveSheet(),
                 ),
+                if (widget.coin.id == 'XMR') ...[
+                  const SizedBox(height: 20),
+                  const Text('Transactions',
+                      style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  if (_transactions.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        _isSynced
+                            ? 'No transactions yet.'
+                            : 'Transactions will appear after sync completes.',
+                        style: const TextStyle(
+                          color: PeekColors.text3,
+                          fontSize: 12,
+                        ),
+                      ),
+                    )
+                  else
+                    for (final tx in _transactions.take(20))
+                      _TxRow(tx: tx),
+                ] else ...[
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      color: Colors.white,
+                      child: QrImageView(
+                        data: _address!,
+                        version: QrVersions.auto,
+                        size: 240,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: PeekColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: PeekColors.border),
+                    ),
+                    child: SelectableText(
+                      _address!,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: _address!));
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Address copied')),
+                      );
+                    },
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('Copy address'),
+                  ),
+                ],
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.canSend,
+    required this.onSend,
+    required this.onReceive,
+  });
+  final bool canSend;
+  final VoidCallback onSend;
+  final VoidCallback onReceive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onReceive,
+            icon: const Icon(Icons.qr_code, size: 18),
+            label: const Text('Receive'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: canSend ? onSend : null,
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            label: const Text('Send'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TxRow extends StatelessWidget {
+  const _TxRow({required this.tx});
+  final MoneroTx tx;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = tx.isFailed
+        ? PeekColors.red
+        : (tx.isIncoming ? PeekColors.green : PeekColors.text);
+    final sign = tx.isIncoming ? '+' : '−';
+    final amount = '$sign${tx.amountXmr.toStringAsFixed(6)} XMR';
+    final dt = tx.timestamp.toLocal();
+    final dateLabel = _fmtDate(dt);
+    final subtitle = tx.isFailed
+        ? 'Failed'
+        : tx.isPending
+            ? 'Pending'
+            : tx.confirmations < 10
+                ? '${tx.confirmations} conf'
+                : 'Confirmed';
+
+    return InkWell(
+      onTap: () => _showDetails(context, tx),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: PeekColors.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                tx.isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
+                color: color,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '$dateLabel · $subtitle',
+                    style: const TextStyle(color: PeekColors.text3, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: PeekColors.text3, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _fmtDate(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${d.year}-${two(d.month)}-${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+  }
+
+  void _showDetails(BuildContext context, MoneroTx tx) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: PeekColors.bg2,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: PeekColors.border2,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              tx.isIncoming ? 'Incoming' : 'Outgoing',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            _kv('Amount', '${tx.amountXmr.toStringAsFixed(9)} XMR'),
+            if (!tx.isIncoming)
+              _kv('Fee', '${tx.feeXmr.toStringAsFixed(9)} XMR'),
+            _kv('Date', _fmtDate(tx.timestamp.toLocal())),
+            _kv('Block height', tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
+            _kv('Confirmations', tx.confirmations.toString()),
+            _kv('Status', tx.isFailed ? 'Failed' : (tx.isPending ? 'Pending' : 'Confirmed')),
+            if (tx.paymentId.isNotEmpty)
+              _kv('Payment ID', tx.paymentId),
+            const SizedBox(height: 6),
+            const Text('TX ID', style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: PeekColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: PeekColors.border),
+              ),
+              child: SelectableText(
+                tx.hash,
+                style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: tx.hash));
+                if (!ctx.mounted) return;
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('TX ID copied')),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copy TX ID'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _kv(String k, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(k, style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
+          ),
+          Expanded(
+            child: SelectableText(
+              v,
+              style: const TextStyle(color: PeekColors.text, fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }
