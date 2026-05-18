@@ -41,16 +41,50 @@ class _CoinScreenState extends State<CoinScreen> {
   List<MoneroTx> _transactions = const [];
   MoneroWallet? _moneroWallet;
 
+  /// Subscription on VaultState — bails out of any in-flight poll if
+  /// the wallet locks while this screen is alive (IndexedStack keeps
+  /// us mounted even when the user navigates away).
+  VoidCallback? _vaultListener;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _vaultListener = _onVaultChange;
+    VaultState.I.addListener(_vaultListener!);
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    if (_vaultListener != null) {
+      VaultState.I.removeListener(_vaultListener!);
+    }
     super.dispose();
+  }
+
+  void _onVaultChange() {
+    // Re-lock teardown: when VaultState locks, MoneroSession.stop()
+    // has closed the wallet and freed the native pointer. The poll
+    // timer is still scheduled — stop it before its next tick reads
+    // from the (defensively-zeroed) closed wallet.
+    if (!VaultState.I.isUnlocked) {
+      _poll?.cancel();
+      _poll = null;
+      _moneroWallet = null;
+      if (mounted) {
+        setState(() {
+          _balanceXmr = null;
+          _syncPct = null;
+          _currentHeight = 0;
+          _tipHeight = 0;
+          _daemonConnected = false;
+          _isSynced = false;
+          _daemonError = null;
+          _transactions = const [];
+        });
+      }
+    }
   }
 
   Future<void> _load() async {

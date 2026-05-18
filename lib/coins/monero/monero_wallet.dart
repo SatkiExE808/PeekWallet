@@ -43,6 +43,20 @@ class MoneroWallet {
   final dynamic _ptr;
   final String address;
 
+  /// True once [close] has freed the native wallet. Every getter and
+  /// mutator below MUST consult this — calling Wallet_balance et al.
+  /// on a freed pointer is undefined behaviour (silent zero on most
+  /// builds, native crash on bad luck). We surface a clean StateError
+  /// instead so the UI sees a normal Dart exception path.
+  bool _closed = false;
+  bool get isClosed => _closed;
+
+  void _ensureLive([String? op]) {
+    if (_closed) {
+      throw StateError('Monero wallet has been closed${op == null ? "" : " — $op called after close"}');
+    }
+  }
+
   /// Boots a wallet from a BIP39 phrase and points it at the daemon.
   /// The first call after install will write a wallet file to
   /// `<docs>/peek_xmr/` and begin scanning from `restoreHeight`.
@@ -224,13 +238,20 @@ class MoneroWallet {
 
   /// Daemon-reported chain tip. Stays 0 until refresh successfully
   /// fetches `/get_height` at least once — so a >0 value is the most
-  /// reliable signal that we're actually talking to a node.
-  int get daemonTipHeight => monero.Wallet_daemonBlockChainHeight(_ptr);
+  /// reliable signal that we're actually talking to a node. Returns 0
+  /// after close so the UI sees "still booting" rather than crashing.
+  int get daemonTipHeight {
+    if (_closed) return 0;
+    return monero.Wallet_daemonBlockChainHeight(_ptr);
+  }
 
   /// Local chain height — how far the wallet has scanned. Sits
   /// somewhere between restoreHeight and daemonTipHeight while sync
   /// is running.
-  int get currentHeight => monero.Wallet_blockChainHeight(_ptr);
+  int get currentHeight {
+    if (_closed) return 0;
+    return monero.Wallet_blockChainHeight(_ptr);
+  }
 
   /// True once the daemon has answered at least one RPC. More reliable
   /// than Wallet_connected, which in this monero_c build seems to
@@ -240,15 +261,18 @@ class MoneroWallet {
   /// Last daemon-side error string from the native wallet, or null when
   /// there's nothing to report.
   String? get daemonError {
+    if (_closed) return null;
     final s = monero.Wallet_errorString(_ptr);
     return s.isEmpty ? null : s;
   }
 
   /// Piconero balance (1 XMR = 10^12 piconero). Reads whatever the
   /// sync worker has accumulated so far; returns 0 until at least
-  /// some blocks have been scanned.
-  int get balancePiconero =>
-      monero.Wallet_balance(_ptr, accountIndex: 0);
+  /// some blocks have been scanned, OR after the wallet is closed.
+  int get balancePiconero {
+    if (_closed) return 0;
+    return monero.Wallet_balance(_ptr, accountIndex: 0);
+  }
 
   double get balanceXmr => balancePiconero / 1e12;
 
@@ -258,6 +282,7 @@ class MoneroWallet {
   /// strict equality check would flicker the UI back to "Syncing X%"
   /// every ~2 min in steady state. 5 blocks ≈ 10 minutes of leeway.
   bool get isSynced {
+    if (_closed) return false;
     if (monero.Wallet_synchronized(_ptr)) return true;
     final tip = daemonTipHeight;
     if (tip <= 0) return false;
@@ -271,6 +296,7 @@ class MoneroWallet {
   /// before isSynced actually flips. The cur >= tip early-return
   /// covers the truly-caught-up case.
   int get syncProgressPct {
+    if (_closed) return 0;
     final tip = monero.Wallet_daemonBlockChainHeight(_ptr);
     if (tip <= 0) return 0;
     final cur = monero.Wallet_blockChainHeight(_ptr);
@@ -281,41 +307,52 @@ class MoneroWallet {
   /// Number of subaddresses currently generated under account 0
   /// (includes the primary at index 0). Call [addSubaddress] to
   /// extend this; the count survives across launches because monero_c
-  /// persists subaddresses in the wallet file.
-  int get subaddressCount =>
-      monero.Wallet_numSubaddresses(_ptr, accountIndex: 0);
+  /// persists subaddresses in the wallet file. Returns 1 (just the
+  /// primary) after close — letting the receive sheet still draw
+  /// something reasonable while it tears down.
+  int get subaddressCount {
+    if (_closed) return 1;
+    return monero.Wallet_numSubaddresses(_ptr, accountIndex: 0);
+  }
 
   /// Address string at the given subaddress index of account 0.
   /// Index 0 is the primary address (same as [address]); higher
   /// indices are Cake-compatible subaddresses (network byte 0x2A,
   /// '8' prefix). Same BIP39 seed in another wallet produces the
   /// same string at the same index.
-  String subaddress(int index) =>
-      monero.Wallet_address(_ptr, accountIndex: 0, addressIndex: index);
+  String subaddress(int index) {
+    if (_closed) return index == 0 ? address : '';
+    return monero.Wallet_address(_ptr, accountIndex: 0, addressIndex: index);
+  }
 
   /// User-set label for a subaddress, or empty string if none. The
   /// monero_c default label is "Primary account" / "" — we treat
   /// empty as unlabeled.
   String subaddressLabel(int index) {
-    final s = monero.Wallet_getSubaddressLabel(
+    if (_closed) return '';
+    return monero.Wallet_getSubaddressLabel(
       _ptr,
       accountIndex: 0,
       addressIndex: index,
     );
-    return s;
   }
 
   /// Generate a fresh subaddress under account 0 with optional label.
   /// Returns the new address string (same as `subaddress(subaddressCount - 1)`
   /// after the call). Persists immediately to the wallet file.
+  /// Throws if the wallet has been closed — minting a subaddress
+  /// after close would silently no-op which is a UX trap.
   String addSubaddress({String label = ''}) {
+    _ensureLive('addSubaddress');
     monero.Wallet_addSubaddress(_ptr, accountIndex: 0, label: label);
     final idx = subaddressCount - 1;
     return subaddress(idx);
   }
 
   /// Rename an existing subaddress. Use empty string to clear.
+  /// Throws if closed (same rationale as [addSubaddress]).
   void setSubaddressLabel({required int index, required String label}) {
+    _ensureLive('setSubaddressLabel');
     monero.Wallet_setSubaddressLabel(
       _ptr,
       accountIndex: 0,
@@ -330,18 +367,30 @@ class MoneroWallet {
   /// funds, malformed address, daemon unreachable, etc.).
   ///
   /// [amountPiconero] — amount in piconero (1 XMR = 1e12 piconero).
+  /// BigInt so the parser can keep full precision; we range-check it
+  /// against int64 here since monero_c's binding takes a plain int.
   /// [priority] — 1 (low / slow / cheap) to 4 (priority / fast).
   PendingMoneroTx buildTransaction({
     required String destAddress,
-    required int amountPiconero,
+    required BigInt amountPiconero,
     int priority = 2,
     String paymentId = '',
   }) {
+    _ensureLive('buildTransaction');
+    // monero_c takes a signed 64-bit int. 2^63-1 piconero ≈ 9.22M XMR,
+    // larger than any realistic send. Anything over that means the
+    // caller's parser didn't validate range.
+    if (amountPiconero <= BigInt.zero) {
+      throw ArgumentError('Amount must be positive');
+    }
+    if (amountPiconero > BigInt.from(0x7FFFFFFFFFFFFFFF)) {
+      throw ArgumentError('Amount exceeds int64 max (9.22M XMR)');
+    }
     final pt = monero.Wallet_createTransaction(
       _ptr,
       dst_addr: destAddress,
       payment_id: paymentId,
-      amount: amountPiconero,
+      amount: amountPiconero.toInt(),
       mixin_count: 0, // ignored on v17+ (network enforces ring size)
       pendingTransactionPriority: priority,
       subaddr_account: 0,
@@ -361,6 +410,7 @@ class MoneroWallet {
   /// land in the list. Cheap call — just iterates the cached list,
   /// no RPC.
   List<MoneroTx> transactions() {
+    if (_closed) return const [];
     final history = monero.Wallet_history(_ptr);
     monero.TransactionHistory_refresh(history);
     final count = monero.TransactionHistory_count(history);
@@ -391,7 +441,11 @@ class MoneroWallet {
 
   /// Close the wallet, flushing the wallet file to disk. Call from
   /// the lock handler so the on-disk file is fresh next time.
+  /// Idempotent — subsequent calls are no-ops, and every other method
+  /// becomes inert (getters → zero / empty, mutators → StateError).
   void close() {
+    if (_closed) return;
+    _closed = true;
     try {
       final wm = monero.WalletManagerFactory_getWalletManager();
       monero.WalletManager_closeWallet(wm, _ptr, true);
@@ -539,6 +593,32 @@ class MoneroSession {
     _wallet = null;
     _stage = null;
   }
+}
+
+/// Exact-precision parser for an XMR decimal amount string. Returns
+/// the piconero count as a BigInt — never via `double * 1e12` (lossy
+/// past ~9007 XMR because the multiplication leaves the safe-integer
+/// range).
+///
+/// Accepts "1", "1.0", "0.000000000001" (one piconero). Rejects
+/// negatives, exponents, more-than-12-decimal-places, and anything
+/// non-numeric. Mirrors vault-wallet's _xmrToPiconero implementation
+/// so amounts entered on either app produce the same on-wire piconero.
+BigInt xmrDecimalToPiconero(String amount) {
+  final s = amount.trim();
+  if (!RegExp(r'^\d+(\.\d+)?$').hasMatch(s)) {
+    throw const FormatException('Invalid XMR amount');
+  }
+  final parts = s.split('.');
+  final intPart = parts[0];
+  final fracRaw = parts.length > 1 ? parts[1] : '';
+  if (fracRaw.length > 12) {
+    throw const FormatException('XMR amount has more than 12 decimal places');
+  }
+  final frac = fracRaw.padRight(12, '0');
+  // BigInt math keeps full precision even for 9-digit XMR balances.
+  return BigInt.parse(intPart) * BigInt.from(1000000000000) +
+      BigInt.parse(frac.isEmpty ? '0' : frac);
 }
 
 /// Default daemon for the Monero wallet. Cake's well-maintained public

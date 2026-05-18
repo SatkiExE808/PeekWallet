@@ -50,22 +50,34 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       });
       return;
     }
-    final amountXmr = double.tryParse(amountText);
-    if (amountXmr == null || amountXmr <= 0) {
+
+    // Exact decimal-to-piconero parsing — never via `* 1e12` doubles,
+    // which silently loses precision once amounts exceed ~9007 XMR.
+    BigInt piconero;
+    try {
+      piconero = xmrDecimalToPiconero(amountText);
+    } on FormatException catch (e) {
+      setState(() {
+        _err = e.message;
+        _busy = false;
+      });
+      return;
+    }
+    if (piconero <= BigInt.zero) {
       setState(() {
         _err = 'Enter an amount greater than 0.';
         _busy = false;
       });
       return;
     }
-    final piconero = (amountXmr * 1e12).round();
-    if (piconero > widget.wallet.balancePiconero) {
+    if (piconero > BigInt.from(widget.wallet.balancePiconero)) {
       setState(() {
         _err = 'Insufficient balance.';
         _busy = false;
       });
       return;
     }
+
     try {
       // Run off the UI thread? Wallet_createTransaction is sync FFI;
       // wrapping in Future.microtask doesn't move it off the main
