@@ -3,6 +3,7 @@ import 'coin_module.dart';
 import 'ethereum/ethereum_module.dart';
 import 'monero/monero_module.dart';
 import 'solana/solana_module.dart';
+import 'tron/tron_module.dart';
 
 /// Single source of truth for which coins PeekWallet supports. The
 /// Wallets-create flow lists these as options; future coin
@@ -16,7 +17,8 @@ const List<CoinModule> kCoinModules = <CoinModule>[
   LitecoinModule(),
   PolygonModule(),
   SolanaModule(),
-  // Tron / BCH — pending Sprint 4
+  TronModule(),
+  // BCH — pending Sprint 4
 ];
 
 CoinModule? coinModuleFor(String coinId) {

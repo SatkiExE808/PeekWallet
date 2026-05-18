@@ -10,6 +10,7 @@ import 'bitcoin_coin_screen.dart';
 import 'coin_screen.dart';
 import 'ethereum_coin_screen.dart';
 import 'solana_coin_screen.dart';
+import 'tron_coin_screen.dart';
 
 /// Lists every wallet in the WalletStore. Tap a row to open its coin
 /// page; tap "+" to add a new wallet via the multi-step flow.
@@ -120,6 +121,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
                                 break;
                               case 'SOL':
                                 page = SolanaCoinScreen(walletMeta: meta);
+                                break;
+                              case 'TRX':
+                                page = TronCoinScreen(walletMeta: meta);
                                 break;
                               default:
                                 page = CoinScreen(
