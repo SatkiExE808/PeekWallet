@@ -2,9 +2,10 @@ import 'dart:math';
 
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../theme.dart';
+import '../util/screenshot_guard.dart';
+import '../util/sensitive_clipboard.dart';
 import '../vault/vault_state.dart';
 
 /// Three-step flow: show generated seed → confirm user wrote it down
@@ -24,26 +25,33 @@ class _CreateWalletScreenState extends State<CreateWalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_titleFor(_step))),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: switch (_step) {
-            0 => _SeedDisplay(
-                mnemonic: _mnemonic,
-                onContinue: () => setState(() => _step = 1),
-              ),
-            1 => _ConfirmStep(
-                mnemonic: _mnemonic,
-                onBack: () => setState(() => _step = 0),
-                onConfirmed: () => setState(() => _step = 2),
-              ),
-            _ => _PasswordStep(mnemonic: _mnemonic),
-          },
-        ),
+    // Steps 0 (show seed) and 1 (confirm — user types words from
+    // memory while screen still shows the input fields) are both
+    // sensitive enough to warrant FLAG_SECURE. Step 2 (set password)
+    // doesn't show seed material so we drop the guard via the
+    // child swap.
+    final body = SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: switch (_step) {
+          0 => _SeedDisplay(
+              mnemonic: _mnemonic,
+              onContinue: () => setState(() => _step = 1),
+            ),
+          1 => _ConfirmStep(
+              mnemonic: _mnemonic,
+              onBack: () => setState(() => _step = 0),
+              onConfirmed: () => setState(() => _step = 2),
+            ),
+          _ => _PasswordStep(mnemonic: _mnemonic),
+        },
       ),
     );
+    final scaffold = Scaffold(
+      appBar: AppBar(title: Text(_titleFor(_step))),
+      body: body,
+    );
+    return _step <= 1 ? ScreenshotGuard(child: scaffold) : scaffold;
   }
 
   String _titleFor(int s) => switch (s) {
@@ -114,10 +122,10 @@ class _SeedDisplay extends StatelessWidget {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: mnemonic));
+            await SensitiveClipboard.copy(mnemonic, label: 'mnemonic');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Copied — clear your clipboard after writing it down')),
+              const SnackBar(content: Text('Copied — clipboard auto-clears in 30 s')),
             );
           },
           icon: const Icon(Icons.copy, size: 16),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../coins/monero/monero_wallet.dart';
 import '../theme.dart';
+import '../util/screenshot_guard.dart';
 
 /// Two-step Send flow:
 ///   1. Form — destination, amount, fee priority
@@ -121,7 +122,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(title: const Text('Send XMR')),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -134,6 +135,15 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
         ),
       ),
     );
+    // FLAG_SECURE on the confirm step — the screen displays the
+    // recipient, the full amount, and the fee at the moment the user
+    // is most likely to want to take a photo of the screen to share
+    // with someone else verifying the destination. The form step
+    // (just an empty form) and the result step (only a tx hash, no
+    // amounts) don't need it.
+    return _pending != null && _broadcastTxid == null
+        ? ScreenshotGuard(child: scaffold)
+        : scaffold;
   }
 
   // --- Step 1: form ------------------------------------------------------

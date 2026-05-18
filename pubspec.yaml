@@ -78,6 +78,12 @@ dependencies:
   # from AuthenticationOptions to direct params, so we pin the major.
   local_auth: ^3.0.0
 
+  # FLAG_SECURE on Android — prevents the OS recents-thumbnail from
+  # capturing screens that display sensitive material (seed words,
+  # private keys, send-confirm). iOS has its own blur-on-inactive
+  # treatment which we wire separately in lib/util/screenshot_guard.
+  flutter_windowmanager_plus: ^1.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

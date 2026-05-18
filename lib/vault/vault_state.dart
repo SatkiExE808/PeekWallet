@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../coins/monero/monero_wallet.dart';
+import '../util/sensitive_clipboard.dart';
 import 'biometric_auth.dart';
 import 'vault_storage.dart';
 
@@ -117,9 +118,13 @@ class VaultState extends ChangeNotifier {
   /// Clears the in-memory seed. Encrypted blob stays on disk for the
   /// next unlock. Also tears down any running native wallet — keeping
   /// the monero_c engine alive past lock would leave keys in memory
-  /// and a sync thread polling the daemon.
+  /// and a sync thread polling the daemon. Cancels any pending
+  /// sensitive-clipboard wipes too: their pending values may include
+  /// seed material whose deferred clear we don't want firing after
+  /// the app re-locks.
   void lock() {
     MoneroSession.I.stop();
+    SensitiveClipboard.cancelAll();
     _mnemonic = null;
     _passphrase = '';
     _walletFilePassword = null;
@@ -129,6 +134,7 @@ class VaultState extends ChangeNotifier {
   /// Permanently removes the encrypted seed.
   Future<void> wipe() async {
     MoneroSession.I.stop();
+    SensitiveClipboard.cancelAll();
     await _storage.wipe();
     _mnemonic = null;
     _passphrase = '';

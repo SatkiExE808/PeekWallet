@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../coins/monero/monero_keys.dart';
 import '../theme.dart';
+import '../util/screenshot_guard.dart';
+import '../util/sensitive_clipboard.dart';
 import '../vault/vault_storage.dart';
 
 /// Two-step viewer for the wallet's recovery material:
@@ -61,12 +63,19 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Reveal recovery phrase')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: _seed == null ? _verifyForm() : _revealView(),
+    // Wrap the whole screen so FLAG_SECURE is applied as soon as the
+    // route lands — the password-verification step also benefits
+    // (a shoulder-surfer's recents thumbnail wouldn't capture the
+    // password, but the broader "this user is about to reveal a seed"
+    // context is already sensitive).
+    return ScreenshotGuard(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Reveal recovery phrase')),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: _seed == null ? _verifyForm() : _revealView(),
+          ),
         ),
       ),
     );
@@ -169,29 +178,32 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        _CopyRow(label: 'Copy phrase', value: seed.mnemonic),
+        _CopyRow(label: 'Copy phrase', value: seed.mnemonic, sensitive: true),
         if (seed.passphrase.isNotEmpty) ...[
           const SizedBox(height: 18),
           const _SectionLabel('BIP39 passphrase (25th word)'),
           const SizedBox(height: 6),
           _MonoBlock(text: seed.passphrase),
-          _CopyRow(label: 'Copy passphrase', value: seed.passphrase),
+          _CopyRow(label: 'Copy passphrase', value: seed.passphrase, sensitive: true),
         ],
         const SizedBox(height: 18),
         const _SectionLabel('Monero primary address'),
         const SizedBox(height: 6),
         _MonoBlock(text: keys.primaryAddress),
+        // Address is public — no auto-clear. User may want to paste
+        // it into a watch-only wallet hours later.
         _CopyRow(label: 'Copy address', value: keys.primaryAddress),
         const SizedBox(height: 18),
         const _SectionLabel('Monero private spend key'),
         const SizedBox(height: 6),
         _MonoBlock(text: keys.privateSpendHex),
-        _CopyRow(label: 'Copy spend key', value: keys.privateSpendHex),
+        _CopyRow(label: 'Copy spend key', value: keys.privateSpendHex, sensitive: true),
         const SizedBox(height: 18),
         const _SectionLabel('Monero private view key'),
         const SizedBox(height: 6),
         _MonoBlock(text: keys.privateViewHex),
-        _CopyRow(label: 'Copy view key', value: keys.privateViewHex),
+        // View key gives read-only access — sensitive enough to clear.
+        _CopyRow(label: 'Copy view key', value: keys.privateViewHex, sensitive: true),
         const SizedBox(height: 24),
         const Text(
           'You can restore this wallet in Cake / Feather / Monero GUI '
@@ -238,9 +250,19 @@ class _MonoBlock extends StatelessWidget {
 }
 
 class _CopyRow extends StatelessWidget {
-  const _CopyRow({required this.label, required this.value});
+  const _CopyRow({
+    required this.label,
+    required this.value,
+    this.sensitive = false,
+  });
   final String label;
   final String value;
+
+  /// When true, copies through SensitiveClipboard so the value is
+  /// auto-wiped from the clipboard after 30 s. Use for seed phrases
+  /// and private keys; leave false for public material (addresses,
+  /// TX hashes) the user may want to paste later.
+  final bool sensitive;
 
   @override
   Widget build(BuildContext context) {
@@ -248,10 +270,16 @@ class _CopyRow extends StatelessWidget {
       alignment: Alignment.centerRight,
       child: TextButton.icon(
         onPressed: () async {
-          await Clipboard.setData(ClipboardData(text: value));
+          if (sensitive) {
+            await SensitiveClipboard.copy(value, label: label);
+          } else {
+            await Clipboard.setData(ClipboardData(text: value));
+          }
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Copied — clear your clipboard after use')),
+            SnackBar(content: Text(sensitive
+                ? 'Copied — clipboard auto-clears in 30 s'
+                : 'Copied')),
           );
         },
         icon: const Icon(Icons.copy, size: 14),
