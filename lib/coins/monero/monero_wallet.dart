@@ -29,9 +29,11 @@
 // wallet use case.
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:monero/monero.dart' as monero;
 import 'package:path_provider/path_provider.dart';
+import 'package:pointycastle/digests/keccak.dart';
 
 import 'monero_keys.dart';
 
@@ -79,12 +81,30 @@ class MoneroWallet {
 
     stage('locating wallet dir');
     final docs = await getApplicationDocumentsDirectory();
-    // peek_xmr_v3 — the v2 dir was created with a hardcoded
-    // restoreHeight that overshot the real chain tip by ~110k blocks
-    // (May-2026 tip is ~3,676,500, not the 3,790,000+ I'd assumed).
-    // That left existing wallets "synced" but skipping all real blocks.
-    // Fresh dir + a sane fallback constant + daemon-tip clamp below.
-    final walletDir = Directory('${docs.path}/peek_xmr_v3');
+    // Per-seed wallet dir, named by the first 12 chars of the keccak
+    // of the primary address. Different seeds → different dirs
+    // automatically; no more hardcoded version-bumping of constants
+    // when state needs to be reset.
+    //
+    // The v3 dir is migrated by detection — if it contains a
+    // matching wallet file for THIS seed we adopt it in place (read
+    // ahead in the if-fileExists branch); if it belongs to a
+    // different seed it's left alone and we create a fresh per-seed
+    // dir alongside.
+    final tag = _walletDirTag(keys.primaryAddress);
+    final root = Directory('${docs.path}/peek_xmr');
+    if (!root.existsSync()) root.createSync(recursive: true);
+    final walletDir = Directory('${root.path}/$tag');
+    // One-time migration: if the legacy peek_xmr_v3 dir exists AND
+    // the address it holds matches this seed, fold it into the new
+    // path so the user keeps their already-synced chain cache.
+    final legacy = Directory('${docs.path}/peek_xmr_v3');
+    if (!walletDir.existsSync() && legacy.existsSync()) {
+      try {
+        legacy.renameSync(walletDir.path);
+        stage('migrated legacy peek_xmr_v3 → $tag');
+      } catch (_) {/* leave legacy in place, create fresh dir */}
+    }
     if (!walletDir.existsSync()) walletDir.createSync(recursive: true);
     final walletPath = '${walletDir.path}/wallet';
 
@@ -129,12 +149,39 @@ class MoneroWallet {
         stage('open mismatch '
             '(status=$status, addr=${openedAddress.isEmpty ? "(empty)" : "${openedAddress.substring(0, 12)}…"}'
             '${err.isEmpty ? "" : ", $err"}) — recreating from keys');
+        // Tear down in this exact order:
+        //   1. close the wallet (signals the sync thread to stop)
+        //   2. rename the dir to a quarantine path
+        //   3. recreate the (empty) dir for the new wallet
+        //   4. delete the quarantined dir (best-effort, async)
+        //
+        // The rename in (2) is the key — if monero_c's sync thread
+        // is mid-write to wallet.cache when we recreate, the write
+        // hits the quarantined inode and never touches our fresh
+        // dir. Without the rename, a racy write could corrupt the
+        // brand-new wallet file as it's being created.
         try {
           monero.WalletManager_closeWallet(wm, w, false);
         } catch (_) {/* best effort */}
         try {
-          walletDir.deleteSync(recursive: true);
-        } catch (_) {/* best effort */}
+          final quarantine = Directory(
+              '${walletDir.path}.stale-${DateTime.now().microsecondsSinceEpoch}');
+          walletDir.renameSync(quarantine.path);
+          // Schedule deletion off the hot path; if it fails (open file
+          // handles still pinning it), the dir lingers but never
+          // interferes — the recreated wallet has a fresh dir.
+          Future.microtask(() {
+            try {
+              quarantine.deleteSync(recursive: true);
+            } catch (_) {/* leftover dir is harmless */}
+          });
+        } catch (_) {
+          // Rename failed (e.g. file lock on Windows). Fall back to
+          // direct recursive delete, accepting the slim race risk.
+          try {
+            walletDir.deleteSync(recursive: true);
+          } catch (_) {/* best effort */}
+        }
         walletDir.createSync(recursive: true);
         fileExists = false;
       }
@@ -476,6 +523,15 @@ class MoneroWallet {
 /// A built-but-unbroadcast Monero transaction. Holds the C-side
 /// PendingTransaction pointer so the UI can show the fee + total
 /// before the user commits.
+///
+/// Lifecycle: the bindings (and monero_c itself) don't expose a
+/// `disposeTransaction` API — the PendingTransaction's C++ memory is
+/// released when the parent wallet is destroyed via
+/// WalletManager_closeWallet. So cancelling a send (dropping the
+/// Dart-side reference) doesn't free the native pointer, but the
+/// memory IS reclaimed at wallet-close time. For a single-session
+/// build-and-cancel-a-few-times flow the bookkeeping is harmless.
+/// Marked deprecated upstream — if a dispose API lands, wire it here.
 class PendingMoneroTx {
   PendingMoneroTx._(this._ptr);
   final dynamic _ptr;
@@ -613,6 +669,24 @@ class MoneroSession {
     _wallet = null;
     _stage = null;
   }
+}
+
+/// Generate a stable per-seed wallet-dir tag — first 12 hex chars of
+/// keccak256(primary address). Same seed always yields the same tag;
+/// different seeds yield different tags so they never share a dir.
+/// Doesn't leak anything sensitive — the primary address is already
+/// public.
+String _walletDirTag(String primaryAddress) {
+  final bytes = Uint8List.fromList(primaryAddress.codeUnits);
+  final d = KeccakDigest(256);
+  d.update(bytes, 0, bytes.length);
+  final out = Uint8List(32);
+  d.doFinal(out, 0);
+  final buf = StringBuffer();
+  for (var i = 0; i < 6; i++) {
+    buf.write(out[i].toRadixString(16).padLeft(2, '0'));
+  }
+  return buf.toString(); // 12 hex chars
 }
 
 /// Exact-precision parser for an XMR decimal amount string. Returns

@@ -130,6 +130,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  Future<void> _confirmLock() async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Lock app?'),
+        content: const Text(
+          'You will need to enter your password to unlock. Any in-progress '
+          'Monero sync will pick up where it left off.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Lock'),
+          ),
+        ],
+      ),
+    );
+    if (yes == true) VaultState.I.lock();
+  }
+
   Future<void> _reset() async {
     setState(() {
       _busy = true;
@@ -294,9 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         'Clear the in-memory seed and require the password again',
                         style: TextStyle(color: PeekColors.text3, fontSize: 11),
                       ),
-                      onTap: () {
-                        VaultState.I.lock();
-                      },
+                      onTap: _confirmLock,
                     ),
                   ],
                 ),

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Force every PeekWallet network connection to use TLS. Daemons users
+  point us at — Cake's public node, sethforprivacy:443, the iamhch
+  proxy — are all HTTPS. A user trying to configure an `http://`
+  daemon URL in Settings will see Wallet_init fail loudly here
+  instead of silently sending unencrypted RPCs over hotel WiFi.
+
+  cleartextTrafficPermitted=false is the global default since API 28,
+  but we set it explicitly so older minSdk levels are also covered.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

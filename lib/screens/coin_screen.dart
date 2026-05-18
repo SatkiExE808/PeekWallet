@@ -292,9 +292,17 @@ class _CoinScreenState extends State<CoinScreen> {
                 )
               else ...[
                 if (widget.coin.id == 'XMR') _ActionRow(
+                  // Allow sending while sync is in progress — older
+                  // confirmed outputs (10+ blocks deep) are spendable
+                  // even if newer activity hasn't been scanned yet.
+                  // Cake behaves the same way; refusing to send mid-
+                  // sync is over-cautious. The createTransaction call
+                  // itself will reject if there really aren't enough
+                  // unlocked outputs.
                   canSend: _moneroWallet != null &&
-                      _isSynced &&
                       (_balanceXmr ?? 0) > 0,
+                  isStillSyncing:
+                      _moneroWallet != null && !_isSynced && (_balanceXmr ?? 0) > 0,
                   onSend: () {
                     if (_moneroWallet == null) return;
                     Navigator.of(context).push(
@@ -308,8 +316,21 @@ class _CoinScreenState extends State<CoinScreen> {
                 ),
                 if (widget.coin.id == 'XMR') ...[
                   const SizedBox(height: 20),
-                  const Text('Transactions',
-                      style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Transactions',
+                            style: TextStyle(
+                                color: PeekColors.text2, fontSize: 12)),
+                      ),
+                      if (_transactions.isNotEmpty)
+                        Text(
+                          '${_transactions.length} total',
+                          style: const TextStyle(
+                              color: PeekColors.text3, fontSize: 11),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   if (_transactions.isEmpty)
                     Padding(
@@ -325,8 +346,11 @@ class _CoinScreenState extends State<CoinScreen> {
                       ),
                     )
                   else
-                    for (final tx in _transactions.take(20))
-                      _TxRow(tx: tx),
+                    // Full list — the parent SingleChildScrollView
+                    // handles overflow. Removed the previous .take(20)
+                    // cap; older TXes were invisible with no way to
+                    // page back to them.
+                    for (final tx in _transactions) _TxRow(tx: tx),
                 ] else ...[
                   Center(
                     child: Container(
@@ -380,30 +404,44 @@ class _ActionRow extends StatelessWidget {
     required this.canSend,
     required this.onSend,
     required this.onReceive,
+    this.isStillSyncing = false,
   });
   final bool canSend;
+  final bool isStillSyncing;
   final VoidCallback onSend;
   final VoidCallback onReceive;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onReceive,
-            icon: const Icon(Icons.qr_code, size: 18),
-            label: const Text('Receive'),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onReceive,
+                icon: const Icon(Icons.qr_code, size: 18),
+                label: const Text('Receive'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: canSend ? onSend : null,
+                icon: const Icon(Icons.arrow_upward, size: 18),
+                label: const Text('Send'),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: canSend ? onSend : null,
-            icon: const Icon(Icons.arrow_upward, size: 18),
-            label: const Text('Send'),
+        if (isStillSyncing) ...[
+          const SizedBox(height: 6),
+          const Text(
+            'Wallet is still syncing — the balance above may not include very recent activity. Older confirmed outputs are still spendable.',
+            style: TextStyle(color: PeekColors.text3, fontSize: 11),
           ),
-        ),
+        ],
       ],
     );
   }
