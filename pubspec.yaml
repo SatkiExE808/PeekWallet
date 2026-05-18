@@ -100,6 +100,14 @@ dependencies:
   # in bug reports.
   package_info_plus: ^9.0.0
 
+  # Bitcoin support — BIP32 hierarchical key derivation + bech32
+  # encoding for BIP84 native SegWit addresses. Pure-Dart, no native
+  # libs needed (unlike monero_c). Balance + history fetched live
+  # from mempool.space via the http client we already pull in.
+  bip32: ^2.0.0
+  bech32: ^0.2.2
+  crypto: ^3.0.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

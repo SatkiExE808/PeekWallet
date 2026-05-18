@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import 'add_wallet/add_wallet_flow.dart';
+import 'bitcoin_coin_screen.dart';
 import 'coin_screen.dart';
 
 /// Lists every wallet in the WalletStore. Tap a row to open its coin
@@ -106,10 +107,12 @@ class _WalletsScreenState extends State<WalletsScreen> {
                         ? null
                         : () => Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => CoinScreen(
-                                  coin: _LegacyCoinAdapter(coin),
-                                  walletMeta: meta,
-                                ),
+                                builder: (_) => meta.coinId == 'BTC'
+                                    ? BitcoinCoinScreen(walletMeta: meta)
+                                    : CoinScreen(
+                                        coin: _LegacyCoinAdapter(coin),
+                                        walletMeta: meta,
+                                      ),
                               ),
                             ),
                     onLongPress: () => _showWalletMenu(meta),

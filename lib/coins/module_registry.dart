@@ -1,3 +1,4 @@
+import 'bitcoin/bitcoin_module.dart';
 import 'coin_module.dart';
 import 'monero/monero_module.dart';
 
@@ -8,7 +9,7 @@ import 'monero/monero_module.dart';
 /// Order = display order in the coin picker.
 const List<CoinModule> kCoinModules = <CoinModule>[
   MoneroModule(),
-  // Bitcoin (BIP84 SegWit) — pending Sprint 4
+  BitcoinModule(),
   // Ethereum             — pending Sprint 4
   // Litecoin             — pending Sprint 4
   // Solana / Tron / BCH  — pending Sprint 4
