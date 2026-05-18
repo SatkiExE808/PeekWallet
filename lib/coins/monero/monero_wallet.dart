@@ -82,20 +82,36 @@ class MoneroWallet {
         path: walletPath,
         password: walletPassword,
       );
-      // Wallet file could be from a previous build that used a
-      // different (hardcoded) password. Status != 0 after open is the
-      // signal — the wallet file is just a cache of state regenerable
-      // from the seed, so wipe + recreate is safe.
+      // Two ways the existing on-disk wallet can be unusable:
+      //
+      // 1. Wrong password — pre-PR-#5 builds used a hardcoded constant
+      //    for the wallet file password; new builds derive it from the
+      //    master password, so the old file won't open.
+      // 2. Different seed — shouldn't happen in normal flow, but if
+      //    someone restored a different mnemonic the old wallet file
+      //    on disk now belongs to a different identity.
+      //
+      // Both surface as: opened wallet's address doesn't match the
+      // seed-derived address (or doesn't open at all). Wallet_status
+      // alone is unreliable across monero_c builds, so check the
+      // address explicitly. The wallet file is just a sync cache —
+      // wiping + recreating is safe because the seed is the source
+      // of truth.
+      String openedAddress = '';
+      try {
+        openedAddress = monero.Wallet_address(w);
+      } catch (_) {/* leave empty */}
       final status = monero.Wallet_status(w);
-      if (status != 0) {
+      final reopenedOk =
+          status == 0 && openedAddress == keys.primaryAddress;
+      if (!reopenedOk) {
         final err = monero.Wallet_errorString(w);
-        stage('open failed (status=$status${err.isEmpty ? "" : ", $err"}) '
-            '— wiping cache and recreating from keys');
+        stage('open mismatch '
+            '(status=$status, addr=${openedAddress.isEmpty ? "(empty)" : "${openedAddress.substring(0, 12)}…"}'
+            '${err.isEmpty ? "" : ", $err"}) — recreating from keys');
         try {
           monero.WalletManager_closeWallet(wm, w, false);
         } catch (_) {/* best effort */}
-        // Delete every file the previous wallet wrote, not just the
-        // main file, so createWalletFromKeys can start clean.
         try {
           walletDir.deleteSync(recursive: true);
         } catch (_) {/* best effort */}
@@ -164,6 +180,11 @@ class MoneroWallet {
   /// reliable signal that we're actually talking to a node.
   int get daemonTipHeight => monero.Wallet_daemonBlockChainHeight(_ptr);
 
+  /// Local chain height — how far the wallet has scanned. Sits
+  /// somewhere between restoreHeight and daemonTipHeight while sync
+  /// is running.
+  int get currentHeight => monero.Wallet_blockChainHeight(_ptr);
+
   /// True once the daemon has answered at least one RPC. More reliable
   /// than Wallet_connected, which in this monero_c build seems to
   /// remain 0 even when refresh is making progress.
@@ -185,7 +206,16 @@ class MoneroWallet {
   double get balanceXmr => balancePiconero / 1e12;
 
   /// True once the local chain has caught up with the daemon's tip.
-  bool get isSynced => monero.Wallet_synchronized(_ptr);
+  /// Tolerates a few blocks of lag — monero_c's Wallet_synchronized
+  /// flips back to false every time a new daemon block lands, so a
+  /// strict equality check would flicker the UI back to "Syncing X%"
+  /// every ~2 min in steady state. 5 blocks ≈ 10 minutes of leeway.
+  bool get isSynced {
+    if (monero.Wallet_synchronized(_ptr)) return true;
+    final tip = daemonTipHeight;
+    if (tip <= 0) return false;
+    return (tip - currentHeight) <= 5;
+  }
 
   /// 0–100 percentage based on `current / tip`. Returns 0 while we're
   /// still waiting for the daemon to respond with the tip. Rounds —
