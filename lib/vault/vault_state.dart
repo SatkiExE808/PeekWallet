@@ -22,6 +22,7 @@ class VaultState extends ChangeNotifier {
   String? _mnemonic;
   String _passphrase = '';
   String? _walletFilePassword;
+  String? _cachedPassword;
   bool _hasWalletKnown = false;
   bool _hasWallet = false;
 
@@ -37,6 +38,17 @@ class VaultState extends ChangeNotifier {
   /// password — see VaultStorage._deriveWalletFilePassword. Null while
   /// the vault is locked.
   String? get walletFilePassword => _walletFilePassword;
+
+  /// The user's master password, held in memory after a successful
+  /// unlock so opening additional wallets (multi-wallet model) doesn't
+  /// re-prompt. Null while the vault is locked. Same security
+  /// boundary as [mnemonic] — both live only in memory until [lock]
+  /// or [wipe] runs.
+  ///
+  /// Consumers MUST treat this as sensitive: never serialize, never
+  /// pass to non-PeekWallet code, never write to logs (PeekLogger
+  /// auto-redacts but defense-in-depth is cheap).
+  String? get cachedPassword => _cachedPassword;
 
   bool get hasWallet => _hasWallet;
   bool get isUnlocked => _mnemonic != null;
@@ -57,6 +69,7 @@ class VaultState extends ChangeNotifier {
     _mnemonic = seed.mnemonic;
     _passphrase = seed.passphrase;
     _walletFilePassword = seed.walletFilePassword;
+    _cachedPassword = password;
     _hasWallet = true;
     _hasWalletKnown = true;
     notifyListeners();
@@ -73,6 +86,7 @@ class VaultState extends ChangeNotifier {
     _mnemonic = seed.mnemonic;
     _passphrase = seed.passphrase;
     _walletFilePassword = seed.walletFilePassword;
+    _cachedPassword = password;
     await _maybeMigrateLegacyWallet(password, seed);
     notifyListeners();
   }
@@ -168,6 +182,7 @@ class VaultState extends ChangeNotifier {
     _mnemonic = null;
     _passphrase = '';
     _walletFilePassword = null;
+    _cachedPassword = null;
     notifyListeners();
   }
 
@@ -182,6 +197,7 @@ class VaultState extends ChangeNotifier {
     _mnemonic = null;
     _passphrase = '';
     _walletFilePassword = null;
+    _cachedPassword = null;
     _hasWallet = false;
     _hasWalletKnown = true;
     notifyListeners();

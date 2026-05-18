@@ -154,27 +154,19 @@ class _CoinScreenState extends State<CoinScreen> {
       return;
     }
 
-    // Ask the user for their password to decrypt the wallet-specific
-    // seed material. Re-using the legacy walletFilePassword is wrong
-    // here because each WalletStore entry has its own salt — call
-    // WalletStore.open with the master password instead.
-    //
-    // We treat VaultState.I as the master-password authority: the
-    // legacy unlock that put us here proved the user knows the
-    // password. So we don't re-prompt; we lift the password from
-    // the password field… except VaultState doesn't keep the master
-    // password in memory (only the seed). We can't re-derive without
-    // it.
-    //
-    // Workaround for this commit: prompt once when the user navigates
-    // to a non-legacy wallet. Future work: cache the master password
-    // securely in memory after unlock (matching biometric storage's
-    // model) so subsequent wallet opens don't re-prompt.
-    final password = await _promptPasswordOnce(context);
+    // Use the cached master password from VaultState (set on
+    // unlock). Falls back to prompting only if the cache is empty
+    // — happens when the session was unlocked before the cache
+    // landed, or if a future feature explicitly evicts the cache
+    // (PIN-only mode, etc.).
+    var password = VaultState.I.cachedPassword;
     if (password == null) {
-      stageTicker.cancel();
-      setState(() => _engineError = 'Password required to open this wallet');
-      return;
+      password = await _promptPasswordOnce(context);
+      if (password == null) {
+        stageTicker.cancel();
+        setState(() => _engineError = 'Password required to open this wallet');
+        return;
+      }
     }
 
     final DecryptedWallet decrypted;
@@ -378,20 +370,39 @@ class _CoinScreenState extends State<CoinScreen> {
     return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
   }
 
+  Future<void> _refresh() async {
+    // Pull-to-refresh on the coin screen — force a daemon refresh +
+    // tx history reload. We don't await the actual sync (that could
+    // take minutes); just kick monero_c's async refresh and wait a
+    // moment so the spinner has time to feel responsive.
+    if (_moneroWallet != null) {
+      _moneroWallet!.refreshAsync();
+      try {
+        final fresh = _moneroWallet!.transactions();
+        setState(() => _transactions = fresh);
+      } catch (_) {/* ignore */}
+    }
+    await Future.delayed(const Duration(milliseconds: 600));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.coin.name)),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: widget.coin.color,
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          color: PeekColors.accent,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: widget.coin.color,
                     radius: 18,
                     child: Icon(widget.coin.icon, color: Colors.white, size: 18),
                   ),
@@ -590,6 +601,7 @@ class _CoinScreenState extends State<CoinScreen> {
                 ],
               ],
             ],
+            ),
           ),
         ),
       ),

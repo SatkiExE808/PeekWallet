@@ -612,6 +612,18 @@ class MoneroWallet {
     return out;
   }
 
+  /// Force a fresh refresh against the daemon — used by the
+  /// pull-to-refresh gesture on the coin screen. Doesn't block;
+  /// returns once monero_c has scheduled the refresh on its sync
+  /// thread. The 1-s poll picks up the new balance / height as
+  /// they land.
+  void refreshAsync() {
+    if (_closed) return;
+    try {
+      monero.Wallet_refreshAsync(_ptr);
+    } catch (_) {/* best effort */}
+  }
+
   /// Close the wallet, flushing the wallet file to disk. Call from
   /// the lock handler so the on-disk file is fresh next time.
   /// Idempotent — subsequent calls are no-ops, and every other method
