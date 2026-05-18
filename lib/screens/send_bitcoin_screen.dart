@@ -124,8 +124,10 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
       return;
     }
     final addr = _addrCtrl.text.trim();
-    if (!addr.startsWith('bc1q')) {
-      setState(() => _error = 'Only bech32 P2WPKH (bc1q…) addresses are supported');
+    final hrpPrefix = '${widget.wallet.params.bech32Hrp}1q';
+    if (!addr.startsWith(hrpPrefix)) {
+      setState(() => _error =
+          'Only bech32 P2WPKH ($hrpPrefix…) addresses are supported');
       return;
     }
     if (amount > _availableSat) {
@@ -176,10 +178,11 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final coinName = widget.wallet.params.name;
     return ScreenshotGuard(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Send Bitcoin'),
+          title: Text('Send $coinName'),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -195,7 +198,8 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     final amountSat = _parseAmountSat();
     final fiatStr = amountSat == null
         ? ''
-        : PriceFeed.I.formatFiat('BTC', amountSat / 100000000.0);
+        : PriceFeed.I.formatFiat(
+            widget.wallet.params.symbol, amountSat / 100000000.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -209,7 +213,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
         TextField(
           controller: _addrCtrl,
           decoration: InputDecoration(
-            hintText: 'bc1q…',
+            hintText: '${widget.wallet.params.bech32Hrp}1q…',
             suffixIcon: IconButton(
               icon: const Icon(Icons.paste, size: 18),
               tooltip: 'Paste from clipboard',
@@ -225,8 +229,9 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
           enableSuggestions: false,
         ),
         const SizedBox(height: 16),
-        const Text('Amount (BTC or sat)',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text('Amount (${widget.wallet.params.symbol} or sat)',
+            style: const TextStyle(
+                color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _amountCtrl,
@@ -278,7 +283,10 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
               children: [
                 _kvRow('To',
                     '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
-                _kvRow('Amount', '${(amount / 100000000).toStringAsFixed(8)} BTC'),
+                _kvRow(
+                    'Amount',
+                    '${(amount / 100000000).toStringAsFixed(8)} '
+                        '${widget.wallet.params.symbol}'),
                 _kvRow('Fee rate', '$feeRate sat/vB'),
                 _kvRow('Available', '$_availableSat sat'),
                 const SizedBox(height: 8),
@@ -371,7 +379,8 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Text(
-                          '${(_availableSat / 100000000).toStringAsFixed(8)} BTC '
+                          '${(_availableSat / 100000000).toStringAsFixed(8)} '
+                          '${widget.wallet.params.symbol} '
                           'available (confirmed UTXOs only)',
                           style: const TextStyle(
                               color: PeekColors.text, fontSize: 13),
@@ -493,12 +502,12 @@ class _ExperimentalBanner extends StatelessWidget {
         children: [
           const Icon(Icons.warning_amber, color: PeekColors.red, size: 18),
           const SizedBox(width: 8),
-          Expanded(
+          const Expanded(
             child: Text(
-              'Experimental — Bitcoin send is BIP-0143 spec-vector '
-              'tested but has not been audited end-to-end. Test with '
-              'small amounts first.',
-              style: const TextStyle(color: PeekColors.text, fontSize: 12),
+              'Experimental — send is BIP-0143 spec-vector tested but '
+              'has not been audited end-to-end. Test with small amounts '
+              'first.',
+              style: TextStyle(color: PeekColors.text, fontSize: 12),
             ),
           ),
         ],

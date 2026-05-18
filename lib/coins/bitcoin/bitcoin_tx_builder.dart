@@ -22,6 +22,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import 'bitcoin_keys.dart';
+import 'chain_params.dart';
 import 'mempool_client.dart';
 
 /// Result of a successful build+sign. The caller broadcasts [rawHex]
@@ -88,6 +89,7 @@ BuiltBitcoinTransaction buildAndSignP2WPKH({
   required int amountSat,
   required String changeAddress,
   required int feeRateSatPerVByte,
+  BitcoinChainParams params = kBtcMainnet,
 }) {
   if (inputs.isEmpty) {
     throw const InsufficientFundsException('No UTXOs provided');
@@ -100,10 +102,10 @@ BuiltBitcoinTransaction buildAndSignP2WPKH({
   }
 
   // Parse destination address to its pubkey hash. This validates that
-  // it's a real bech32 P2WPKH mainnet address; any other format
-  // throws here, before the user signs anything.
-  final destPkh = decodeP2WPKHAddress(destAddress);
-  final changePkh = decodeP2WPKHAddress(changeAddress);
+  // it's a real bech32 P2WPKH address on the right network; any other
+  // format throws here, before the user signs anything.
+  final destPkh = decodeP2WPKHAddress(destAddress, params: params);
+  final changePkh = decodeP2WPKHAddress(changeAddress, params: params);
 
   // Resolve a signer for every input. Missing signer = wallet doesn't
   // own this UTXO, which would mean the caller passed garbage.

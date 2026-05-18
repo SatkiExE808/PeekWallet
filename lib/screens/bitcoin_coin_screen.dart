@@ -60,13 +60,17 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
         walletId: widget.walletMeta.id,
         password: password,
       );
-      final mod = const BitcoinModule();
+      // Same screen serves BTC and LTC — pick the right module from
+      // the wallet's coinId so we get the right derivation params.
+      final mod = widget.walletMeta.coinId == 'LTC'
+          ? const LitecoinModule()
+          : const BitcoinModule();
       final w = await mod.open(
         walletId: widget.walletMeta.id,
         format: widget.walletMeta.format,
         seedMaterial: decrypted.seedMaterial,
         walletFilePassword: decrypted.walletFilePassword,
-        daemonUri: '', // unused for BTC
+        daemonUri: '', // unused for UTXO chains
         restoreHeight: 0,
       ) as BitcoinWallet;
       if (!mounted) return;
@@ -103,10 +107,13 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
     }
   }
 
+  String get _symbol => _wallet?.params.symbol ?? widget.walletMeta.coinId;
+  String get _coinName => _wallet?.params.name ?? 'Bitcoin';
+
   String _balanceText() {
-    if (_wallet == null) return '… BTC';
+    if (_wallet == null) return '… $_symbol';
     final btc = _balanceSat / 100000000.0;
-    return '${btc.toStringAsFixed(8)} BTC';
+    return '${btc.toStringAsFixed(8)} $_symbol';
   }
 
   Future<void> _openSendScreen(BitcoinWallet w) async {
@@ -149,10 +156,11 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Receive BTC',
+              Text(
+                'Receive $_symbol',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 16),
               Center(
@@ -212,7 +220,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
     final w = _wallet;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bitcoin'),
+        title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -233,17 +241,24 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
               children: [
                 Row(
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: Color(0xFFF7931A),
+                    CircleAvatar(
+                      backgroundColor: _symbol == 'LTC'
+                          ? const Color(0xFFBFBBBB)
+                          : const Color(0xFFF7931A),
                       radius: 18,
-                      child: Icon(Icons.currency_bitcoin,
-                          color: Colors.white, size: 18),
+                      child: Icon(
+                        _symbol == 'LTC'
+                            ? Icons.toll
+                            : Icons.currency_bitcoin,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'BTC balance',
-                      style:
-                          TextStyle(color: PeekColors.text2, fontSize: 13),
+                    Text(
+                      '$_symbol balance',
+                      style: const TextStyle(
+                          color: PeekColors.text2, fontSize: 13),
                     ),
                     const Spacer(),
                     if (_refreshing)
@@ -265,7 +280,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                   builder: (_, _) {
                     if (_balanceSat == 0) return const SizedBox.shrink();
                     final fiat = PriceFeed.I.formatFiat(
-                        'BTC', _balanceSat / 100000000.0);
+                        _symbol, _balanceSat / 100000000.0);
                     if (fiat.isEmpty) return const SizedBox.shrink();
                     return Padding(
                       padding: const EdgeInsets.only(top: 2),
@@ -307,12 +322,12 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                   ),
                 if (w != null) ...[
                   const SizedBox(height: 6),
-                  const Text(
-                    'Bitcoin send is experimental — test with small '
-                    'amounts before sending large sums. Source-audit the '
-                    'BIP143 signer if you\'re moving meaningful BTC.',
-                    style:
-                        TextStyle(color: PeekColors.text3, fontSize: 11),
+                  Text(
+                    'Send is experimental — test with small amounts before '
+                    'sending large sums. Source-audit the BIP143 signer if '
+                    'you\'re moving meaningful $_symbol.',
+                    style: const TextStyle(
+                        color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -342,13 +357,13 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                           ? 'Loading…'
                           : 'No transactions yet — give your receive '
                               'address to a sender, refresh, and incoming '
-                              'BTC appears here.',
+                              '$_symbol appears here.',
                       style: const TextStyle(
                           color: PeekColors.text3, fontSize: 12),
                     ),
                   )
                 else
-                  for (final tx in _txes) _BtcTxRow(tx: tx),
+                  for (final tx in _txes) _BtcTxRow(tx: tx, symbol: _symbol),
               ],
             ),
           ),
@@ -359,14 +374,17 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
 }
 
 class _BtcTxRow extends StatelessWidget {
-  const _BtcTxRow({required this.tx});
+  const _BtcTxRow({required this.tx, required this.symbol});
   final BitcoinTx tx;
+  /// Coin symbol — "BTC" or "LTC". Used for the amount label so the
+  /// same row layout renders for either chain.
+  final String symbol;
 
   @override
   Widget build(BuildContext context) {
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
-    final amount = '$sign${tx.netBtc.abs().toStringAsFixed(8)} BTC';
+    final amount = '$sign${tx.netBtc.abs().toStringAsFixed(8)} $symbol';
     final subtitle = tx.confirmed
         ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
         : 'In mempool';
@@ -451,8 +469,8 @@ class _BtcTxRow extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _kv('Net amount',
-                  '${tx.netBtc.toStringAsFixed(8)} BTC'),
-              _kv('Fee', '${tx.feeBtc.toStringAsFixed(8)} BTC'),
+                  '${tx.netBtc.toStringAsFixed(8)} $symbol'),
+              _kv('Fee', '${tx.feeBtc.toStringAsFixed(8)} $symbol'),
               _kv('Status', tx.confirmed ? 'Confirmed' : 'In mempool'),
               _kv('Block height',
                   tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),

@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../util/peek_logger.dart';
 import 'bitcoin_keys.dart';
 import 'bitcoin_tx_builder.dart';
+import 'chain_params.dart';
 import 'mempool_client.dart';
 
 /// Runtime handle for a Bitcoin wallet — the equivalent of
@@ -27,16 +28,21 @@ class BitcoinWallet {
     required this.passphrase,
     required this.gapLimit,
     required this.addresses,
-  }) : _client = MempoolClient();
+    required this.params,
+  }) : _client = MempoolClient(baseUrl: params.mempoolBaseUrl);
 
-  /// Open a Bitcoin wallet for the given seed. Derives [gapLimit]
-  /// addresses on the external (receive) chain so balance / history
-  /// can be summed across all of them. Defaults match the BIP44 gap
-  /// limit convention.
+  /// Open a Bitcoin (or Litecoin / any BIP143-compatible chain) wallet
+  /// for the given seed. Derives [gapLimit] addresses on the external
+  /// (receive) chain so balance / history can be summed across all
+  /// of them.
+  ///
+  /// [params] selects the chain. Default = Bitcoin mainnet, so the
+  /// existing BTC call sites keep working with no change.
   factory BitcoinWallet.open({
     required String mnemonic,
     String passphrase = '',
     int gapLimit = 20,
+    BitcoinChainParams params = kBtcMainnet,
   }) {
     final addrs = <BitcoinAddressDerivation>[];
     for (var i = 0; i < gapLimit; i++) {
@@ -44,6 +50,7 @@ class BitcoinWallet {
         mnemonic: mnemonic,
         passphrase: passphrase,
         addressIndex: i,
+        params: params,
       ));
     }
     return BitcoinWallet._(
@@ -51,6 +58,7 @@ class BitcoinWallet {
       passphrase: passphrase,
       gapLimit: gapLimit,
       addresses: addrs,
+      params: params,
     );
   }
 
@@ -58,6 +66,10 @@ class BitcoinWallet {
   final String passphrase;
   final int gapLimit;
   final List<BitcoinAddressDerivation> addresses;
+  /// Which chain this wallet talks to (BTC / LTC / …). Determines
+  /// HRP, derivation path, and which mempool-space-compatible
+  /// explorer we hit.
+  final BitcoinChainParams params;
   final MempoolClient _client;
   bool _closed = false;
 
@@ -78,10 +90,12 @@ class BitcoinWallet {
     if (_closed) return 0;
     try {
       final b = await _client.multiBalance(watchAddresses);
-      PeekLogger.I.log('btc', 'balance fetched: ${b.totalSat} sat');
+      PeekLogger.I.log(params.symbol.toLowerCase(),
+          'balance fetched: ${b.totalSat} sat');
       return b.totalSat;
     } catch (e) {
-      PeekLogger.I.log('btc', 'balance fetch failed: $e');
+      PeekLogger.I.log(params.symbol.toLowerCase(),
+          'balance fetch failed: $e');
       rethrow;
     }
   }
@@ -97,7 +111,8 @@ class BitcoinWallet {
     try {
       return await _client.multiHistory(watchAddresses);
     } catch (e) {
-      PeekLogger.I.log('btc', 'history fetch failed: $e');
+      PeekLogger.I.log(params.symbol.toLowerCase(),
+          'history fetch failed: $e');
       return const [];
     }
   }
@@ -150,8 +165,9 @@ class BitcoinWallet {
     if (_closed) {
       throw StateError('Wallet is closed');
     }
+    final logTag = params.symbol.toLowerCase();
     PeekLogger.I.log(
-      'btc',
+      logTag,
       'send requested: $amountSat sat to '
           '${destAddress.length >= 12 ? '${destAddress.substring(0, 8)}…' : destAddress} '
           '@ $feeRateSatPerVByte sat/vB',
@@ -184,18 +200,20 @@ class BitcoinWallet {
         mnemonic: mnemonic,
         passphrase: passphrase,
         addressIndex: idx,
+        params: params,
       );
     }
 
     // Change goes back to the LAST address in our gap-limit window —
     // a temporary simplification until we implement proper "next
-    // unused" tracking. mempool.space will report this as a new
+    // unused" tracking. The explorer will report this as a new
     // address-with-balance on the next refresh, so the change is
     // visible in the UI immediately.
     final changeKey = deriveBitcoinSpendingKey(
       mnemonic: mnemonic,
       passphrase: passphrase,
       addressIndex: gapLimit - 1,
+      params: params,
     );
 
     final built = buildAndSignP2WPKH(
@@ -205,17 +223,18 @@ class BitcoinWallet {
       amountSat: amountSat,
       changeAddress: changeKey.address,
       feeRateSatPerVByte: feeRateSatPerVByte,
+      params: params,
     );
 
     PeekLogger.I.log(
-      'btc',
+      logTag,
       'broadcasting tx ${built.txid} '
           '(${built.virtualSize} vB, fee ${built.feeSat} sat)',
     );
     final txid = await _client.broadcast(built.rawHex);
     if (txid != built.txid) {
-      PeekLogger.I.log('btc',
-          'WARNING: mempool returned txid $txid but we computed ${built.txid}');
+      PeekLogger.I.log(logTag,
+          'WARNING: explorer returned txid $txid but we computed ${built.txid}');
     }
     return built;
   }

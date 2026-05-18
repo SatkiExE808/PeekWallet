@@ -107,12 +107,13 @@ class _WalletsScreenState extends State<WalletsScreen> {
                         ? null
                         : () => Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => meta.coinId == 'BTC'
-                                    ? BitcoinCoinScreen(walletMeta: meta)
-                                    : CoinScreen(
-                                        coin: _LegacyCoinAdapter(coin),
-                                        walletMeta: meta,
-                                      ),
+                                builder: (_) =>
+                                    (meta.coinId == 'BTC' || meta.coinId == 'LTC')
+                                        ? BitcoinCoinScreen(walletMeta: meta)
+                                        : CoinScreen(
+                                            coin: _LegacyCoinAdapter(coin),
+                                            walletMeta: meta,
+                                          ),
                               ),
                             ),
                     onLongPress: () => _showWalletMenu(meta),

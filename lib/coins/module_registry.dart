@@ -10,8 +10,8 @@ import 'monero/monero_module.dart';
 const List<CoinModule> kCoinModules = <CoinModule>[
   MoneroModule(),
   BitcoinModule(),
+  LitecoinModule(),
   // Ethereum             — pending Sprint 4
-  // Litecoin             — pending Sprint 4
   // Solana / Tron / BCH  — pending Sprint 4
 ];
 
