@@ -147,6 +147,17 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
     }
   }
 
+  Future<void> _openSplSendScreen(SolanaWallet w, SplToken token) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendSolanaScreen(wallet: w, token: token),
+      ),
+    );
+    if (didSend == true) {
+      unawaited(_refresh());
+    }
+  }
+
   void _showReceiveSheet() {
     final w = _wallet;
     if (w == null) return;
@@ -356,6 +367,7 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                         token: token,
                         rawBalance: _tokenBalances[token.mint]!,
                         wallet: w,
+                        onTap: () => _openSplSendScreen(w, token),
                       ),
                 ],
                 const SizedBox(height: 20),
@@ -409,15 +421,19 @@ class _SplRow extends StatelessWidget {
     required this.token,
     required this.rawBalance,
     required this.wallet,
+    required this.onTap,
   });
   final SplToken token;
   final BigInt rawBalance;
   final SolanaWallet wallet;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final display = wallet.tokenBalanceDisplay(rawBalance, token);
-    return Padding(
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: AnimatedBuilder(
         animation: PriceFeed.I,
@@ -467,6 +483,7 @@ class _SplRow extends StatelessWidget {
             ],
           );
         },
+      ),
       ),
     );
   }

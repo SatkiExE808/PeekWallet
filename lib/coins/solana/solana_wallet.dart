@@ -147,6 +147,78 @@ class SolanaWallet {
   /// extend this per-wallet.
   List<SplToken> get defaultTokens => kDefaultSplTokens;
 
+  /// Build, sign and broadcast an SPL token transfer. Returns the
+  /// transaction signature (the on-chain id) on success.
+  ///
+  /// Requires the recipient to ALREADY have a token account for
+  /// this mint (an "ATA"). If they don't, this throws with a clear
+  /// message — the user can ask the recipient to receive SOL or any
+  /// other asset first to create the account, then retry.
+  ///
+  /// We don't compute the ATA address client-side (PDA derivation
+  /// needs ed25519 off-curve checks). Instead we call the RPC for
+  /// both sender + recipient token accounts and use the first one
+  /// each side has — works for the dominant case where users have
+  /// exactly one account per mint (the canonical ATA).
+  Future<BuiltSolanaTransaction> sendSpl({
+    required SplToken token,
+    required String destOwnerAddress,
+    required BigInt amountRaw,
+  }) async {
+    if (_closed) throw StateError('Wallet is closed');
+
+    final sourceATA = await _rpc.firstTokenAccountAddress(
+      ownerBase58: address.address,
+      mintBase58: token.mint,
+    );
+    if (sourceATA == null) {
+      throw StateError(
+          'No ${token.symbol} token account found for this wallet. '
+          'Receive the token here first.');
+    }
+
+    final destATA = await _rpc.firstTokenAccountAddress(
+      ownerBase58: destOwnerAddress,
+      mintBase58: token.mint,
+    );
+    if (destATA == null) {
+      throw StateError(
+          'Recipient has no ${token.symbol} token account. Ask them '
+          'to receive any SOL first to create one — or wait until we '
+          'add ATA-auto-create.');
+    }
+
+    final blockhashStr = await _rpc.latestBlockhash();
+    final blockhash = base58Decode(blockhashStr);
+    if (blockhash == null || blockhash.length != 32) {
+      throw StateError('Unexpected blockhash from RPC: $blockhashStr');
+    }
+
+    PeekLogger.I.log(
+      'sol',
+      '${token.symbol} send requested: $amountRaw raw to '
+          '${destOwnerAddress.length >= 10 ? '${destOwnerAddress.substring(0, 10)}…' : destOwnerAddress}',
+    );
+
+    final built = await buildAndSignSplTransfer(
+      ownerPubkey: address.publicKey,
+      ownerPrivateSeed: address.privateSeed,
+      sourceATABase58: sourceATA,
+      destATABase58: destATA,
+      amountRaw: amountRaw,
+      recentBlockhash: blockhash,
+    );
+
+    final sigFromRpc = await _rpc.sendTransaction(built.rawBase64);
+    if (sigFromRpc != built.signature) {
+      PeekLogger.I.log('sol',
+          'WARNING: RPC returned signature $sigFromRpc but we computed ${built.signature}');
+    }
+    PeekLogger.I.log('sol',
+        'broadcast SPL transfer ${built.signature} ($amountRaw ${token.symbol} raw)');
+    return built;
+  }
+
   void close() {
     if (_closed) return;
     _closed = true;

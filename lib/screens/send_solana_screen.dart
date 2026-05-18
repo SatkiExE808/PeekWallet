@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../address_book/address_book.dart';
 import '../coins/solana/solana_rpc_client.dart';
 import '../coins/solana/solana_wallet.dart';
+import '../coins/solana/spl_tokens.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/remember_recipient.dart';
@@ -19,8 +20,17 @@ import 'qr_scan_screen.dart';
 /// transaction encoding is unit-tested but the end-to-end flow
 /// hasn't been audited.
 class SendSolanaScreen extends StatefulWidget {
-  const SendSolanaScreen({super.key, required this.wallet});
+  const SendSolanaScreen({
+    super.key,
+    required this.wallet,
+    this.token,
+  });
   final SolanaWallet wallet;
+  /// Non-null = send THIS SPL token via the Token Program transfer
+  /// instruction. Null = send native SOL via SystemProgram.transfer.
+  final SplToken? token;
+
+  String get assetSymbol => token?.symbol ?? 'SOL';
 
   @override
   State<SendSolanaScreen> createState() => _SendSolanaScreenState();
@@ -32,6 +42,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   final _confirmCtrl = TextEditingController();
 
   int _balanceLamports = 0;
+  BigInt _tokenBalanceRaw = BigInt.zero;
   bool _loading = true;
   String? _balanceError;
 
@@ -61,9 +72,14 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   Future<void> _loadBalance() async {
     try {
       final v = await widget.wallet.balanceLamports();
+      BigInt tokenRaw = BigInt.zero;
+      if (widget.token != null) {
+        tokenRaw = await widget.wallet.tokenBalanceRaw(widget.token!);
+      }
       if (mounted) {
         setState(() {
           _balanceLamports = v;
+          _tokenBalanceRaw = tokenRaw;
           _loading = false;
         });
       }
@@ -77,23 +93,44 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     }
   }
 
-  int? _parseAmountLamports() {
+  /// Parse the amount as either lamports (native SOL) or token base
+  /// units (SPL). Native SOL uses 9 decimals; SPL tokens use their
+  /// own decimals from the catalog.
+  ({int? lamports, BigInt? tokenRaw}) _parseAmount() {
     final raw = _amountCtrl.text.trim();
-    if (raw.isEmpty) return null;
+    if (raw.isEmpty) return (lamports: null, tokenRaw: null);
+
+    if (widget.token != null) {
+      final decimals = widget.token!.decimals;
+      if (raw.contains('.')) {
+        final tokenRaw = _decimalToRaw(raw, decimals);
+        return (lamports: null, tokenRaw: tokenRaw);
+      }
+      return (lamports: null, tokenRaw: BigInt.tryParse(raw));
+    }
+
     if (raw.contains('.')) {
-      // SOL form. 1 SOL = 10^9 lamports. Convert by string arithmetic
-      // so we don't lose precision past ~6 decimals.
-      final parts = raw.split('.');
+      final asBig = _decimalToRaw(raw, 9);
+      return (lamports: asBig?.toInt(), tokenRaw: null);
+    }
+    return (lamports: int.tryParse(raw), tokenRaw: null);
+  }
+
+  BigInt? _decimalToRaw(String dec, int decimals) {
+    try {
+      final parts = dec.split('.');
       final whole = parts[0];
       final frac = parts.length > 1 ? parts[1] : '';
-      if (frac.length > 9) return null; // SOL has 9 decimals
-      final padded = frac.padRight(9, '0');
+      if (frac.length > decimals) return null;
+      final padded = frac.padRight(decimals, '0');
       final combined = (whole.isEmpty ? '0' : whole) + padded;
       final trimmed = combined.replaceFirst(RegExp(r'^0+'), '');
-      return int.tryParse(trimmed.isEmpty ? '0' : trimmed);
+      return BigInt.parse(trimmed.isEmpty ? '0' : trimmed);
+    } catch (_) {
+      return null;
     }
-    return int.tryParse(raw);
   }
+
 
   Future<void> _pickFromBook() async {
     final picked = await Navigator.of(context).push<AddressBookEntry>(
@@ -129,8 +166,17 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   void _onMax() {
-    // Subtract a one-tx fee reserve so the send can't fail for
-    // insufficient funds after we've already signed.
+    if (widget.token != null) {
+      // Token send: max = full token balance. SOL fee comes out
+      // of the separate native balance.
+      if (_tokenBalanceRaw <= BigInt.zero) return;
+      setState(() {
+        _amountCtrl.text = _tokenBalanceRaw.toString();
+      });
+      return;
+    }
+    // Native: subtract a one-tx fee reserve so the send can't fail
+    // for insufficient funds after we've already signed.
     if (_balanceLamports <= _feeLamports) return;
     setState(() {
       _amountCtrl.text = (_balanceLamports - _feeLamports).toString();
@@ -139,21 +185,39 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
 
   Future<void> _onContinue() async {
     setState(() => _error = null);
-    final amount = _parseAmountLamports();
-    if (amount == null || amount <= 0) {
-      setState(() => _error = 'Enter a valid amount');
-      return;
-    }
+    final parsed = _parseAmount();
     final addr = _addrCtrl.text.trim();
-    // Solana addresses are 32-byte base58 → 32-44 chars; we don't
-    // validate the base58 alphabet here, the builder does that.
     if (addr.length < 32 || addr.length > 44) {
       setState(() => _error = 'Address should be 32-44 base58 characters');
       return;
     }
-    if (amount + _feeLamports > _balanceLamports) {
-      setState(() => _error = 'Amount + fee exceeds balance');
-      return;
+
+    if (widget.token != null) {
+      final amt = parsed.tokenRaw;
+      if (amt == null || amt <= BigInt.zero) {
+        setState(() => _error = 'Enter a valid amount');
+        return;
+      }
+      if (amt > _tokenBalanceRaw) {
+        setState(() =>
+            _error = 'Amount exceeds ${widget.token!.symbol} balance');
+        return;
+      }
+      if (_balanceLamports < _feeLamports) {
+        setState(() => _error =
+            'No SOL for fees — fund this wallet with a small amount of SOL first');
+        return;
+      }
+    } else {
+      final amt = parsed.lamports;
+      if (amt == null || amt <= 0) {
+        setState(() => _error = 'Enter a valid amount');
+        return;
+      }
+      if (amt + _feeLamports > _balanceLamports) {
+        setState(() => _error = 'Amount + fee exceeds balance');
+        return;
+      }
     }
     setState(() => _previewing = true);
   }
@@ -163,8 +227,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
       setState(() => _error = 'Type SEND to confirm');
       return;
     }
-    final amount = _parseAmountLamports();
-    if (amount == null) return;
+    final parsed = _parseAmount();
     setState(() {
       _broadcasting = true;
       _error = null;
@@ -173,10 +236,21 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     final nav = Navigator.of(context);
     try {
       final destAddress = _addrCtrl.text.trim();
-      final built = await widget.wallet.sendSol(
-        destAddress: destAddress,
-        lamports: amount,
-      );
+      String sig;
+      if (widget.token != null) {
+        final built = await widget.wallet.sendSpl(
+          token: widget.token!,
+          destOwnerAddress: destAddress,
+          amountRaw: parsed.tokenRaw!,
+        );
+        sig = built.signature;
+      } else {
+        final built = await widget.wallet.sendSol(
+          destAddress: destAddress,
+          lamports: parsed.lamports!,
+        );
+        sig = built.signature;
+      }
       unawaited(rememberRecipient(
         coinId: 'SOL',
         address: destAddress,
@@ -185,8 +259,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
       messenger.showSnackBar(
         SnackBar(
           backgroundColor: PeekColors.green,
-          content: Text(
-              'Broadcast! sig: ${built.signature.substring(0, 16)}…'),
+          content: Text('Broadcast! sig: ${sig.substring(0, 16)}…'),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -205,7 +278,11 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   Widget build(BuildContext context) {
     return ScreenshotGuard(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Send Solana')),
+        appBar: AppBar(
+          title: Text(widget.token != null
+              ? 'Send ${widget.token!.symbol}'
+              : 'Send Solana'),
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -217,10 +294,16 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Widget _buildForm() {
-    final amount = _parseAmountLamports();
-    final fiat = amount == null
-        ? ''
-        : PriceFeed.I.formatFiat('SOL', amount / 1000000000.0);
+    final parsed = _parseAmount();
+    final displayValue = widget.token != null && parsed.tokenRaw != null
+        ? widget.wallet
+            .tokenBalanceDisplay(parsed.tokenRaw!, widget.token!)
+        : (parsed.lamports != null
+            ? parsed.lamports! / 1000000000.0
+            : 0.0);
+    final fiat = displayValue > 0
+        ? PriceFeed.I.formatFiat(widget.assetSymbol, displayValue)
+        : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -267,13 +350,20 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Expanded(
-              child: Text('Amount (SOL or lamports)',
-                  style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+            Expanded(
+              child: Text(
+                  widget.token != null
+                      ? 'Amount (${widget.token!.symbol} or base units)'
+                      : 'Amount (SOL or lamports)',
+                  style: const TextStyle(
+                      color: PeekColors.text2, fontSize: 12)),
             ),
             TextButton(
-              onPressed:
-                  _balanceLamports <= _feeLamports ? null : _onMax,
+              onPressed: (widget.token != null
+                      ? _tokenBalanceRaw == BigInt.zero
+                      : _balanceLamports <= _feeLamports)
+                  ? null
+                  : _onMax,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 0),
@@ -311,8 +401,11 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Widget _buildPreview() {
-    final amount = _parseAmountLamports()!;
+    final parsed = _parseAmount();
     final addr = _addrCtrl.text.trim();
+    final amountStr = widget.token != null
+        ? '${widget.wallet.tokenBalanceDisplay(parsed.tokenRaw!, widget.token!).toStringAsFixed(widget.token!.decimals == 6 ? 2 : 4)} ${widget.token!.symbol}'
+        : '${(parsed.lamports! / 1000000000.0).toStringAsFixed(9)} SOL';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -326,8 +419,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
               children: [
                 _kvRow('To',
                     '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
-                _kvRow('Amount',
-                    '${(amount / 1000000000.0).toStringAsFixed(9)} SOL'),
+                _kvRow('Amount', amountStr),
                 _kvRow('Network fee',
                     '${(_feeLamports / 1000000000.0).toStringAsFixed(9)} SOL'),
                 const SizedBox(height: 8),
@@ -409,7 +501,10 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Text(
-                          '${(_balanceLamports / 1000000000.0).toStringAsFixed(9)} SOL available',
+                          widget.token != null
+                              ? '${widget.wallet.tokenBalanceDisplay(_tokenBalanceRaw, widget.token!).toStringAsFixed(widget.token!.decimals == 6 ? 2 : 4)} ${widget.token!.symbol} available · '
+                                  '${(_balanceLamports / 1000000000.0).toStringAsFixed(6)} SOL for fees'
+                              : '${(_balanceLamports / 1000000000.0).toStringAsFixed(9)} SOL available',
                           style: const TextStyle(
                               color: PeekColors.text, fontSize: 13),
                         ),

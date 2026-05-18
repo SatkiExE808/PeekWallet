@@ -124,6 +124,26 @@ class SolanaRpcClient {
     return res as String;
   }
 
+  /// The first token-account address [owner] holds for [mint], or
+  /// null if the owner has no account for this mint (typical for a
+  /// fresh wallet that has never received the token). Used by SPL
+  /// transfer to find the SOURCE account; the destination side does
+  /// the same lookup against the recipient address.
+  Future<String?> firstTokenAccountAddress({
+    required String ownerBase58,
+    required String mintBase58,
+  }) async {
+    final res = await _rpc('getTokenAccountsByOwner', [
+      ownerBase58,
+      {'mint': mintBase58},
+      {'encoding': 'jsonParsed', 'commitment': 'finalized'},
+    ]) as Map<String, dynamic>;
+    final value = (res['value'] as List?) ?? const [];
+    if (value.isEmpty) return null;
+    final entry = value.first as Map<String, dynamic>;
+    return entry['pubkey'] as String?;
+  }
+
   /// Sum of SPL token balance for [owner] across all token accounts
   /// holding [mint]. Most users have exactly one account per mint
   /// (the associated token account), but the RPC can return multiple

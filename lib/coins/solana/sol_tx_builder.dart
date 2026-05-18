@@ -42,6 +42,12 @@ import 'solana_keys.dart';
 /// "11111111111111111111111111111111" in base58 = 32 zero bytes.
 final Uint8List _systemProgramId = Uint8List(32);
 
+/// SPL Token Program address: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA.
+/// All SPL token operations (transfer, mint, burn) target this
+/// program. The address is stable across all Solana clusters.
+final Uint8List _tokenProgramId =
+    base58Decode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')!;
+
 /// Result of building+signing a Solana transfer transaction.
 class BuiltSolanaTransaction {
   const BuiltSolanaTransaction({
@@ -160,6 +166,112 @@ Future<BuiltSolanaTransaction> buildAndSignTransfer({
     rawBase64: _base64Encode(txBytes.toBytes()),
     signature: base58Encode(sigBytes),
     lamports: lamports,
+  );
+}
+
+/// Build, sign, and serialize an SPL Token Program transfer.
+///
+/// Pre-conditions:
+///   - [sourceATA] is the sender's token account for the mint
+///     (32-byte base58 pubkey).
+///   - [destATA] is the recipient's token account for the mint.
+///   - Both ATAs MUST already exist on-chain. If [destATA] doesn't,
+///     the tx will be accepted by the RPC but rejected at runtime
+///     with "InvalidAccountData" or similar. The caller's job is
+///     to surface a helpful message in that case ("ask the
+///     recipient to receive SOL first to create their token
+///     account").
+///
+/// The Token Program Transfer instruction:
+///   discriminator: 3 (one byte)
+///   data:          [3, amount_u64_LE]
+///   accounts:      [source_ATA (writable), dest_ATA (writable),
+///                   owner (signer, readonly)]
+Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
+  required Uint8List ownerPubkey,
+  required Uint8List ownerPrivateSeed,
+  required String sourceATABase58,
+  required String destATABase58,
+  required BigInt amountRaw,
+  required Uint8List recentBlockhash,
+}) async {
+  if (amountRaw <= BigInt.zero) {
+    throw const InvalidSolanaAddressException(
+        'Amount must be positive');
+  }
+  if (recentBlockhash.length != 32) {
+    throw const InvalidSolanaAddressException(
+        'Recent blockhash must be 32 bytes');
+  }
+
+  final sourceBytes = base58Decode(sourceATABase58);
+  final destBytes = base58Decode(destATABase58);
+  if (sourceBytes == null ||
+      sourceBytes.length != 32 ||
+      destBytes == null ||
+      destBytes.length != 32) {
+    throw const InvalidSolanaAddressException(
+        'Token account address must decode to 32 bytes');
+  }
+
+  // Account list order (matters for the message header counts):
+  //   - owner: signer + readonly  → goes first
+  //   - sourceATA: writable + non-signer
+  //   - destATA: writable + non-signer
+  //   - TokenProgram: read-only + non-signer
+  final accountKeys = <Uint8List>[
+    ownerPubkey,
+    sourceBytes,
+    destBytes,
+    _tokenProgramId,
+  ];
+  const numRequiredSignatures = 1;
+  const numReadonlySigned = 0;
+  const numReadonlyUnsigned = 1; // TokenProgram
+
+  // Transfer instruction: discriminator 3 + amount u64 LE.
+  final transferData = Uint8List(1 + 8);
+  transferData[0] = 3;
+  final amountLE = ByteData(8);
+  // BigInt → u64 LE: serialize the low 64 bits.
+  var n = amountRaw;
+  for (var i = 0; i < 8; i++) {
+    amountLE.setUint8(i, (n & BigInt.from(0xff)).toInt());
+    n = n >> 8;
+  }
+  transferData.setRange(1, 9, amountLE.buffer.asUint8List());
+
+  final instruction = _CompiledInstruction(
+    programIdIndex: 3, // TokenProgram
+    accountIndices: Uint8List.fromList([1, 2, 0]), // source, dest, owner
+    data: transferData,
+  );
+
+  final message = _serializeMessage(
+    header: [
+      numRequiredSignatures,
+      numReadonlySigned,
+      numReadonlyUnsigned,
+    ],
+    accountKeys: accountKeys,
+    recentBlockhash: recentBlockhash,
+    instructions: [instruction],
+  );
+
+  final alg = Ed25519();
+  final keyPair = await alg.newKeyPairFromSeed(ownerPrivateSeed);
+  final sig = await alg.sign(message, keyPair: keyPair);
+  final sigBytes = Uint8List.fromList(sig.bytes);
+
+  final txBytes = BytesBuilder();
+  txBytes.add(_compactU16(1));
+  txBytes.add(sigBytes);
+  txBytes.add(message);
+
+  return BuiltSolanaTransaction(
+    rawBase64: _base64Encode(txBytes.toBytes()),
+    signature: base58Encode(sigBytes),
+    lamports: amountRaw.toInt(), // misnomer for SPL; just a tag
   );
 }
 
