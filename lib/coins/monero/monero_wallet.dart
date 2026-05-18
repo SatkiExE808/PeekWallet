@@ -94,22 +94,38 @@ class MoneroWallet {
       );
     }
 
-    stage('attaching daemon');
+    // monero_c's Wallet_init takes daemonAddress as host:port — NOT a
+    // URL with scheme. Passing 'https://host' makes the native side
+    // DNS-resolve the literal string 'https://host' and silently sit
+    // disconnected forever. Normalize first.
+    final daemon = _DaemonEndpoint.parse(daemonUri);
+    stage('attaching daemon ${daemon.hostPort} (ssl=${daemon.useSsl})');
     final ok = monero.Wallet_init(
       w,
-      daemonAddress: daemonUri,
-      // The iamhch proxy serves HTTPS on 443 — Wallet_init parses the
-      // URL itself, so useSsl is informational here.
-      useSsl: daemonUri.startsWith('https://'),
+      daemonAddress: daemon.hostPort,
+      useSsl: daemon.useSsl,
     );
     if (!ok) {
-      stage('Wallet_init returned false');
+      final err = monero.Wallet_errorString(w);
+      throw Exception(
+          'Wallet_init failed for ${daemon.hostPort}: ${err.isEmpty ? "(no detail)" : err}');
     }
     stage('starting refresh');
     monero.Wallet_startRefresh(w);
     stage('ready');
 
     return MoneroWallet._(w, keys.primaryAddress);
+  }
+
+  /// True once monero_c reports a live RPC connection to the daemon.
+  /// Wallet_connected: 0 = disconnected, 1 = connected, 2 = wrong version.
+  bool get isDaemonConnected => monero.Wallet_connected(_ptr) == 1;
+
+  /// Last daemon-side error string from the native wallet, or null when
+  /// there's nothing to report.
+  String? get daemonError {
+    final s = monero.Wallet_errorString(_ptr);
+    return s.isEmpty ? null : s;
   }
 
   /// Piconero balance (1 XMR = 10^12 piconero). Reads whatever the
@@ -204,6 +220,28 @@ class MoneroSession {
 /// in front of Cake's public node. Override per device via Settings →
 /// Monero Node (saved in shared prefs).
 const String kDefaultMoneroDaemon = 'https://xmr-rpc.iamhch.com';
+
+/// Splits a user-friendly daemon URL into the host:port + useSsl pair
+/// that monero_c's Wallet_init expects. Accepts:
+///   https://host             -> host:443  ssl
+///   https://host:port        -> host:port ssl
+///   http://host[:port]       -> host:port no ssl  (default 18081)
+///   host[:port]              -> host:port no ssl  (default 18081)
+class _DaemonEndpoint {
+  const _DaemonEndpoint(this.hostPort, this.useSsl);
+  final String hostPort;
+  final bool useSsl;
+
+  static _DaemonEndpoint parse(String input) {
+    final raw = input.trim();
+    final hasScheme = raw.contains('://');
+    final uri = Uri.parse(hasScheme ? raw : 'tcp://$raw');
+    final ssl = uri.scheme == 'https';
+    final host = uri.host;
+    final port = uri.hasPort ? uri.port : (ssl ? 443 : 18081);
+    return _DaemonEndpoint('$host:$port', ssl);
+  }
+}
 
 /// Whether the host platform can load the monero_c .so / .dylib.
 /// Used by the UI to decide whether to attempt MoneroSession.start.
