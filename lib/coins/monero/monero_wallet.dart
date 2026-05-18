@@ -94,55 +94,55 @@ class MoneroWallet {
       );
     }
 
-    // Try the user's daemon first, then known-good public nodes. A
-    // single proxy outage (or a wrong-format URL) shouldn't brick
-    // sync. monero_c's Wallet_init takes host:port — NOT a URL with
-    // scheme — and returns success even when the host is unreachable,
-    // so we have to call Wallet_connected to actually verify each one.
+    // Try the user's daemon first, then known-good public nodes. We
+    // *only* gate on Wallet_init's return value — Wallet_connected
+    // reports a cached status that stays 0 until refresh actually
+    // pulls something, so using it as a boot-time probe causes the
+    // loop to reject every candidate. The real connectivity test is
+    // whether daemonTipHeight goes >0 once refresh runs (UI surfaces
+    // that as "Connecting to daemon…" vs sync %).
     final candidates = <String>{daemonUri, ...kMoneroFallbackNodes}.toList();
     String? activeHostPort;
+    bool activeSsl = false;
     String lastError = '';
     for (final url in candidates) {
       final ep = _DaemonEndpoint.parse(url);
-      stage('trying ${ep.hostPort} (ssl=${ep.useSsl})');
+      stage('init ${ep.hostPort} (ssl=${ep.useSsl})');
       final ok = monero.Wallet_init(
         w,
         daemonAddress: ep.hostPort,
         useSsl: ep.useSsl,
       );
-      if (!ok) {
-        lastError = monero.Wallet_errorString(w);
-        stage('init failed on ${ep.hostPort}: $lastError');
-        continue;
-      }
-      // Wallet_connected makes an actual RPC call to /get_info; can
-      // block ~2-3s on a dead host. Acceptable here — we're already
-      // off the UI thread inside MoneroSession.start.
-      final status = monero.Wallet_connected(w);
-      if (status == 1) {
+      if (ok) {
         activeHostPort = ep.hostPort;
+        activeSsl = ep.useSsl;
         break;
       }
       lastError = monero.Wallet_errorString(w);
-      stage('${ep.hostPort} unreachable '
-          '(status=$status, ${lastError.isEmpty ? "no detail" : lastError})');
+      stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
     }
 
     if (activeHostPort == null) {
       throw Exception(
-          'No Monero node reachable. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
+          'Wallet_init rejected every candidate. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
     }
 
-    stage('connected to $activeHostPort — starting refresh');
+    stage('attached $activeHostPort (ssl=$activeSsl) — starting refresh');
     monero.Wallet_startRefresh(w);
     stage('ready');
 
     return MoneroWallet._(w, keys.primaryAddress);
   }
 
-  /// True once monero_c reports a live RPC connection to the daemon.
-  /// Wallet_connected: 0 = disconnected, 1 = connected, 2 = wrong version.
-  bool get isDaemonConnected => monero.Wallet_connected(_ptr) == 1;
+  /// Daemon-reported chain tip. Stays 0 until refresh successfully
+  /// fetches `/get_height` at least once — so a >0 value is the most
+  /// reliable signal that we're actually talking to a node.
+  int get daemonTipHeight => monero.Wallet_daemonBlockChainHeight(_ptr);
+
+  /// True once the daemon has answered at least one RPC. More reliable
+  /// than Wallet_connected, which in this monero_c build seems to
+  /// remain 0 even when refresh is making progress.
+  bool get isDaemonConnected => daemonTipHeight > 0;
 
   /// Last daemon-side error string from the native wallet, or null when
   /// there's nothing to report.
