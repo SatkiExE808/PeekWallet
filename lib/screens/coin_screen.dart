@@ -30,6 +30,8 @@ class _CoinScreenState extends State<CoinScreen> {
   Timer? _poll;
   int? _syncPct;
   double? _balanceXmr;
+  int _currentHeight = 0;
+  int _tipHeight = 0;
   bool _daemonConnected = false;
   bool _isSynced = false;
   String? _daemonError;
@@ -107,11 +109,25 @@ class _CoinScreenState extends State<CoinScreen> {
       setState(() {
         _syncPct = w.syncProgressPct;
         _balanceXmr = w.balanceXmr;
+        _currentHeight = w.currentHeight;
+        _tipHeight = w.daemonTipHeight;
         _daemonConnected = w.isDaemonConnected;
         _isSynced = w.isSynced;
         _daemonError = w.daemonError;
       });
     });
+  }
+
+  String _fmtHeight(int h) {
+    if (h == 0) return '—';
+    // Thousand-separators so 3,795,210 is readable at a glance.
+    final s = h.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 
   String _balanceText() {
@@ -160,6 +176,15 @@ class _CoinScreenState extends State<CoinScreen> {
                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
               ),
               if (widget.coin.id == 'XMR') const _EngineStatusBanner(),
+              if (widget.coin.id == 'XMR' && _tipHeight > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    'Height ${_fmtHeight(_currentHeight)} / ${_fmtHeight(_tipHeight)} '
+                    '(${_tipHeight - _currentHeight} behind)',
+                    style: const TextStyle(color: PeekColors.text3, fontSize: 11),
+                  ),
+                ),
               if (_engineError != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
