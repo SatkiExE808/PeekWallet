@@ -95,6 +95,11 @@ dependencies:
   # mempool / ETH RPC clients). Lighter than dio for our use.
   http: ^1.4.0
 
+  # Reads version / build number from the bundled platform metadata.
+  # Used by Settings → About so the user can quote a specific build
+  # in bug reports.
+  package_info_plus: ^9.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

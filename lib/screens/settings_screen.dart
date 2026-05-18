@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 
 import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
+import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/peek_logger.dart';
 import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
+import 'about_screen.dart';
 import 'address_book_screen.dart';
 import 'reveal_seed_screen.dart';
 
@@ -129,6 +132,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _message = 'Saved. Lock + unlock the app to switch your wallet to the new node.';
       _messageColor = Colors.green;
     });
+  }
+
+  Future<void> _exportLogs() async {
+    final content = await PeekLogger.I.readCurrent();
+    if (!mounted) return;
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No logs to export yet.')),
+      );
+      return;
+    }
+    // Show the contents in a scrollable dialog with a Copy button.
+    // Filesystem-share + email-attach is a follow-up — needs the
+    // share_plus plugin. The copy-to-clipboard path covers the
+    // primary use case ("paste into a GitHub issue").
+    // Capture the outer messenger so the post-pop SnackBar isn't
+    // racing against a disposed dialog context.
+    final messenger = ScaffoldMessenger.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logs (last 7 days)'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              content,
+              style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: content));
+              if (ctx.mounted) Navigator.of(ctx).pop();
+              messenger.showSnackBar(
+                const SnackBar(
+                    content: Text('Logs copied to clipboard')),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copy'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickCurrency() async {
+    const currencies = <String>[
+      'usd', 'eur', 'gbp', 'jpy', 'cny', 'krw', 'rub',
+      'aud', 'cad', 'inr', 'try', 'brl', 'sgd', 'hkd', 'twd',
+    ];
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: PeekColors.bg2,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Text(
+                'Display currency',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            SwitchListTile(
+              title: const Text('Show fiat values'),
+              subtitle: const Text(
+                'Polls CoinGecko every 5 min. No PII sent.',
+                style: TextStyle(color: PeekColors.text3, fontSize: 11),
+              ),
+              value: PriceFeed.I.enabled,
+              onChanged: (v) async {
+                await PriceFeed.I.setEnabled(v);
+                if (!ctx.mounted) return;
+                Navigator.of(ctx).pop();
+              },
+            ),
+            const Divider(),
+            for (final c in currencies)
+              ListTile(
+                title: Text(c.toUpperCase()),
+                trailing: c == PriceFeed.I.currency
+                    ? const Icon(Icons.check, color: PeekColors.accent)
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(c),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) {
+      await PriceFeed.I.setCurrency(picked);
+    }
   }
 
   Future<void> _confirmLock() async {
@@ -337,6 +447,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(color: PeekColors.text3, fontSize: 11),
                       ),
                       onTap: _confirmLock,
+                    ),
+                    const SizedBox(height: 28),
+                    const _SectionDivider(label: 'Display'),
+                    const SizedBox(height: 8),
+                    AnimatedBuilder(
+                      animation: PriceFeed.I,
+                      builder: (_, _) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.currency_exchange,
+                            color: PeekColors.text2),
+                        title: const Text('Display currency'),
+                        subtitle: Text(
+                          PriceFeed.I.enabled
+                              ? PriceFeed.I.currency.toUpperCase()
+                              : 'Disabled',
+                          style: const TextStyle(
+                              color: PeekColors.text3, fontSize: 11),
+                        ),
+                        trailing: const Icon(Icons.chevron_right,
+                            color: PeekColors.text3),
+                        onTap: _pickCurrency,
+                      ),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.description_outlined,
+                          color: PeekColors.text2),
+                      title: const Text('Export logs'),
+                      subtitle: const Text(
+                        'Last 7 days. Addresses and keys are auto-redacted.',
+                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: PeekColors.text3),
+                      onTap: _exportLogs,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.info_outline,
+                          color: PeekColors.text2),
+                      title: const Text('About PeekWallet'),
+                      subtitle: const Text(
+                        'Version, license, source code',
+                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: PeekColors.text3),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AboutScreen()),
+                      ),
                     ),
                   ],
                 ),

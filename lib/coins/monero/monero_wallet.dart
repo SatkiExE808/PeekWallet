@@ -35,6 +35,7 @@ import 'package:monero/monero.dart' as monero;
 import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/digests/keccak.dart';
 
+import '../../util/peek_logger.dart';
 import 'monero_keys.dart';
 
 class MoneroWallet {
@@ -153,8 +154,7 @@ class MoneroWallet {
     void Function(String stage)? onStage,
   }) async {
     void stage(String s) {
-      // ignore: avoid_print
-      print('[xmr] $s');
+      PeekLogger.I.log('xmr', s);
       onStage?.call(s);
     }
 
@@ -200,8 +200,7 @@ class MoneroWallet {
     void Function(String stage)? onStage,
   }) async {
     void stage(String s) {
-      // ignore: avoid_print
-      print('[xmr] $s');
+      PeekLogger.I.log('xmr', s);
       onStage?.call(s);
     }
     stage('deriving keys');
