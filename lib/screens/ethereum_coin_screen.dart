@@ -41,6 +41,9 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   /// All tokens we display (defaults + user-added). Re-fetched on
   /// each refresh so newly-added custom tokens appear immediately.
   List<Erc20Token> _tokens = const [];
+  /// ERC-20 token transfer history, filtered to tokens we recognize
+  /// (defaults + custom). Sorted newest-first.
+  List<TokenTransfer> _tokenTxes = const [];
   Timer? _poll;
   bool _refreshing = false;
 
@@ -119,12 +122,26 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         }
       }
 
+      // Fetch token transfer history in parallel with everything
+      // else; filter to tokens we recognize so unrelated airdrops
+      // don't clutter the list.
+      List<TokenTransfer> tokenTransfers = const [];
+      try {
+        final all = await w.tokenTransfers();
+        final knownContracts =
+            tokens.map((t) => t.contract.toLowerCase()).toSet();
+        tokenTransfers = all
+            .where((t) => knownContracts.contains(t.contract.toLowerCase()))
+            .toList();
+      } catch (_) {/* keep empty */}
+
       if (!mounted) return;
       setState(() {
         _balanceWei = wei;
         _txes = txes;
         _tokenBalances = tokenResults;
         _tokens = tokens;
+        _tokenTxes = tokenTransfers;
         _err = null;
       });
       final eth = EthereumTx.weiToEth(wei);
@@ -249,6 +266,27 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     ));
     // Trigger a refresh so the new token's balance loads.
     unawaited(_refresh());
+  }
+
+  /// Native ETH txes + ERC-20 token transfers merged into a single
+  /// list, sorted newest-first by timestamp. We accept the mixed
+  /// type because rendering branches on it anyway; saves an
+  /// intermediate wrapper class.
+  List<Object> _mergedTxList() {
+    final merged = <Object>[
+      ..._txes,
+      ..._tokenTxes,
+    ];
+    merged.sort((a, b) {
+      final ta = a is EthereumTx
+          ? a.timestampSec
+          : (a as TokenTransfer).timestampSec;
+      final tb = b is EthereumTx
+          ? b.timestampSec
+          : (b as TokenTransfer).timestampSec;
+      return tb.compareTo(ta);
+    });
+    return merged;
   }
 
   Future<void> _openSendScreen(EthereumWallet w) async {
@@ -535,16 +573,16 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                             TextStyle(color: PeekColors.text2, fontSize: 12),
                       ),
                     ),
-                    if (_txes.isNotEmpty)
+                    if (_txes.isNotEmpty || _tokenTxes.isNotEmpty)
                       Text(
-                        '${_txes.length} total',
+                        '${_txes.length + _tokenTxes.length} total',
                         style: const TextStyle(
                             color: PeekColors.text3, fontSize: 11),
                       ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                if (_txes.isEmpty)
+                if (_txes.isEmpty && _tokenTxes.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
@@ -552,13 +590,17 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                           ? 'Loading…'
                           : 'No transactions yet — give your receive '
                               'address to a sender, refresh, and incoming '
-                              '$_symbol appears here.',
+                              '$_symbol or tokens appear here.',
                       style: const TextStyle(
                           color: PeekColors.text3, fontSize: 12),
                     ),
                   )
                 else
-                  for (final tx in _txes) _EthTxRow(tx: tx, symbol: _symbol),
+                  for (final row in _mergedTxList())
+                    if (row is EthereumTx)
+                      _EthTxRow(tx: row, symbol: _symbol)
+                    else
+                      _TokenTxRow(tx: row as TokenTransfer),
               ],
             ),
           ),
@@ -650,6 +692,195 @@ class _TokenRow extends StatelessWidget {
     if (v < 0.0001) return v.toStringAsExponential(2);
     return v.toStringAsFixed(digits);
   }
+}
+
+/// One row in the merged history list for an ERC-20 token transfer.
+/// Visually distinguished from native txes by a token-symbol chip
+/// in the leading icon — so the user can immediately tell "USDT in"
+/// from "ETH in".
+class _TokenTxRow extends StatelessWidget {
+  const _TokenTxRow({required this.tx});
+  final TokenTransfer tx;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
+    final sign = tx.isIncoming ? '+' : '−';
+    final display = tx.displayAmount;
+    // Stablecoins (6-dec USDT/USDC) want 2 display digits; long-tail
+    // tokens with 18 decimals get 4 to avoid losing the user's eye
+    // in a sea of zeros.
+    final digits = tx.tokenDecimals == 6 ? 2 : 4;
+    final amount = '$sign${display.toStringAsFixed(digits)} ${tx.tokenSymbol}';
+    final subtitle = tx.confirmed
+        ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
+        : 'Pending';
+    return InkWell(
+      onTap: () => _showDetails(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: PeekColors.surface2,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  tx.tokenSymbol.length >= 4
+                      ? tx.tokenSymbol.substring(0, 4)
+                      : tx.tokenSymbol,
+                  style: const TextStyle(
+                      color: PeekColors.text2, fontSize: 9),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(amount,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          color: PeekColors.text3, fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right,
+                color: PeekColors.text3, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _fmtDate(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${d.year}-${two(d.month)}-${two(d.day)} '
+        '${two(d.hour)}:${two(d.minute)}';
+  }
+
+  void _showDetails(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: PeekColors.bg2,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: PeekColors.border2,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                tx.isIncoming
+                    ? 'Incoming ${tx.tokenSymbol}'
+                    : 'Outgoing ${tx.tokenSymbol}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              _kv('Amount',
+                  '${tx.displayAmount.toStringAsFixed(tx.tokenDecimals == 6 ? 2 : 4)} ${tx.tokenSymbol}'),
+              _kv('Direction', tx.isIncoming ? 'Received' : 'Sent'),
+              _kv('Counterparty',
+                  '${(tx.isIncoming ? tx.from : tx.to).substring(0, 10)}…'),
+              _kv('Date', _fmtDate(tx.timestamp.toLocal())),
+              const Divider(color: PeekColors.border, height: 24),
+              const Text('Hash',
+                  style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+              const SizedBox(height: 4),
+              SelectableText(tx.hash,
+                  style: const TextStyle(
+                      fontSize: 11, fontFamily: 'monospace')),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy'),
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            ClipboardData(text: tx.hash));
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Hash copied')),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Explorer'),
+                      onPressed: () async {
+                        // Best-effort: use the wallet's native-coin
+                        // explorer mapping. Most explorers handle
+                        // token transfers under the same tx page.
+                        final url = explorerTxUrl(
+                            coinId: 'ETH', txid: tx.hash);
+                        if (url == null) return;
+                        final ok = await openExplorerUrl(url);
+                        if (!ok && ctx.mounted) {
+                          messenger.showSnackBar(const SnackBar(
+                              content:
+                                  Text('Could not open browser')));
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _kv(String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(k,
+                  style:
+                      const TextStyle(color: PeekColors.text2, fontSize: 12)),
+            ),
+            Expanded(
+              child: Text(v,
+                  style:
+                      const TextStyle(color: PeekColors.text, fontSize: 13)),
+            ),
+          ],
+        ),
+      );
 }
 
 class _EthTxRow extends StatelessWidget {

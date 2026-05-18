@@ -67,6 +67,18 @@ class TronWallet {
     }
   }
 
+  /// TRC-20 transfer history for this wallet. Includes every token
+  /// the address has touched; the UI filters to known tokens.
+  Future<List<Trc20Transfer>> trc20Transfers() async {
+    if (_closed) return const [];
+    try {
+      return await _client.trc20Transfers(address.address);
+    } catch (e) {
+      PeekLogger.I.log('trx', 'TRC-20 history fetch failed: $e');
+      return const [];
+    }
+  }
+
   /// Raw TRC-20 balance for [token] in base units. Decimals
   /// conversion is the caller's job — for USDT/USDC that's
   /// 10^6 per token.

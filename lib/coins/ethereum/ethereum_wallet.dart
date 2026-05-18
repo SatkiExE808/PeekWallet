@@ -100,6 +100,19 @@ class EthereumWallet {
     }
   }
 
+  /// Recent ERC-20 token transfers across every token the user has
+  /// touched. Newest first. Callers can filter to a known-token
+  /// list to hide airdrop spam.
+  Future<List<TokenTransfer>> tokenTransfers() async {
+    if (_closed) return const [];
+    try {
+      return await _client.tokenTransfers(address.addressLower);
+    } catch (e) {
+      PeekLogger.I.log(_logTag, 'token history fetch failed: $e');
+      return const [];
+    }
+  }
+
   /// Read the raw ERC-20 balance (in base units, not display units)
   /// for [token]. Wraps eth_call balanceOf.
   Future<BigInt> tokenBalanceRaw(Erc20Token token) async {

@@ -38,6 +38,8 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
   /// TRC-20 balances keyed by base58 contract address. Populated
   /// in _refresh() alongside the native TRX balance.
   Map<String, BigInt> _tokenBalances = const {};
+  /// TRC-20 transfer history, filtered to tokens we recognize.
+  List<Trc20Transfer> _tokenTxes = const [];
   Timer? _poll;
   bool _refreshing = false;
 
@@ -105,11 +107,21 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
           }
         }
       }
+      // TRC-20 transfer history, filtered to tokens we recognize.
+      List<Trc20Transfer> tokenTransfers = const [];
+      try {
+        final all = await w.trc20Transfers();
+        final knownContracts = tokens.map((t) => t.contract).toSet();
+        tokenTransfers =
+            all.where((t) => knownContracts.contains(t.contract)).toList();
+      } catch (_) {/* keep empty */}
+
       if (!mounted) return;
       setState(() {
         _balanceSun = sun;
         _txes = txes;
         _tokenBalances = tokenResults;
+        _tokenTxes = tokenTransfers;
         _err = null;
       });
       final trx = sun / 1000000.0;
@@ -134,6 +146,25 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
     if (_wallet == null) return '… TRX';
     final trx = _balanceSun / 1000000.0;
     return '${trx.toStringAsFixed(6)} TRX';
+  }
+
+  /// Native TRX + TRC-20 transfer history merged into a single
+  /// newest-first list.
+  List<Object> _mergedTrxHistory() {
+    final merged = <Object>[
+      ..._txes,
+      ..._tokenTxes,
+    ];
+    merged.sort((a, b) {
+      final ta = a is TronTx
+          ? a.timestampSec
+          : (a as Trc20Transfer).timestampSec;
+      final tb = b is TronTx
+          ? b.timestampSec
+          : (b as Trc20Transfer).timestampSec;
+      return tb.compareTo(ta);
+    });
+    return merged;
   }
 
   Future<void> _openSendScreen(TronWallet w, Trc20Token? token) async {
@@ -366,32 +397,34 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                             TextStyle(color: PeekColors.text2, fontSize: 12),
                       ),
                     ),
-                    if (_txes.isNotEmpty)
+                    if (_txes.isNotEmpty || _tokenTxes.isNotEmpty)
                       Text(
-                        '${_txes.length} total',
+                        '${_txes.length + _tokenTxes.length} total',
                         style: const TextStyle(
                             color: PeekColors.text3, fontSize: 11),
                       ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                if (_txes.isEmpty)
+                if (_txes.isEmpty && _tokenTxes.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       _wallet == null
                           ? 'Loading…'
-                          : 'No native-TRX transactions yet. TRC-20 '
-                              'transfers (USDT etc.) aren\'t included in this '
-                              'list yet — see the per-token rows above for '
-                              'current balances; full TRC-20 tx history '
-                              'lands in a follow-up.',
+                          : 'No transactions yet — receive TRX or '
+                              'USDT/USDC to this address and they\'ll '
+                              'appear here.',
                       style: const TextStyle(
                           color: PeekColors.text3, fontSize: 12),
                     ),
                   )
                 else
-                  for (final tx in _txes) _TrxTxRow(tx: tx),
+                  for (final row in _mergedTrxHistory())
+                    if (row is TronTx)
+                      _TrxTxRow(tx: row)
+                    else
+                      _Trc20TxRow(tx: row as Trc20Transfer),
               ],
             ),
           ),
@@ -483,6 +516,79 @@ class _Trc20Row extends StatelessWidget {
     if (v == 0) return '0';
     if (v < 0.0001) return v.toStringAsExponential(2);
     return v.toStringAsFixed(digits);
+  }
+}
+
+/// One row for a TRC-20 transfer. Visually distinguished from
+/// native TRX rows by a token-symbol chip rather than the directional
+/// arrow icon — same convention as the ETH screen's _TokenTxRow.
+class _Trc20TxRow extends StatelessWidget {
+  const _Trc20TxRow({required this.tx});
+  final Trc20Transfer tx;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
+    final sign = tx.isIncoming ? '+' : '−';
+    final digits = tx.tokenDecimals == 6 ? 2 : 4;
+    final amount =
+        '$sign${tx.displayAmount.toStringAsFixed(digits)} ${tx.tokenSymbol}';
+    final subtitle = '${_fmtDate(tx.timestamp.toLocal())} · Confirmed';
+    return InkWell(
+      onTap: () async {
+        final url = explorerTxUrl(coinId: 'TRX', txid: tx.hash);
+        if (url == null) return;
+        await openExplorerUrl(url);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: PeekColors.surface2,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  tx.tokenSymbol.length >= 4
+                      ? tx.tokenSymbol.substring(0, 4)
+                      : tx.tokenSymbol,
+                  style: const TextStyle(
+                      color: PeekColors.text2, fontSize: 9),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(amount,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          color: PeekColors.text3, fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.open_in_new,
+                color: PeekColors.text3, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _fmtDate(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${d.year}-${two(d.month)}-${two(d.day)} '
+        '${two(d.hour)}:${two(d.minute)}';
   }
 }
 

@@ -64,6 +64,28 @@ class TronGridClient {
         .toList();
   }
 
+  /// TRC-20 token transfer history. TronGrid exposes these on a
+  /// dedicated endpoint separate from the native-tx list; each entry
+  /// already includes the resolved token contract address, symbol,
+  /// and decimals so we don't need a second lookup.
+  Future<List<Trc20Transfer>> trc20Transfers(String base58Address,
+      {int limit = 50}) async {
+    final uri = Uri.parse(
+        '$_base/v1/accounts/$base58Address/transactions/trc20?limit=$limit');
+    final r = await _http.get(uri).timeout(const Duration(seconds: 12));
+    if (r.statusCode != 200) {
+      throw Exception('TronGrid TRC-20 history returned ${r.statusCode}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    if (json['success'] != true) return const [];
+    final list = (json['data'] as List?) ?? const [];
+    return list
+        .map((m) =>
+            Trc20Transfer.fromJson(m as Map<String, dynamic>, base58Address))
+        .whereType<Trc20Transfer>()
+        .toList();
+  }
+
   /// Call a view method on a smart contract. Wraps TronGrid's
   /// `/wallet/triggerconstantcontract` — Tron's equivalent of
   /// Ethereum's `eth_call`. Returns the raw hex of the first
@@ -360,6 +382,58 @@ class TronTx {
   double get feeTrx => feeSun / 1000000.0;
   DateTime get timestamp =>
       DateTime.fromMillisecondsSinceEpoch(timestampSec * 1000);
+}
+
+/// One TRC-20 transfer from the user's perspective.
+class Trc20Transfer {
+  const Trc20Transfer({
+    required this.hash,
+    required this.contract,
+    required this.tokenSymbol,
+    required this.tokenDecimals,
+    required this.rawAmount,
+    required this.timestampSec,
+    required this.from,
+    required this.to,
+    required this.isIncoming,
+  });
+
+  static Trc20Transfer? fromJson(
+      Map<String, dynamic> json, String ourBase58) {
+    String s(dynamic v) => v?.toString() ?? '';
+    final info = json['token_info'] as Map<String, dynamic>?;
+    if (info == null) return null;
+    final from = s(json['from']);
+    final to = s(json['to']);
+    return Trc20Transfer(
+      hash: s(json['transaction_id']),
+      contract: s(info['address']),
+      tokenSymbol: s(info['symbol']),
+      tokenDecimals: (info['decimals'] as num?)?.toInt() ?? 0,
+      rawAmount: BigInt.tryParse(s(json['value'])) ?? BigInt.zero,
+      timestampSec: ((json['block_timestamp'] as num?)?.toInt() ?? 0) ~/ 1000,
+      from: from,
+      to: to,
+      isIncoming: to == ourBase58,
+    );
+  }
+
+  final String hash;
+  final String contract;
+  final String tokenSymbol;
+  final int tokenDecimals;
+  final BigInt rawAmount;
+  final int timestampSec;
+  final String from;
+  final String to;
+  final bool isIncoming;
+
+  DateTime get timestamp =>
+      DateTime.fromMillisecondsSinceEpoch(timestampSec * 1000);
+
+  double get displayAmount =>
+      rawAmount.toDouble() /
+      BigInt.from(10).pow(tokenDecimals).toDouble();
 }
 
 /// Convert a Tron base58check address back to its 21-byte hex form
