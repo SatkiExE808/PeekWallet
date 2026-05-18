@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../coins/monero/monero_wallet.dart';
 import 'vault_storage.dart';
 
 /// App-wide vault state. Holds the decrypted mnemonic (+ BIP39
@@ -56,8 +57,11 @@ class VaultState extends ChangeNotifier {
   }
 
   /// Clears the in-memory seed. Encrypted blob stays on disk for the
-  /// next unlock.
+  /// next unlock. Also tears down any running native wallet — keeping
+  /// the monero_c engine alive past lock would leave keys in memory
+  /// and a sync thread polling the daemon.
   void lock() {
+    MoneroSession.I.stop();
     _mnemonic = null;
     _passphrase = '';
     notifyListeners();
@@ -65,6 +69,7 @@ class VaultState extends ChangeNotifier {
 
   /// Permanently removes the encrypted seed.
   Future<void> wipe() async {
+    MoneroSession.I.stop();
     await _storage.wipe();
     _mnemonic = null;
     _passphrase = '';

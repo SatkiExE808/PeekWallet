@@ -30,6 +30,8 @@ class _CoinScreenState extends State<CoinScreen> {
   Timer? _poll;
   int? _syncPct;
   double? _balanceXmr;
+  bool _daemonConnected = false;
+  String? _daemonError;
   String? _engineError;
 
   @override
@@ -93,6 +95,8 @@ class _CoinScreenState extends State<CoinScreen> {
       setState(() {
         _syncPct = w.syncProgressPct;
         _balanceXmr = w.balanceXmr;
+        _daemonConnected = w.isDaemonConnected;
+        _daemonError = w.daemonError;
       });
     });
   }
@@ -104,6 +108,7 @@ class _CoinScreenState extends State<CoinScreen> {
       final s = MoneroSession.I.stage;
       return s == null ? '… ${widget.coin.symbol}' : 'Boot: $s';
     }
+    if (!_daemonConnected) return 'Connecting to daemon…';
     final synced = (_syncPct ?? 0) >= 100;
     if (!synced) return 'Syncing ${_syncPct ?? 0}%';
     return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
@@ -144,6 +149,16 @@ class _CoinScreenState extends State<CoinScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     'Engine: $_engineError',
+                    style: const TextStyle(color: PeekColors.red, fontSize: 11),
+                  ),
+                ),
+              if (widget.coin.id == 'XMR' &&
+                  _engineError == null &&
+                  _daemonError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Daemon: $_daemonError',
                     style: const TextStyle(color: PeekColors.red, fontSize: 11),
                   ),
                 ),
