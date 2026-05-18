@@ -146,21 +146,27 @@ class EthereumWallet {
   /// Current pending-state nonce — what we should use for the next tx.
   Future<BigInt> nonce() => _rpc.getTransactionCount(address.addressLower);
 
-  /// Build, sign, and broadcast an EIP-1559 ETH transfer.
+  /// Build, sign, and broadcast an EIP-1559 transfer.
   ///
-  /// - [destAddress]: recipient (0x-prefixed hex, EIP-55 OK).
-  /// - [valueWei]: amount in wei.
-  /// - [maxPriorityFeeWei] / [maxFeeWei]: fee tiers (use
-  ///   [feeSuggestion] for the standard "Market" pair).
+  /// - Native send (default): pass [destAddress] + [valueWei]. Tx
+  ///   `to` is the recipient, `value` is the wei amount, `data`
+  ///   is empty.
+  /// - Token send: also pass [token] + [tokenAmountRaw]. Tx `to`
+  ///   becomes the token contract, `value` is 0, `data` is the
+  ///   ABI-encoded `transfer(destAddress, tokenAmountRaw)` call.
+  ///   The caller's [destAddress] is the human-visible recipient
+  ///   even though it's not the wire-level `to`.
   ///
-  /// We sanity-check the RPC's chainId against the mainnet constant
-  /// (1) before signing. If a future Settings → Custom RPC sends us
-  /// to Sepolia by accident, this catches it before we burn nonce.
+  /// The RPC's chainId is sanity-checked against this wallet's
+  /// network before signing — if Settings → Custom RPC ever sends
+  /// us to Sepolia by accident, we catch it before burning nonce.
   Future<BuiltEthereumTransaction> sendEth({
     required String destAddress,
     required BigInt valueWei,
     required BigInt maxPriorityFeeWei,
     required BigInt maxFeeWei,
+    Erc20Token? token,
+    BigInt? tokenAmountRaw,
   }) async {
     if (_closed) throw StateError('Wallet is closed');
 
@@ -172,15 +178,45 @@ class EthereumWallet {
     }
 
     final nonceVal = await _rpc.getTransactionCount(address.addressLower);
+
+    // For token sends, the on-wire `to` is the contract and `data`
+    // is the ABI-encoded transfer call. For native sends, `to` is
+    // the recipient and `data` is empty.
+    final String wireTo;
+    final BigInt wireValue;
+    final Uint8List? wireData;
+    if (token != null) {
+      if (tokenAmountRaw == null || tokenAmountRaw <= BigInt.zero) {
+        throw ArgumentError('tokenAmountRaw must be > 0 for token sends');
+      }
+      wireTo = token.contract;
+      wireValue = BigInt.zero;
+      final dataHex = encodeTransferCall(
+        to0xAddress: destAddress,
+        amountBaseUnits: tokenAmountRaw,
+      );
+      wireData = Uint8List.fromList(_hexToBytes(dataHex));
+    } else {
+      wireTo = destAddress;
+      wireValue = valueWei;
+      wireData = null;
+    }
+
     final gasLimit = await _rpc.estimateGas(
       from: address.addressLower,
-      to: destAddress,
-      valueWei: valueWei,
+      to: wireTo,
+      valueWei: wireValue,
+      dataHex: wireData == null
+          ? null
+          : '0x${wireData.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}',
     );
 
+    final logSummary = token == null
+        ? '$valueWei wei'
+        : '$tokenAmountRaw ${token.symbol} (raw)';
     PeekLogger.I.log(
       _logTag,
-      'send requested: $valueWei wei to '
+      'send requested: $logSummary to '
           '${destAddress.length >= 12 ? '${destAddress.substring(0, 10)}…' : destAddress} '
           'nonce=$nonceVal gas=$gasLimit maxFee=$maxFeeWei',
     );
@@ -200,8 +236,9 @@ class EthereumWallet {
       maxPriorityFeePerGasWei: maxPriorityFeeWei,
       maxFeePerGasWei: maxFeeWei,
       gasLimit: gasLimit,
-      toAddress: destAddress,
-      valueWei: valueWei,
+      toAddress: wireTo,
+      valueWei: wireValue,
+      data: wireData,
       privateKey: privKey,
       expectedPublicKey: pubKey,
     );
@@ -238,4 +275,20 @@ class EthFeeSuggestion {
   final BigInt baseFeeWei;
   final BigInt maxPriorityFeeWei;
   final BigInt maxFeeWei;
+}
+
+/// Plain hex → bytes; treats an optional 0x prefix as ignored. Used
+/// internally for assembling the ERC-20 `data` payload of a token
+/// send. Kept private because erc20.dart already has its own helper
+/// that I don't want to over-export.
+List<int> _hexToBytes(String hex) {
+  var clean = hex.startsWith('0x') || hex.startsWith('0X')
+      ? hex.substring(2)
+      : hex;
+  if (clean.length.isOdd) clean = '0$clean';
+  final out = List<int>.filled(clean.length ~/ 2, 0);
+  for (var i = 0; i < out.length; i++) {
+    out[i] = int.parse(clean.substring(2 * i, 2 * i + 2), radix: 16);
+  }
+  return out;
 }

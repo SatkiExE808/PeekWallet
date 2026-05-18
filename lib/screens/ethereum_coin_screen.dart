@@ -161,6 +161,18 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     }
   }
 
+  Future<void> _openTokenSendScreen(
+      EthereumWallet w, Erc20Token token) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendEthereumScreen(wallet: w, token: token),
+      ),
+    );
+    if (didSend == true) {
+      unawaited(_refresh());
+    }
+  }
+
   void _showReceiveSheet() {
     final w = _wallet;
     if (w == null) return;
@@ -378,6 +390,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                         token: token,
                         rawBalance: _tokenBalances[token.contract]!,
                         wallet: w,
+                        onTap: () => _openTokenSendScreen(w, token),
                       ),
                 ],
                 const SizedBox(height: 20),
@@ -433,21 +446,25 @@ class _TokenRow extends StatelessWidget {
     required this.token,
     required this.rawBalance,
     required this.wallet,
+    required this.onTap,
   });
   final Erc20Token token;
   final BigInt rawBalance;
   final EthereumWallet wallet;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final display = wallet.tokenBalanceDisplay(rawBalance, token);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: AnimatedBuilder(
-        animation: PriceFeed.I,
-        builder: (_, _) {
-          final fiat = PriceFeed.I.formatFiat(token.symbol, display);
-          return Row(
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: AnimatedBuilder(
+          animation: PriceFeed.I,
+          builder: (_, _) {
+            final fiat = PriceFeed.I.formatFiat(token.symbol, display);
+            return Row(
             children: [
               CircleAvatar(
                 radius: 14,
@@ -491,6 +508,7 @@ class _TokenRow extends StatelessWidget {
             ],
           );
         },
+        ),
       ),
     );
   }

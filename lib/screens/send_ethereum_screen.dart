@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../address_book/address_book.dart';
+import '../coins/ethereum/erc20_tokens.dart';
 import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/ethereum/etherscan_client.dart';
 import '../prices/price_feed.dart';
@@ -20,8 +21,19 @@ import 'qr_scan_screen.dart';
 /// the full end-to-end "real money on chain" path has not been
 /// adversarially audited.
 class SendEthereumScreen extends StatefulWidget {
-  const SendEthereumScreen({super.key, required this.wallet});
+  const SendEthereumScreen({
+    super.key,
+    required this.wallet,
+    this.token,
+  });
   final EthereumWallet wallet;
+  /// Non-null = send THIS token (ABI-encoded transfer to its
+  /// contract). Null = send native ETH/MATIC. Gas is paid in native
+  /// either way.
+  final Erc20Token? token;
+
+  /// Display symbol for whatever this screen is sending.
+  String get assetSymbol => token?.symbol ?? wallet.network.symbol;
 
   @override
   State<SendEthereumScreen> createState() => _SendEthereumScreenState();
@@ -35,6 +47,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   EthFeeSuggestion? _fee;
   String? _feeError;
   BigInt _balanceWei = BigInt.zero;
+  /// Token balance in BASE UNITS (e.g. 1,000,000 = 1 USDT). Only
+  /// meaningful when widget.token != null.
+  BigInt _tokenBalanceRaw = BigInt.zero;
   bool _loading = true;
   String? _balanceError;
 
@@ -65,9 +80,17 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     }
     try {
       final wei = await widget.wallet.balanceWei();
+      // For token sends we also need the token's balance — but we
+      // still grab the native balance so we can warn if the user
+      // doesn't have enough gas to send the token.
+      BigInt tokenRaw = BigInt.zero;
+      if (widget.token != null) {
+        tokenRaw = await widget.wallet.tokenBalanceRaw(widget.token!);
+      }
       if (mounted) {
         setState(() {
           _balanceWei = wei;
+          _tokenBalanceRaw = tokenRaw;
           _loading = false;
         });
       }
@@ -84,30 +107,31 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   /// Parse the amount input. Accepts "0.001" (ETH) or a wei integer
   /// (≥ 10^9 to disambiguate from a tiny ETH-decimal entry — anything
   /// with a decimal point is unambiguously ETH).
-  BigInt? _parseAmountWei() {
+  /// Parse the amount field as base units (wei for ETH, base units
+  /// for tokens — e.g. 1 USDT = 1_000_000 because USDT has 6 decimals).
+  /// If a decimal point appears, treat as the display unit;
+  /// otherwise treat the integer as raw base units.
+  BigInt? _parseAmountRaw() {
     final raw = _amountCtrl.text.trim();
     if (raw.isEmpty) return null;
+    final decimals = widget.token?.decimals ?? 18;
     if (raw.contains('.')) {
       final v = double.tryParse(raw);
       if (v == null || v <= 0) return null;
-      // Convert ETH → wei via string arithmetic so we don't lose
-      // precision past ~6 decimals (double is 53-bit mantissa, wei
-      // uses up to 18 decimals).
-      return _ethToWei(raw);
+      return _decimalToRaw(raw, decimals);
     }
     return BigInt.tryParse(raw);
   }
 
-  BigInt _ethToWei(String dec) {
+  BigInt _decimalToRaw(String dec, int decimals) {
     final parts = dec.split('.');
     final whole = parts[0];
     final frac = parts.length > 1 ? parts[1] : '';
-    if (frac.length > 18) {
-      throw const FormatException('More than 18 decimals');
+    if (frac.length > decimals) {
+      throw FormatException('More than $decimals decimal places');
     }
-    final padded = frac.padRight(18, '0');
+    final padded = frac.padRight(decimals, '0');
     final combined = (whole.isEmpty ? '0' : whole) + padded;
-    // Strip leading zeros for canonical parse.
     final trimmed = combined.replaceFirst(RegExp(r'^0+'), '');
     return BigInt.parse(trimmed.isEmpty ? '0' : trimmed);
   }
@@ -149,10 +173,17 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   void _onMax() {
-    // Send-all is more nuanced than for BTC because every ETH send
-    // pays gas. We subtract a conservative gas reserve (21000 gas
-    // at the suggested maxFee) so the user doesn't try to send a
-    // value the chain can never accept.
+    // For token sends, "Max" = entire token balance — gas comes
+    // out of the native balance, which we don't touch here.
+    if (widget.token != null) {
+      if (_tokenBalanceRaw <= BigInt.zero) return;
+      setState(() {
+        _amountCtrl.text = _tokenBalanceRaw.toString();
+      });
+      return;
+    }
+    // For native send: subtract a conservative gas reserve so the
+    // user doesn't try to send a value the chain can never accept.
     if (_balanceWei <= BigInt.zero) return;
     final fee = _fee;
     if (fee == null) return;
@@ -166,7 +197,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
 
   Future<void> _onContinue() async {
     setState(() => _error = null);
-    final amount = _parseAmountWei();
+    final amount = _parseAmountRaw();
     if (amount == null || amount <= BigInt.zero) {
       setState(() => _error = 'Enter a valid amount');
       return;
@@ -177,9 +208,22 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
           _error = 'Recipient must be a 0x-prefixed 40-hex-character address');
       return;
     }
-    if (amount > _balanceWei) {
-      setState(() => _error = 'Amount exceeds balance');
-      return;
+    if (widget.token != null) {
+      if (amount > _tokenBalanceRaw) {
+        setState(() => _error = 'Amount exceeds ${widget.token!.symbol} balance');
+        return;
+      }
+      // Token sends still need native gas — flag if the user has zero ETH/MATIC.
+      if (_balanceWei == BigInt.zero) {
+        setState(() => _error =
+            'No ${widget.wallet.network.symbol} for gas — fund this wallet first');
+        return;
+      }
+    } else {
+      if (amount > _balanceWei) {
+        setState(() => _error = 'Amount exceeds balance');
+        return;
+      }
     }
     setState(() => _previewing = true);
   }
@@ -189,7 +233,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
       setState(() => _error = 'Type SEND to confirm');
       return;
     }
-    final amount = _parseAmountWei();
+    final amount = _parseAmountRaw();
     final fee = _fee;
     if (amount == null || fee == null) return;
     setState(() {
@@ -202,7 +246,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
       final destAddress = _addrCtrl.text.trim();
       final built = await widget.wallet.sendEth(
         destAddress: destAddress,
-        valueWei: amount,
+        valueWei: widget.token == null ? amount : BigInt.zero,
+        token: widget.token,
+        tokenAmountRaw: widget.token == null ? null : amount,
         maxPriorityFeeWei: fee.maxPriorityFeeWei,
         maxFeeWei: fee.maxFeeWei,
       );
@@ -233,7 +279,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   Widget build(BuildContext context) {
     return ScreenshotGuard(
       child: Scaffold(
-        appBar: AppBar(title: Text('Send ${widget.wallet.network.name}')),
+        appBar: AppBar(
+            title: Text('Send ${widget.token?.symbol ?? widget.wallet.network.name}')),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -245,12 +292,20 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Widget _buildForm() {
-    final amountWei = _parseAmountWei();
-    final symbol = widget.wallet.network.symbol;
-    final fiat = amountWei == null
+    final amountRaw = _parseAmountRaw();
+    final symbol = widget.assetSymbol;
+    // Fiat shown next to the amount: for tokens, use the token's
+    // own symbol and price (USDT ≈ $1, USDC ≈ $1, DAI ≈ $1).
+    final fiat = amountRaw == null
         ? ''
-        : PriceFeed.I.formatFiat(
-            symbol, EthereumTx.weiToEth(amountWei));
+        : widget.token != null
+            ? PriceFeed.I.formatFiat(
+                symbol,
+                widget.wallet.tokenBalanceDisplay(
+                    amountRaw, widget.token!),
+              )
+            : PriceFeed.I.formatFiat(
+                symbol, EthereumTx.weiToEth(amountRaw));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -298,12 +353,20 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
         Row(
           children: [
             Expanded(
-              child: Text('Amount ($symbol or wei)',
-                  style: const TextStyle(
-                      color: PeekColors.text2, fontSize: 12)),
+              child: Text(
+                widget.token != null
+                    ? 'Amount ($symbol or base units)'
+                    : 'Amount ($symbol or wei)',
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 12),
+              ),
             ),
             TextButton(
-              onPressed: _balanceWei == BigInt.zero ? null : _onMax,
+              onPressed: (widget.token != null
+                      ? _tokenBalanceRaw == BigInt.zero
+                      : _balanceWei == BigInt.zero)
+                  ? null
+                  : _onMax,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 0),
@@ -332,8 +395,12 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
         ],
         const SizedBox(height: 20),
         ElevatedButton(
-          onPressed:
-              (_loading || _balanceWei == BigInt.zero) ? null : _onContinue,
+          onPressed: (_loading ||
+                  (widget.token != null
+                      ? _tokenBalanceRaw == BigInt.zero
+                      : _balanceWei == BigInt.zero))
+              ? null
+              : _onContinue,
           child: const Text('Continue'),
         ),
       ],
@@ -341,7 +408,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Widget _buildPreview() {
-    final amount = _parseAmountWei()!;
+    final amount = _parseAmountRaw()!;
     final fee = _fee!;
     final addr = _addrCtrl.text.trim();
     return Column(
@@ -359,8 +426,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                     '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
                 _kvRow(
                     'Amount',
-                    '${EthereumTx.weiToEth(amount).toStringAsFixed(6)} '
-                        '${widget.wallet.network.symbol}'),
+                    widget.token != null
+                        ? '${widget.wallet.tokenBalanceDisplay(amount, widget.token!).toStringAsFixed(widget.token!.decimals == 6 ? 2 : 4)} ${widget.token!.symbol}'
+                        : '${EthereumTx.weiToEth(amount).toStringAsFixed(6)} ${widget.wallet.network.symbol}'),
                 _kvRow('Max fee per gas',
                     '${_gwei(fee.maxFeeWei)} gwei'),
                 _kvRow('Priority fee per gas',
@@ -446,8 +514,10 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Text(
-                          '${EthereumTx.weiToEth(_balanceWei).toStringAsFixed(6)} '
-                          '${widget.wallet.network.symbol} available',
+                          widget.token != null
+                              ? '${widget.wallet.tokenBalanceDisplay(_tokenBalanceRaw, widget.token!).toStringAsFixed(widget.token!.decimals == 6 ? 2 : 4)} ${widget.token!.symbol} available · '
+                                  '${EthereumTx.weiToEth(_balanceWei).toStringAsFixed(6)} ${widget.wallet.network.symbol} for gas'
+                              : '${EthereumTx.weiToEth(_balanceWei).toStringAsFixed(6)} ${widget.wallet.network.symbol} available',
                           style: const TextStyle(
                               color: PeekColors.text, fontSize: 13),
                         ),
