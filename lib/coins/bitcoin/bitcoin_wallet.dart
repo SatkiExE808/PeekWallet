@@ -2,8 +2,10 @@ import 'dart:async';
 
 import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
+import 'bitcoin_explorer.dart';
 import 'bitcoin_keys.dart';
 import 'bitcoin_tx_builder.dart';
+import 'blockchair_explorer.dart';
 import 'chain_params.dart';
 import 'mempool_client.dart';
 
@@ -30,10 +32,28 @@ class BitcoinWallet {
     required this.gapLimit,
     required this.addresses,
     required this.params,
-  }) : _client = MempoolClient(
-            baseUrl:
-                RpcOverrides.I.get(params.id, 'mempool') ??
-                    params.mempoolBaseUrl);
+  }) : _client = _buildClient(params);
+
+  /// Build the chain's explorer. Always starts with the mempool.space-
+  /// compatible client (primary + any user override + same-API
+  /// fallbacks). For chains where the Esplora API has few public
+  /// mirrors — Litecoin most notably — we also stack a Blockchair
+  /// adapter underneath so a litecoinspace outage falls through to a
+  /// different provider on a different infrastructure.
+  static BitcoinExplorer _buildClient(BitcoinChainParams params) {
+    final override = RpcOverrides.I.get(params.id, 'mempool');
+    final urls = <String>[
+      if (override != null && override.isNotEmpty) override,
+      ...params.allMempoolBaseUrls,
+    ];
+    final mempool = MempoolClient(baseUrls: urls);
+    final fallbacks = <BitcoinExplorer>[
+      if (params.id == 'LTC') BlockchairExplorer.forLitecoin(),
+      if (params.id == 'BTC') BlockchairExplorer.forBitcoin(),
+    ];
+    if (fallbacks.isEmpty) return mempool;
+    return CompositeExplorer(primary: mempool, fallbacks: fallbacks);
+  }
 
   /// Open a Bitcoin (or Litecoin / any BIP143-compatible chain) wallet
   /// for the given seed. Derives [gapLimit] addresses on the external
@@ -74,7 +94,7 @@ class BitcoinWallet {
   /// HRP, derivation path, and which mempool-space-compatible
   /// explorer we hit.
   final BitcoinChainParams params;
-  final MempoolClient _client;
+  final BitcoinExplorer _client;
   bool _closed = false;
 
   /// The primary receive address. Index 0 on the external chain.

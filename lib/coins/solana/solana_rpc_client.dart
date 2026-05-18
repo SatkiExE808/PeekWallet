@@ -1,45 +1,88 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-/// Thin Solana JSON-RPC client. Default endpoint is the Solana
-/// Foundation's public mainnet-beta RPC, which is heavily rate-
-/// limited but works without an API key. Heavy users should swap in
-/// a dedicated provider (Helius, Triton, Alchemy) via the Settings
-/// → Custom RPC field once that ships.
+/// Thin Solana JSON-RPC client. Default endpoint chain starts with
+/// the Solana Foundation's public mainnet-beta RPC, then falls
+/// through to a handful of community-run mirrors (Ankr, Blast,
+/// PublicNode) on transient failure. mainnet-beta.solana.com is the
+/// canonical one but it rate-limits aggressively; the public mirrors
+/// give the wallet a soft alternative when that happens.
+///
+/// Heavy users should still pin their own provider (Helius, Triton,
+/// Alchemy) via Settings → Custom RPC; that pin is tried first.
 class SolanaRpcClient {
-  SolanaRpcClient({String? endpoint, http.Client? httpClient})
-      : _endpoint = endpoint ?? _defaultEndpoint,
+  SolanaRpcClient({List<String>? endpoints, http.Client? httpClient})
+      : _endpoints = _normalize(endpoints ?? _defaultEndpoints),
         _http = httpClient ?? http.Client();
 
-  static const _defaultEndpoint = 'https://api.mainnet-beta.solana.com';
+  SolanaRpcClient.single(String endpoint, {http.Client? httpClient})
+      : _endpoints = _normalize([endpoint]),
+        _http = httpClient ?? http.Client();
 
-  final String _endpoint;
+  static const _defaultEndpoints = <String>[
+    'https://api.mainnet-beta.solana.com',
+    'https://solana-rpc.publicnode.com',
+    'https://solana-mainnet.public.blastapi.io',
+    'https://rpc.ankr.com/solana',
+  ];
+
+  static List<String> _normalize(List<String> raw) {
+    final cleaned = raw
+        .map((u) => u.trim().replaceAll(RegExp(r'/$'), ''))
+        .where((u) => u.isNotEmpty)
+        .toList(growable: false);
+    return cleaned.isEmpty ? _defaultEndpoints : cleaned;
+  }
+
+  final List<String> _endpoints;
   final http.Client _http;
   int _idCounter = 1;
 
-  Future<dynamic> _rpc(String method, [List<dynamic> params = const []]) async {
+  Future<dynamic> _rpc(String method,
+      [List<dynamic> params = const []]) async {
     final body = jsonEncode({
       'jsonrpc': '2.0',
       'method': method,
       'params': params,
       'id': _idCounter++,
     });
-    final r = await _http
-        .post(Uri.parse(_endpoint),
-            headers: {'Content-Type': 'application/json'}, body: body)
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      throw Exception('Solana RPC HTTP ${r.statusCode}: ${r.body.trim()}');
+    Object? lastErr;
+    for (final endpoint in _endpoints) {
+      try {
+        final r = await _http
+            .post(Uri.parse(endpoint),
+                headers: {'Content-Type': 'application/json'}, body: body)
+            .timeout(const Duration(seconds: 15));
+        if (r.statusCode == 429 || r.statusCode >= 500) {
+          // Rate-limited or infrastructure failure — try the next.
+          lastErr = Exception('Solana RPC HTTP ${r.statusCode} at $endpoint');
+          continue;
+        }
+        if (r.statusCode != 200) {
+          throw Exception(
+              'Solana RPC HTTP ${r.statusCode}: ${r.body.trim()}');
+        }
+        final json = jsonDecode(r.body) as Map<String, dynamic>;
+        if (json.containsKey('error')) {
+          final err = json['error'] as Map<String, dynamic>;
+          throw Exception(
+              'Solana RPC error ${err['code']}: ${err['message']}');
+        }
+        return json['result'];
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      } on http.ClientException catch (e) {
+        lastErr = e;
+      }
     }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    if (json.containsKey('error')) {
-      final err = json['error'] as Map<String, dynamic>;
-      throw Exception(
-          'Solana RPC error ${err['code']}: ${err['message']}');
-    }
-    return json['result'];
+    throw lastErr ?? Exception('All Solana RPC endpoints failed');
   }
 
   /// Lamports balance for [address]. 1 SOL = 10^9 lamports.

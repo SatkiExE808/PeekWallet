@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -9,71 +10,81 @@ import 'package:http/http.dart' as http;
 /// privacy tradeoff as mempool.space for Bitcoin (your IP plus the
 /// address you're looking at is visible to the provider).
 ///
+/// Accepts a list of base URLs and tries each in order on transient
+/// failure (5xx / timeout / socket). Different Blockscout instances
+/// behave slightly differently, but the Etherscan API surface they
+/// implement is the same across them — same parameters, same JSON
+/// response shape — so they're interchangeable for read-path calls.
+///
 /// Future: route through Tor when we add the Tor support roadmap item.
 class EtherscanClient {
-  EtherscanClient({String? baseUrl, http.Client? httpClient})
-      : _base = (baseUrl ?? _defaultBase).replaceAll(RegExp(r'/$'), ''),
+  EtherscanClient({List<String>? baseUrls, http.Client? httpClient})
+      : _bases = _normalize(baseUrls ?? const [_defaultBase]),
+        _http = httpClient ?? http.Client();
+
+  EtherscanClient.single(String baseUrl, {http.Client? httpClient})
+      : _bases = _normalize([baseUrl]),
         _http = httpClient ?? http.Client();
 
   /// Blockscout's hosted Ethereum mainnet API. The Etherscan-
   /// compatible surface lives at /api with module=… parameters.
-  /// For Polygon and other EVM chains we override via [baseUrl].
+  /// For Polygon and other EVM chains we override via [baseUrls].
   static const _defaultBase = 'https://eth.blockscout.com/api';
 
-  final String _base;
+  static List<String> _normalize(List<String> raw) {
+    final cleaned = raw
+        .map((u) => u.replaceAll(RegExp(r'/$'), ''))
+        .where((u) => u.isNotEmpty)
+        .toList(growable: false);
+    return cleaned.isEmpty ? const [_defaultBase] : cleaned;
+  }
+
+  final List<String> _bases;
   final http.Client _http;
 
   /// Wei balance for a single address. Etherscan-style endpoint
   /// returns the value as a decimal STRING (because wei is uint256
   /// and can exceed Dart's int range), so we parse to BigInt.
   Future<BigInt> balanceWei(String address) async {
-    final uri = Uri.parse(
-        '$_base?module=account&action=balance&address=$address&tag=latest');
-    final r = await _http.get(uri).timeout(const Duration(seconds: 8));
-    if (r.statusCode != 200) {
-      throw Exception('Etherscan-compat API returned ${r.statusCode}');
-    }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    final status = json['status']?.toString();
-    if (status != '1') {
-      // status "0" + message "No transactions found" is legitimate
-      // (a brand-new address with zero balance). Detect that case
-      // and return 0; everything else is a real error.
-      final msg = json['message']?.toString() ?? '';
-      if (msg.contains('No transactions') || msg.contains('not found')) {
-        return BigInt.zero;
-      }
-      throw Exception('Etherscan-compat error: ${json['message']}');
-    }
-    final result = json['result']?.toString();
-    if (result == null) return BigInt.zero;
-    return BigInt.parse(result);
+    return _tryAll(
+      query: '?module=account&action=balance&address=$address&tag=latest',
+      timeout: const Duration(seconds: 10),
+      parse: (body) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        final status = json['status']?.toString();
+        if (status != '1') {
+          final msg = json['message']?.toString() ?? '';
+          if (msg.contains('No transactions') || msg.contains('not found')) {
+            return BigInt.zero;
+          }
+          throw Exception('Etherscan-compat error: ${json['message']}');
+        }
+        final result = json['result']?.toString();
+        if (result == null) return BigInt.zero;
+        return BigInt.parse(result);
+      },
+    );
   }
 
   /// Recent transactions for an address. Blockscout's txlist endpoint
   /// returns up to 10000 records — we cap to 50 for the UI.
-  Future<List<EthereumTx>> transactions(String address, {int limit = 50}) async {
-    final uri = Uri.parse(
-      '$_base?module=account&action=txlist&address=$address'
-      '&startblock=0&endblock=99999999&sort=desc&page=1&offset=$limit',
+  Future<List<EthereumTx>> transactions(String address,
+      {int limit = 50}) async {
+    final addrLower = address.toLowerCase();
+    return _tryAll(
+      query: '?module=account&action=txlist&address=$address'
+          '&startblock=0&endblock=99999999&sort=desc&page=1&offset=$limit',
+      timeout: const Duration(seconds: 12),
+      parse: (body) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        if (json['status']?.toString() != '1') return const <EthereumTx>[];
+        final list = (json['result'] as List?) ?? const [];
+        return list
+            .map((m) =>
+                EthereumTx.fromJson(m as Map<String, dynamic>, addrLower))
+            .toList();
+      },
     );
-    final r = await _http.get(uri).timeout(const Duration(seconds: 10));
-    if (r.statusCode != 200) {
-      throw Exception('Etherscan-compat API returned ${r.statusCode}');
-    }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    final status = json['status']?.toString();
-    if (status != '1') {
-      // "No transactions found" is the documented response when an
-      // address has no on-chain activity — surface it as an empty
-      // list, not an error.
-      return const [];
-    }
-    final list = (json['result'] as List?) ?? const [];
-    return list
-        .map((m) => EthereumTx.fromJson(
-            m as Map<String, dynamic>, address.toLowerCase()))
-        .toList();
   }
 
   /// ERC-20 token transfer events for [address]. Blockscout's
@@ -87,19 +98,54 @@ class EtherscanClient {
   /// the history.
   Future<List<TokenTransfer>> tokenTransfers(String address,
       {int limit = 50}) async {
-    final uri = Uri.parse('$_base?module=account&action=tokentx'
-        '&address=$address&sort=desc&page=1&offset=$limit');
-    final r = await _http.get(uri).timeout(const Duration(seconds: 10));
-    if (r.statusCode != 200) {
-      throw Exception('Etherscan-compat tokentx returned ${r.statusCode}');
+    final addrLower = address.toLowerCase();
+    return _tryAll(
+      query: '?module=account&action=tokentx'
+          '&address=$address&sort=desc&page=1&offset=$limit',
+      timeout: const Duration(seconds: 12),
+      parse: (body) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        if (json['status']?.toString() != '1') return const <TokenTransfer>[];
+        final list = (json['result'] as List?) ?? const [];
+        return list
+            .map((m) =>
+                TokenTransfer.fromJson(m as Map<String, dynamic>, addrLower))
+            .toList();
+      },
+    );
+  }
+
+  Future<T> _tryAll<T>({
+    required String query,
+    required Duration timeout,
+    required T Function(String body) parse,
+  }) async {
+    Object? lastErr;
+    for (final base in _bases) {
+      try {
+        final r = await _http
+            .get(Uri.parse('$base$query'))
+            .timeout(timeout);
+        if (r.statusCode >= 500) {
+          lastErr = Exception('Etherscan-compat HTTP ${r.statusCode} at $base');
+          continue;
+        }
+        if (r.statusCode != 200) {
+          throw Exception(
+              'Etherscan-compat at $base returned ${r.statusCode}');
+        }
+        return parse(r.body);
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      } on http.ClientException catch (e) {
+        lastErr = e;
+      }
     }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    if (json['status']?.toString() != '1') return const [];
-    final list = (json['result'] as List?) ?? const [];
-    return list
-        .map((m) => TokenTransfer.fromJson(
-            m as Map<String, dynamic>, address.toLowerCase()))
-        .toList();
+    throw lastErr ?? Exception('All Etherscan-compat endpoints failed');
   }
 
   void close() => _http.close();
@@ -188,18 +234,14 @@ class EthereumTx {
     final gasPrice = b(json['gasPrice']);
     final gasFee = gasUsed * gasPrice;
 
-    // Net from our perspective:
-    //   + if we received (to == us)
-    //   - value - gasFee if we sent (from == us)
     BigInt net;
     if (from == ourAddress && to == ourAddress) {
-      net = BigInt.zero - gasFee; // self-send, only fee
+      net = BigInt.zero - gasFee;
     } else if (from == ourAddress) {
       net = BigInt.zero - value - gasFee;
     } else if (to == ourAddress) {
       net = value;
     } else {
-      // Internal tx or contract — should be rare in txlist mode.
       net = BigInt.zero;
     }
 

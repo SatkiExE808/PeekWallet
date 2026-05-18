@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -9,19 +10,40 @@ import 'package:http/http.dart' as http;
 /// expose, while the read-path calls (balance, history) are Etherscan-
 /// style indexed endpoints that RPC nodes don't expose.
 ///
-/// Default endpoint: llamarpc.com — a public no-auth mainnet RPC.
-/// Falls back to publicnode.com on transient errors. Users on heavy
-/// load can swap this via a future Settings → Node URL field.
+/// Accepts a list of endpoints and tries them in order on transient
+/// failure (HTTP 5xx, timeout, socket error, TLS error). Per-call,
+/// not sticky — every refresh starts at the primary so a brief
+/// outage doesn't permanently demote the wallet to a slower mirror.
+///
+/// Default endpoints: llamarpc.com (primary) + cloudflare-eth.com +
+/// publicnode + ankr — all no-auth mainnet RPCs. Users on heavy
+/// load can pin their own via Settings → Custom RPC.
 class EthRpcClient {
-  EthRpcClient({String? endpoint, http.Client? httpClient})
-      : _endpoint = endpoint ?? _defaultEndpoint,
+  EthRpcClient({List<String>? endpoints, http.Client? httpClient})
+      : _endpoints = _normalize(endpoints ?? _defaultEthEndpoints),
         _http = httpClient ?? http.Client();
 
-  /// Default endpoint = Ethereum mainnet. Polygon/Arbitrum/etc. pass
-  /// their own [endpoint] when constructing.
-  static const _defaultEndpoint = 'https://eth.llamarpc.com';
+  /// Single-endpoint convenience constructor.
+  EthRpcClient.single(String endpoint, {http.Client? httpClient})
+      : _endpoints = _normalize([endpoint]),
+        _http = httpClient ?? http.Client();
 
-  final String _endpoint;
+  static const _defaultEthEndpoints = <String>[
+    'https://eth.llamarpc.com',
+    'https://cloudflare-eth.com',
+    'https://ethereum-rpc.publicnode.com',
+    'https://rpc.ankr.com/eth',
+  ];
+
+  static List<String> _normalize(List<String> raw) {
+    final cleaned = raw
+        .map((u) => u.trim().replaceAll(RegExp(r'/$'), ''))
+        .where((u) => u.isNotEmpty)
+        .toList(growable: false);
+    return cleaned.isEmpty ? _defaultEthEndpoints : cleaned;
+  }
+
+  final List<String> _endpoints;
   final http.Client _http;
   int _idCounter = 1;
 
@@ -33,19 +55,45 @@ class EthRpcClient {
       'params': params,
       'id': id,
     });
-    final r = await _http
-        .post(Uri.parse(_endpoint),
-            headers: {'Content-Type': 'application/json'}, body: body)
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      throw Exception('RPC HTTP ${r.statusCode}: ${r.body.trim()}');
+    Object? lastErr;
+    for (final endpoint in _endpoints) {
+      try {
+        final r = await _http
+            .post(Uri.parse(endpoint),
+                headers: {'Content-Type': 'application/json'}, body: body)
+            .timeout(const Duration(seconds: 15));
+        if (r.statusCode >= 500) {
+          // Infra-level — try the next mirror.
+          lastErr = Exception('RPC HTTP ${r.statusCode} at $endpoint');
+          continue;
+        }
+        if (r.statusCode != 200) {
+          // 4xx — endpoint rejected the request shape; same shape would
+          // fail elsewhere too. Propagate.
+          throw Exception('RPC HTTP ${r.statusCode}: ${r.body.trim()}');
+        }
+        final json = jsonDecode(r.body) as Map<String, dynamic>;
+        if (json.containsKey('error')) {
+          final err = json['error'] as Map<String, dynamic>;
+          // JSON-RPC-level error — semantic failure (nonce too low,
+          // out of gas, method not found). Don't try the next endpoint
+          // by default; for some methods like eth_maxPriorityFeePerGas
+          // a "method not found" should be silenced by the caller.
+          throw Exception(
+              'RPC error: ${err['message']} (code ${err['code']})');
+        }
+        return json['result'];
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      } on http.ClientException catch (e) {
+        lastErr = e;
+      }
     }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    if (json.containsKey('error')) {
-      final err = json['error'] as Map<String, dynamic>;
-      throw Exception('RPC error: ${err['message']} (code ${err['code']})');
-    }
-    return json['result'];
+    throw lastErr ?? Exception('All RPC endpoints failed');
   }
 
   /// Next nonce for [address]. We use "pending" (not "latest") so
@@ -61,9 +109,8 @@ class EthRpcClient {
   /// The 2x base-fee buffer protects against the base fee climbing
   /// between when we sign and when the tx actually gets included.
   Future<BigInt> baseFeePerGas() async {
-    // eth_feeHistory returns the most recent N blocks' baseFee.
     final res = await _rpc('eth_feeHistory', [
-      '0x1', // last 1 block
+      '0x1',
       'latest',
       <int>[],
     ]) as Map<String, dynamic>;
@@ -136,6 +183,16 @@ class EthRpcClient {
 
   void close() => _http.close();
 }
+
+/// Default endpoint list for the Polygon mainnet RPC. Same trade-off
+/// space as Ethereum — keep widely-available no-auth nodes first so a
+/// brand-new install can sync without any user configuration.
+const kDefaultPolygonRpcEndpoints = <String>[
+  'https://polygon-rpc.com',
+  'https://polygon-bor-rpc.publicnode.com',
+  'https://rpc.ankr.com/polygon',
+  'https://polygon.llamarpc.com',
+];
 
 BigInt _hexToBigInt(String hex) {
   var clean = hex.startsWith('0x') ? hex.substring(2) : hex;

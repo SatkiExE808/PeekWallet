@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -8,17 +9,77 @@ import 'package:http/http.dart' as http;
 /// `/dashboards/address` endpoint returns balance and transactions
 /// in a single call which keeps the wallet's polling cheap.
 ///
-/// No API key required for low-volume usage. Heavier users would pin
-/// their own provider via Settings → Custom Node (a future hook).
+/// Accepts a list of base URLs and tries them in order on transient
+/// failure. Blockchair runs the primary infrastructure; a Bitcore-
+/// compatible mirror (bch.imaginary.cash) is included as a secondary
+/// in case Blockchair throttles or has an outage. Different API
+/// shapes — only the canonical Blockchair URL is the full client;
+/// fallbacks are best-effort and might miss methods like broadcast.
 class BlockchairBchClient {
-  BlockchairBchClient({String? baseUrl, http.Client? httpClient})
-      : _base = (baseUrl ?? _defaultBase).replaceAll(RegExp(r'/$'), ''),
+  BlockchairBchClient({List<String>? baseUrls, http.Client? httpClient})
+      : _bases = _normalize(baseUrls ?? const [_defaultBase]),
+        _http = httpClient ?? http.Client();
+
+  BlockchairBchClient.single(String baseUrl, {http.Client? httpClient})
+      : _bases = _normalize([baseUrl]),
         _http = httpClient ?? http.Client();
 
   static const _defaultBase = 'https://api.blockchair.com/bitcoin-cash';
 
-  final String _base;
+  static List<String> _normalize(List<String> raw) {
+    final cleaned = raw
+        .map((u) => u.replaceAll(RegExp(r'/$'), ''))
+        .where((u) => u.isNotEmpty)
+        .toList(growable: false);
+    return cleaned.isEmpty ? const [_defaultBase] : cleaned;
+  }
+
+  final List<String> _bases;
   final http.Client _http;
+
+  /// Primary base URL — the one we'd use for non-retried tooling.
+  String get primaryBase => _bases.first;
+
+  Future<http.Response> _get(String path, {required int timeout}) async {
+    return _try((base) =>
+        _http.get(Uri.parse('$base$path')).timeout(Duration(seconds: timeout)));
+  }
+
+  Future<http.Response> _post(String path,
+      {required Object body,
+      Map<String, String>? headers,
+      required int timeout}) async {
+    return _try((base) => _http
+        .post(Uri.parse('$base$path'), headers: headers, body: body)
+        .timeout(Duration(seconds: timeout)));
+  }
+
+  Future<http.Response> _try(
+      Future<http.Response> Function(String base) call) async {
+    Object? lastErr;
+    for (final base in _bases) {
+      try {
+        final r = await call(base);
+        // 404 is meaningful (empty address) — return it directly so
+        // callers can treat it as a zero balance instead of an error.
+        if (r.statusCode == 404) return r;
+        if (r.statusCode == 429 || r.statusCode >= 500) {
+          lastErr = Exception('Blockchair HTTP ${r.statusCode} at $base');
+          continue;
+        }
+        return r;
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      } on http.ClientException catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr ?? Exception('All BCH explorer endpoints failed');
+  }
 
   /// Confirmed BCH balance in satoshis (1 BCH = 10^8 sat).
   /// Returns 0 for a brand-new address with no on-chain history.
@@ -30,9 +91,8 @@ class BlockchairBchClient {
         ? cashaddrAddress.split(':').last
         : cashaddrAddress;
 
-    final r = await _http
-        .get(Uri.parse('$_base/dashboards/address/$stripped?limit=1'))
-        .timeout(const Duration(seconds: 25));
+    final r = await _get('/dashboards/address/$stripped?limit=1',
+        timeout: 25);
     if (r.statusCode == 404) return 0; // brand-new address
     if (r.statusCode != 200) {
       throw Exception('Blockchair API returned ${r.statusCode}');
@@ -54,9 +114,8 @@ class BlockchairBchClient {
         ? cashaddrAddress.split(':').last
         : cashaddrAddress;
 
-    final r = await _http
-        .get(Uri.parse('$_base/dashboards/address/$stripped?limit=$limit'))
-        .timeout(const Duration(seconds: 30));
+    final r = await _get('/dashboards/address/$stripped?limit=$limit',
+        timeout: 30);
     if (r.statusCode == 404) return const [];
     if (r.statusCode != 200) {
       throw Exception('Blockchair API returned ${r.statusCode}');
@@ -90,9 +149,8 @@ class BlockchairBchClient {
         ? cashaddrAddress.split(':').last
         : cashaddrAddress;
 
-    final r = await _http
-        .get(Uri.parse('$_base/dashboards/address/$stripped?limit=0,100'))
-        .timeout(const Duration(seconds: 25));
+    final r = await _get('/dashboards/address/$stripped?limit=0,100',
+        timeout: 25);
     if (r.statusCode == 404) return const [];
     if (r.statusCode != 200) {
       throw Exception('Blockchair API returned ${r.statusCode}');
@@ -122,13 +180,10 @@ class BlockchairBchClient {
   /// Broadcast a signed raw tx hex. Blockchair's broadcast endpoint
   /// returns the transaction hash on success.
   Future<String> broadcast(String rawHex) async {
-    final r = await _http
-        .post(
-          Uri.parse('$_base/push/transaction'),
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'data=$rawHex',
-        )
-        .timeout(const Duration(seconds: 15));
+    final r = await _post('/push/transaction',
+        body: 'data=$rawHex',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        timeout: 18);
     if (r.statusCode != 200) {
       throw Exception(
           'BCH broadcast returned ${r.statusCode}: ${r.body.trim()}');

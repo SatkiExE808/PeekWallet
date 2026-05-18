@@ -1,27 +1,51 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+
+import 'bitcoin_explorer.dart';
 
 /// Thin client for mempool.space's public REST API. We use it for
 /// balance + transaction-history lookup; their /api/* is rate-
 /// limited but reasonable for an interactive wallet (a single user's
 /// poll cadence won't trip the limits).
 ///
+/// The client accepts a *list* of base URLs and tries them in order
+/// on 5xx / timeout / socket failure. This gives Litecoin in
+/// particular some resilience — litecoinspace.org has gone Cloudflare-
+/// 521 multiple times this year, but the mempool.space API surface
+/// is implemented identically on a few other community-run mirrors.
+///
 /// We DON'T send anything sensitive — only addresses (which are
-/// already public on-chain). The user's IP is exposed to mempool.space
+/// already public on-chain). The user's IP is exposed to the explorer
 /// the way any block explorer query would expose it; that's the same
 /// privacy tradeoff every BTC light wallet makes.
 ///
 /// Future: route through Tor when we add the Tor support roadmap item.
-class MempoolClient {
-  MempoolClient({String? baseUrl, http.Client? httpClient})
-      : _base = (baseUrl ?? _defaultBase).replaceAll(RegExp(r'/$'), ''),
+class MempoolClient implements BitcoinExplorer {
+  MempoolClient({List<String>? baseUrls, http.Client? httpClient})
+      : _bases = _normalize(baseUrls ?? const [_defaultBase]),
+        _http = httpClient ?? http.Client();
+
+  /// Convenience constructor for callers that only have a single URL
+  /// (e.g. a user-supplied Custom RPC override). Internally always
+  /// stored as a list so the retry path is unified.
+  MempoolClient.single(String baseUrl, {http.Client? httpClient})
+      : _bases = _normalize([baseUrl]),
         _http = httpClient ?? http.Client();
 
   static const _defaultBase = 'https://mempool.space/api';
 
-  final String _base;
+  static List<String> _normalize(List<String> urls) {
+    if (urls.isEmpty) return const [_defaultBase];
+    return urls
+        .map((u) => u.replaceAll(RegExp(r'/$'), ''))
+        .where((u) => u.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  final List<String> _bases;
   final http.Client _http;
 
   /// Balance for a single address in satoshis. Returns (chain, mempool)
@@ -29,20 +53,20 @@ class MempoolClient {
   /// receive address: `chain.received - chain.spent` minus any pending
   /// spends; UI usually just shows the sum.
   Future<AddressBalance> balance(String address) async {
-    final r = await _http.get(
-      Uri.parse('$_base/address/$address'),
-    ).timeout(const Duration(seconds: 8));
-    if (r.statusCode != 200) {
-      throw _MempoolApiError(r.statusCode, _base);
-    }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    final chain = json['chain_stats'] as Map<String, dynamic>;
-    final memp = json['mempool_stats'] as Map<String, dynamic>;
-    return AddressBalance(
-      confirmedReceivedSat: (chain['funded_txo_sum'] as num).toInt(),
-      confirmedSpentSat: (chain['spent_txo_sum'] as num).toInt(),
-      mempoolReceivedSat: (memp['funded_txo_sum'] as num).toInt(),
-      mempoolSpentSat: (memp['spent_txo_sum'] as num).toInt(),
+    return _tryAll(
+      path: '/address/$address',
+      timeout: const Duration(seconds: 10),
+      parse: (body) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        final chain = json['chain_stats'] as Map<String, dynamic>;
+        final memp = json['mempool_stats'] as Map<String, dynamic>;
+        return AddressBalance(
+          confirmedReceivedSat: (chain['funded_txo_sum'] as num).toInt(),
+          confirmedSpentSat: (chain['spent_txo_sum'] as num).toInt(),
+          mempoolReceivedSat: (memp['funded_txo_sum'] as num).toInt(),
+          mempoolSpentSat: (memp['spent_txo_sum'] as num).toInt(),
+        );
+      },
     );
   }
 
@@ -50,6 +74,7 @@ class MempoolClient {
   /// short-circuits on the first error. Returns the running total +
   /// per-address balances so the UI can show "wallet has 0.5 BTC
   /// across 3 addresses".
+  @override
   Future<MultiAddressBalance> multiBalance(List<String> addresses) async {
     if (addresses.isEmpty) {
       return MultiAddressBalance(perAddress: const {}, totalSat: 0);
@@ -68,21 +93,22 @@ class MempoolClient {
   /// ~50 by their API — paging via `txs/chain/{last_txid}` for older
   /// history is a follow-up.
   Future<List<BitcoinTx>> transactions(String address) async {
-    final r = await _http.get(
-      Uri.parse('$_base/address/$address/txs'),
-    ).timeout(const Duration(seconds: 8));
-    if (r.statusCode != 200) {
-      throw _MempoolApiError(r.statusCode, _base);
-    }
-    final list = jsonDecode(r.body) as List;
-    return list
-        .map((m) => BitcoinTx.fromJson(m as Map<String, dynamic>, address))
-        .toList();
+    return _tryAll(
+      path: '/address/$address/txs',
+      timeout: const Duration(seconds: 10),
+      parse: (body) {
+        final list = jsonDecode(body) as List;
+        return list
+            .map((m) => BitcoinTx.fromJson(m as Map<String, dynamic>, address))
+            .toList();
+      },
+    );
   }
 
   /// Aggregated history across addresses. Sorts by timestamp desc and
   /// deduplicates txids (a single tx can touch multiple of our
   /// addresses, but we only want to show it once).
+  @override
   Future<List<BitcoinTx>> multiHistory(List<String> addresses) async {
     if (addresses.isEmpty) return const [];
     final per = await Future.wait(addresses.map(transactions));
@@ -98,14 +124,13 @@ class MempoolClient {
   }
 
   /// Current chain tip. Used by sync-progress UI ("we're caught up").
+  @override
   Future<int> tipHeight() async {
-    final r = await _http
-        .get(Uri.parse('$_base/blocks/tip/height'))
-        .timeout(const Duration(seconds: 6));
-    if (r.statusCode != 200) {
-      throw Exception('Mempool tip API returned ${r.statusCode}');
-    }
-    return int.parse(r.body.trim());
+    return _tryAll(
+      path: '/blocks/tip/height',
+      timeout: const Duration(seconds: 8),
+      parse: (body) => int.parse(body.trim()),
+    );
   }
 
   /// Unspent outputs for a single address. Each Utxo carries enough
@@ -113,22 +138,23 @@ class MempoolClient {
   /// (we don't actually need scriptPubKey for P2WPKH; the recipient
   /// address is enough to reconstruct it client-side).
   Future<List<Utxo>> utxos(String address) async {
-    final r = await _http
-        .get(Uri.parse('$_base/address/$address/utxo'))
-        .timeout(const Duration(seconds: 8));
-    if (r.statusCode != 200) {
-      throw Exception('Mempool UTXO API returned ${r.statusCode}');
-    }
-    final list = jsonDecode(r.body) as List;
-    return list
-        .map((m) => Utxo.fromJson(m as Map<String, dynamic>, address))
-        .toList();
+    return _tryAll(
+      path: '/address/$address/utxo',
+      timeout: const Duration(seconds: 10),
+      parse: (body) {
+        final list = jsonDecode(body) as List;
+        return list
+            .map((m) => Utxo.fromJson(m as Map<String, dynamic>, address))
+            .toList();
+      },
+    );
   }
 
   /// Aggregate UTXOs across many addresses (the gap-limit window of
   /// receive addresses derived from the seed). Each UTXO retains its
   /// owning address so the signer knows which derivation index's
   /// private key to use.
+  @override
   Future<List<Utxo>> multiUtxos(List<String> addresses) async {
     if (addresses.isEmpty) return const [];
     final per = await Future.wait(addresses.map(utxos));
@@ -141,41 +167,106 @@ class MempoolClient {
 
   /// Current recommended fee rates from mempool.space — sat/vB for
   /// each priority tier. Cached server-side, refreshed every ~30 s.
+  @override
   Future<FeeRates> feeRates() async {
-    final r = await _http
-        .get(Uri.parse('$_base/v1/fees/recommended'))
-        .timeout(const Duration(seconds: 6));
-    if (r.statusCode != 200) {
-      throw Exception('Mempool fee API returned ${r.statusCode}');
-    }
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    return FeeRates(
-      fastestSatPerVByte: (json['fastestFee'] as num).toInt(),
-      halfHourSatPerVByte: (json['halfHourFee'] as num).toInt(),
-      hourSatPerVByte: (json['hourFee'] as num).toInt(),
-      economySatPerVByte: (json['economyFee'] as num).toInt(),
-      minimumSatPerVByte: (json['minimumFee'] as num).toInt(),
+    return _tryAll(
+      path: '/v1/fees/recommended',
+      timeout: const Duration(seconds: 8),
+      parse: (body) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        return FeeRates(
+          fastestSatPerVByte: (json['fastestFee'] as num).toInt(),
+          halfHourSatPerVByte: (json['halfHourFee'] as num).toInt(),
+          hourSatPerVByte: (json['hourFee'] as num).toInt(),
+          economySatPerVByte: (json['economyFee'] as num).toInt(),
+          minimumSatPerVByte: (json['minimumFee'] as num).toInt(),
+        );
+      },
     );
   }
 
   /// Broadcast a fully signed transaction. Body is the raw tx hex.
   /// Returns the txid on success; throws with mempool.space's error
   /// message on rejection (insufficient fee, double-spend, etc.).
+  @override
   Future<String> broadcast(String txHex) async {
-    final r = await _http
-        .post(
-          Uri.parse('$_base/tx'),
-          headers: {'Content-Type': 'text/plain'},
-          body: txHex,
-        )
-        .timeout(const Duration(seconds: 15));
-    if (r.statusCode != 200) {
-      throw Exception(
-          'Broadcast rejected (${r.statusCode}): ${r.body.trim()}');
+    Object? lastErr;
+    for (final base in _bases) {
+      try {
+        final r = await _http
+            .post(
+              Uri.parse('$base/tx'),
+              headers: {'Content-Type': 'text/plain'},
+              body: txHex,
+            )
+            .timeout(const Duration(seconds: 15));
+        if (r.statusCode == 200) return r.body.trim();
+        // 4xx is a real rejection (insufficient fee, double-spend, etc.)
+        // — don't retry on a different endpoint, the tx is bad.
+        if (r.statusCode >= 400 && r.statusCode < 500) {
+          throw Exception(
+              'Broadcast rejected (${r.statusCode}): ${r.body.trim()}');
+        }
+        lastErr = Exception(
+            'Broadcast (${r.statusCode}) at $base: ${r.body.trim()}');
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      }
     }
-    return r.body.trim();
+    throw lastErr ?? Exception('Broadcast failed against every endpoint');
   }
 
+  /// Run [path] (GET) against each base URL in turn, parsing on the
+  /// first 2xx and short-circuiting. Retries on 5xx, socket failure,
+  /// or TLS handshake errors — these are all "this endpoint is broken
+  /// right now" signals. A 4xx is propagated immediately because the
+  /// next mirror would just return the same client-side error.
+  Future<T> _tryAll<T>({
+    required String path,
+    required Duration timeout,
+    required T Function(String body) parse,
+  }) async {
+    Object? lastErr;
+    int? lastStatus;
+    String? lastEndpoint;
+    for (final base in _bases) {
+      lastEndpoint = base;
+      try {
+        final r = await _http
+            .get(Uri.parse('$base$path'))
+            .timeout(timeout);
+        if (r.statusCode == 200) return parse(r.body);
+        lastStatus = r.statusCode;
+        // 4xx — endpoint-level rejection. The next mirror would
+        // most likely respond identically; propagate immediately.
+        if (r.statusCode >= 400 && r.statusCode < 500) {
+          throw _MempoolApiError(r.statusCode, base);
+        }
+        // 5xx — try the next mirror.
+        lastErr = _MempoolApiError(r.statusCode, base);
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      } on http.ClientException catch (e) {
+        // Network-level errors (DNS resolution, connection refused).
+        lastErr = e;
+      }
+    }
+    if (lastErr is _MempoolApiError) throw lastErr;
+    if (lastStatus != null && lastEndpoint != null) {
+      throw _MempoolApiError(lastStatus, lastEndpoint);
+    }
+    throw lastErr ?? Exception('All explorer endpoints failed');
+  }
+
+  @override
   void close() => _http.close();
 }
 

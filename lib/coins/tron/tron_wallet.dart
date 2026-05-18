@@ -20,8 +20,21 @@ class TronWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  }) : _client = TronGridClient(
-            baseUrl: RpcOverrides.I.get('TRX', 'explorer'));
+  }) : _client = _buildClient();
+
+  /// User override (if any) is tried first; TronGrid's canonical
+  /// endpoint follows as a fallback. The TronGrid REST API surface
+  /// is largely TronGrid-specific so we don't have many independent
+  /// providers to chain past it, but the architecture is ready for
+  /// when more public mirrors become reliable.
+  static TronGridClient _buildClient() {
+    final override = RpcOverrides.I.get('TRX', 'explorer');
+    final urls = <String>[
+      if (override != null && override.isNotEmpty) override,
+      'https://api.trongrid.io',
+    ];
+    return TronGridClient(baseUrls: urls);
+  }
 
   factory TronWallet.open({
     required String mnemonic,

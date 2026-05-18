@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -7,26 +8,81 @@ import 'package:http/http.dart' as http;
 /// open without an API key for low-volume usage; heavier users would
 /// pin their own via Settings → Custom node (a future hook).
 ///
-/// We deliberately stick to the v1 REST surface (GET /v1/accounts/…)
-/// rather than the older `/wallet/getaccount` POST path because v1
-/// returns JSON-shaped data instead of protobuf-flavored maps with
-/// snake-case keys.
+/// Accepts a list of base URLs and tries them in order on transient
+/// failure (HTTP 5xx, 429, timeout, socket error). The TronGrid REST
+/// surface is largely TronGrid-specific so the fallback list is
+/// short — but having the architecture in place lets users add
+/// private mirrors via Settings → Custom RPC without code changes.
 class TronGridClient {
-  TronGridClient({String? baseUrl, http.Client? httpClient})
-      : _base = (baseUrl ?? _defaultBase).replaceAll(RegExp(r'/$'), ''),
+  TronGridClient({List<String>? baseUrls, http.Client? httpClient})
+      : _bases = _normalize(baseUrls ?? const [_defaultBase]),
+        _http = httpClient ?? http.Client();
+
+  TronGridClient.single(String baseUrl, {http.Client? httpClient})
+      : _bases = _normalize([baseUrl]),
         _http = httpClient ?? http.Client();
 
   static const _defaultBase = 'https://api.trongrid.io';
 
-  final String _base;
+  static List<String> _normalize(List<String> raw) {
+    final cleaned = raw
+        .map((u) => u.replaceAll(RegExp(r'/$'), ''))
+        .where((u) => u.isNotEmpty)
+        .toList(growable: false);
+    return cleaned.isEmpty ? const [_defaultBase] : cleaned;
+  }
+
+  final List<String> _bases;
   final http.Client _http;
+
+  /// Try each base URL until one responds with a non-transient
+  /// status. Retries on HTTP 5xx, 429 (rate-limit), timeouts, socket
+  /// errors, and TLS errors. A 4xx is propagated immediately — the
+  /// request is malformed and trying another mirror won't help.
+  Future<http.Response> _get(String path,
+      {required Duration timeout}) async {
+    return _try((base) => _http.get(Uri.parse('$base$path')).timeout(timeout));
+  }
+
+  Future<http.Response> _post(String path,
+      {required Object body,
+      Map<String, String>? headers,
+      required Duration timeout}) async {
+    return _try((base) => _http
+        .post(Uri.parse('$base$path'),
+            headers: headers, body: body)
+        .timeout(timeout));
+  }
+
+  Future<http.Response> _try(
+      Future<http.Response> Function(String base) call) async {
+    Object? lastErr;
+    for (final base in _bases) {
+      try {
+        final r = await call(base);
+        if (r.statusCode == 429 || r.statusCode >= 500) {
+          lastErr = Exception('TronGrid HTTP ${r.statusCode} at $base');
+          continue;
+        }
+        return r;
+      } on SocketException catch (e) {
+        lastErr = e;
+      } on TimeoutException catch (e) {
+        lastErr = e;
+      } on HandshakeException catch (e) {
+        lastErr = e;
+      } on http.ClientException catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr ?? Exception('All TronGrid endpoints failed');
+  }
 
   /// TRX balance for [base58Address] in sun (1 TRX = 10^6 sun).
   /// Returns 0 for a fresh / never-funded address.
   Future<int> balanceSun(String base58Address) async {
-    final r = await _http
-        .get(Uri.parse('$_base/v1/accounts/$base58Address'))
-        .timeout(const Duration(seconds: 10));
+    final r = await _get('/v1/accounts/$base58Address',
+        timeout: const Duration(seconds: 12));
     if (r.statusCode != 200) {
       throw Exception('TronGrid API returned ${r.statusCode}');
     }
@@ -47,10 +103,10 @@ class TronGridClient {
   /// hash. Limited to 50 by default.
   Future<List<TronTx>> transactions(String base58Address,
       {int limit = 50}) async {
-    final uri = Uri.parse(
-        '$_base/v1/accounts/$base58Address/transactions'
-        '?limit=$limit&only_confirmed=true');
-    final r = await _http.get(uri).timeout(const Duration(seconds: 12));
+    final r = await _get(
+        '/v1/accounts/$base58Address/transactions'
+        '?limit=$limit&only_confirmed=true',
+        timeout: const Duration(seconds: 15));
     if (r.statusCode != 200) {
       throw Exception('TronGrid API returned ${r.statusCode}');
     }
@@ -70,9 +126,9 @@ class TronGridClient {
   /// and decimals so we don't need a second lookup.
   Future<List<Trc20Transfer>> trc20Transfers(String base58Address,
       {int limit = 50}) async {
-    final uri = Uri.parse(
-        '$_base/v1/accounts/$base58Address/transactions/trc20?limit=$limit');
-    final r = await _http.get(uri).timeout(const Duration(seconds: 12));
+    final r = await _get(
+        '/v1/accounts/$base58Address/transactions/trc20?limit=$limit',
+        timeout: const Duration(seconds: 15));
     if (r.statusCode != 200) {
       throw Exception('TronGrid TRC-20 history returned ${r.statusCode}');
     }
@@ -109,13 +165,10 @@ class TronGridClient {
       'parameter': parameterHex,
       'visible': false,
     });
-    final r = await _http
-        .post(
-          Uri.parse('$_base/wallet/triggerconstantcontract'),
-          headers: {'Content-Type': 'application/json'},
-          body: body,
-        )
-        .timeout(const Duration(seconds: 10));
+    final r = await _post('/wallet/triggerconstantcontract',
+        body: body,
+        headers: {'Content-Type': 'application/json'},
+        timeout: const Duration(seconds: 12));
     if (r.statusCode != 200) {
       throw Exception(
           'TronGrid contract call returned ${r.statusCode}');
@@ -142,13 +195,10 @@ class TronGridClient {
       'amount': amountSun,
       'visible': false,
     });
-    final r = await _http
-        .post(
-          Uri.parse('$_base/wallet/createtransaction'),
-          headers: {'Content-Type': 'application/json'},
-          body: body,
-        )
-        .timeout(const Duration(seconds: 12));
+    final r = await _post('/wallet/createtransaction',
+        body: body,
+        headers: {'Content-Type': 'application/json'},
+        timeout: const Duration(seconds: 15));
     if (r.statusCode != 200) {
       throw Exception(
           'TronGrid createtransaction returned ${r.statusCode}: ${r.body.trim()}');
@@ -187,13 +237,10 @@ class TronGridClient {
       'call_value': 0,
       'visible': false,
     });
-    final r = await _http
-        .post(
-          Uri.parse('$_base/wallet/triggersmartcontract'),
-          headers: {'Content-Type': 'application/json'},
-          body: body,
-        )
-        .timeout(const Duration(seconds: 12));
+    final r = await _post('/wallet/triggersmartcontract',
+        body: body,
+        headers: {'Content-Type': 'application/json'},
+        timeout: const Duration(seconds: 15));
     if (r.statusCode != 200) {
       throw Exception(
           'TronGrid triggersmartcontract returned ${r.statusCode}: ${r.body.trim()}');
@@ -211,13 +258,10 @@ class TronGridClient {
 
   /// Broadcast a signed transaction. Returns the txid on success.
   Future<String> broadcastTransaction(TronSignedTx signed) async {
-    final r = await _http
-        .post(
-          Uri.parse('$_base/wallet/broadcasttransaction'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(signed.toJson()),
-        )
-        .timeout(const Duration(seconds: 15));
+    final r = await _post('/wallet/broadcasttransaction',
+        body: jsonEncode(signed.toJson()),
+        headers: {'Content-Type': 'application/json'},
+        timeout: const Duration(seconds: 18));
     if (r.statusCode != 200) {
       throw Exception(
           'TronGrid broadcast returned ${r.statusCode}: ${r.body.trim()}');

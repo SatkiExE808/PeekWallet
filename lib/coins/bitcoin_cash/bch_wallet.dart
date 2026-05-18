@@ -15,8 +15,20 @@ class BitcoinCashWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  }) : _client = BlockchairBchClient(
-            baseUrl: RpcOverrides.I.get('BCH', 'explorer'));
+  }) : _client = _buildClient();
+
+  /// User override (if any) tried first, then Blockchair's canonical
+  /// /bitcoin-cash endpoint. The bch.imaginary.cash Bitcore mirror
+  /// has a different API shape, so it's NOT included here — that
+  /// adapter would need its own client class.
+  static BlockchairBchClient _buildClient() {
+    final override = RpcOverrides.I.get('BCH', 'explorer');
+    final urls = <String>[
+      if (override != null && override.isNotEmpty) override,
+      'https://api.blockchair.com/bitcoin-cash',
+    ];
+    return BlockchairBchClient(baseUrls: urls);
+  }
 
   factory BitcoinCashWallet.open({
     required String mnemonic,

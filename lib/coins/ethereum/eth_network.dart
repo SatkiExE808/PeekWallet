@@ -23,6 +23,8 @@ class EthereumNetwork {
     required this.chainId,
     required this.blockscoutBaseUrl,
     required this.rpcUrl,
+    this.fallbackRpcUrls = const [],
+    this.fallbackBlockscoutUrls = const [],
     this.coinType = 60,
   });
 
@@ -35,8 +37,24 @@ class EthereumNetwork {
   final String blockscoutBaseUrl;
   /// JSON-RPC endpoint for send-path operations (nonce, gas, broadcast).
   final String rpcUrl;
+  /// Additional no-auth JSON-RPC endpoints tried in order when [rpcUrl]
+  /// or earlier fallbacks return 5xx, time out, or are unreachable.
+  /// Same JSON-RPC API; just a different provider.
+  final List<String> fallbackRpcUrls;
+  /// Additional Blockscout-compatible base URLs tried on transient
+  /// failure of [blockscoutBaseUrl]. Some Blockscout instances cache
+  /// differently or are temporarily down — list a couple of well-
+  /// known mirrors so balance/history stays live.
+  final List<String> fallbackBlockscoutUrls;
   /// SLIP-0044 coin_type. 60 for almost every EVM chain by convention.
   final int coinType;
+
+  /// Primary + fallback RPCs as a single ordered list.
+  List<String> get allRpcUrls => [rpcUrl, ...fallbackRpcUrls];
+
+  /// Primary + fallback explorers as a single ordered list.
+  List<String> get allBlockscoutUrls =>
+      [blockscoutBaseUrl, ...fallbackBlockscoutUrls];
 }
 
 const kEthMainnet = EthereumNetwork(
@@ -46,6 +64,14 @@ const kEthMainnet = EthereumNetwork(
   chainId: 1,
   blockscoutBaseUrl: 'https://eth.blockscout.com/api',
   rpcUrl: 'https://eth.llamarpc.com',
+  fallbackRpcUrls: [
+    'https://cloudflare-eth.com',
+    'https://ethereum-rpc.publicnode.com',
+    'https://rpc.ankr.com/eth',
+  ],
+  fallbackBlockscoutUrls: [
+    'https://api.etherscan.io/api',
+  ],
 );
 
 const kPolygonMainnet = EthereumNetwork(
@@ -55,4 +81,12 @@ const kPolygonMainnet = EthereumNetwork(
   chainId: 137,
   blockscoutBaseUrl: 'https://polygon.blockscout.com/api',
   rpcUrl: 'https://polygon-rpc.com',
+  fallbackRpcUrls: [
+    'https://polygon-bor-rpc.publicnode.com',
+    'https://rpc.ankr.com/polygon',
+    'https://polygon.llamarpc.com',
+  ],
+  fallbackBlockscoutUrls: [
+    'https://api.polygonscan.com/api',
+  ],
 );

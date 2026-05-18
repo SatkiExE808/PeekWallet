@@ -21,8 +21,26 @@ class SolanaWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  }) : _rpc = SolanaRpcClient(
-            endpoint: RpcOverrides.I.get('SOL', 'rpc'));
+  }) : _rpc = _buildRpcClient();
+
+  /// User override (if any) is tried first, then the public mainnet-
+  /// beta RPC + community fallbacks (Ankr, Blast, PublicNode). The
+  /// fallbacks are intentionally included even when the user pinned a
+  /// custom endpoint — Solana's mainnet-beta drops connections often
+  /// enough that a safety net is worth the privacy tradeoff.
+  static SolanaRpcClient _buildRpcClient() {
+    final override = RpcOverrides.I.get('SOL', 'rpc');
+    if (override == null || override.isEmpty) {
+      return SolanaRpcClient();
+    }
+    return SolanaRpcClient(endpoints: [
+      override,
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-rpc.publicnode.com',
+      'https://solana-mainnet.public.blastapi.io',
+      'https://rpc.ankr.com/solana',
+    ]);
+  }
 
   static Future<SolanaWallet> open({
     required String mnemonic,

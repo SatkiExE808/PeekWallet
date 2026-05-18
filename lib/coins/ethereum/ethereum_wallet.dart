@@ -31,12 +31,28 @@ class EthereumWallet {
     required this.passphrase,
     required this.address,
     required this.network,
-  })  : _client = EtherscanClient(
-            baseUrl: RpcOverrides.I.get(network.id, 'explorer') ??
-                network.blockscoutBaseUrl),
-        _rpc = EthRpcClient(
-            endpoint: RpcOverrides.I.get(network.id, 'rpc') ??
-                network.rpcUrl);
+  })  : _client = EtherscanClient(baseUrls: _explorerUrls(network)),
+        _rpc = EthRpcClient(endpoints: _rpcUrls(network));
+
+  /// Build the explorer URL chain — user override first, then the
+  /// chain's primary + fallback list. Same shape for the RPC chain.
+  /// We keep the user override on top so a pinned private endpoint
+  /// still gets tried first; the public fallbacks act as a safety net.
+  static List<String> _explorerUrls(EthereumNetwork network) {
+    final override = RpcOverrides.I.get(network.id, 'explorer');
+    return [
+      if (override != null && override.isNotEmpty) override,
+      ...network.allBlockscoutUrls,
+    ];
+  }
+
+  static List<String> _rpcUrls(EthereumNetwork network) {
+    final override = RpcOverrides.I.get(network.id, 'rpc');
+    return [
+      if (override != null && override.isNotEmpty) override,
+      ...network.allRpcUrls,
+    ];
+  }
 
   /// Open an EVM wallet for the given seed + network. Defaults to
   /// Ethereum mainnet; pass [kPolygonMainnet] (or any other
