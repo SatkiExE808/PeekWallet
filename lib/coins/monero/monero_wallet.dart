@@ -278,6 +278,71 @@ class MoneroWallet {
     return ((cur / tip) * 100).clamp(0.0, 100.0).floor();
   }
 
+  /// Build a transaction without broadcasting it. Returns a PendingTx
+  /// the UI can show fees / totals on; call [commit] to actually
+  /// relay it. Throws if the native side reports an error (insufficient
+  /// funds, malformed address, daemon unreachable, etc.).
+  ///
+  /// [amountPiconero] — amount in piconero (1 XMR = 1e12 piconero).
+  /// [priority] — 1 (low / slow / cheap) to 4 (priority / fast).
+  PendingMoneroTx buildTransaction({
+    required String destAddress,
+    required int amountPiconero,
+    int priority = 2,
+    String paymentId = '',
+  }) {
+    final pt = monero.Wallet_createTransaction(
+      _ptr,
+      dst_addr: destAddress,
+      payment_id: paymentId,
+      amount: amountPiconero,
+      mixin_count: 0, // ignored on v17+ (network enforces ring size)
+      pendingTransactionPriority: priority,
+      subaddr_account: 0,
+    );
+    final status = monero.PendingTransaction_status(pt);
+    if (status != 0) {
+      final err = monero.PendingTransaction_errorString(pt);
+      throw Exception(err.isEmpty
+          ? 'Could not build transaction (status=$status)'
+          : err);
+    }
+    return PendingMoneroTx._(pt);
+  }
+
+  /// Read the wallet's transaction history. Refreshes the underlying
+  /// monero_c TransactionHistory pointer first so newly-arrived txs
+  /// land in the list. Cheap call — just iterates the cached list,
+  /// no RPC.
+  List<MoneroTx> transactions() {
+    final history = monero.Wallet_history(_ptr);
+    monero.TransactionHistory_refresh(history);
+    final count = monero.TransactionHistory_count(history);
+    final out = <MoneroTx>[];
+    for (var i = 0; i < count; i++) {
+      final t = monero.TransactionHistory_transaction(history, index: i);
+      out.add(MoneroTx._(
+        hash: monero.TransactionInfo_hash(t),
+        amountPiconero: monero.TransactionInfo_amount(t),
+        feePiconero: monero.TransactionInfo_fee(t),
+        // TransactionInfo_Direction is an enum { In, Out } in the
+        // bindings — match against .In rather than its ordinal so
+        // an upstream reorder can't silently flip the sign.
+        isIncoming: monero.TransactionInfo_direction(t) ==
+            monero.TransactionInfo_Direction.In,
+        timestampSec: monero.TransactionInfo_timestamp(t),
+        blockHeight: monero.TransactionInfo_blockHeight(t),
+        isPending: monero.TransactionInfo_isPending(t),
+        isFailed: monero.TransactionInfo_isFailed(t),
+        confirmations: monero.TransactionInfo_confirmations(t),
+        paymentId: monero.TransactionInfo_paymentId(t),
+      ));
+    }
+    // Newest first.
+    out.sort((a, b) => b.timestampSec.compareTo(a.timestampSec));
+    return out;
+  }
+
   /// Close the wallet, flushing the wallet file to disk. Call from
   /// the lock handler so the on-disk file is fresh next time.
   void close() {
@@ -286,6 +351,76 @@ class MoneroWallet {
       monero.WalletManager_closeWallet(wm, _ptr, true);
     } catch (_) {/* best effort */}
   }
+}
+
+/// A built-but-unbroadcast Monero transaction. Holds the C-side
+/// PendingTransaction pointer so the UI can show the fee + total
+/// before the user commits.
+class PendingMoneroTx {
+  PendingMoneroTx._(this._ptr);
+  final dynamic _ptr;
+
+  /// Total amount being sent in piconero (excludes fee).
+  int get amountPiconero => monero.PendingTransaction_amount(_ptr);
+
+  /// Network fee in piconero.
+  int get feePiconero => monero.PendingTransaction_fee(_ptr);
+
+  double get amountXmr => amountPiconero / 1e12;
+  double get feeXmr => feePiconero / 1e12;
+
+  /// Number of sub-transactions monero_c will broadcast for this
+  /// send (usually 1; multi-output / large sends can split).
+  int get txCount => monero.PendingTransaction_txCount(_ptr);
+
+  /// Broadcast the transaction to the daemon. Returns the txid (or
+  /// joined txids if the send was split). Throws on relay failure.
+  String commit() {
+    final ok = monero.PendingTransaction_commit(
+      _ptr,
+      filename: '',
+      overwrite: false,
+    );
+    if (!ok) {
+      final err = monero.PendingTransaction_errorString(_ptr);
+      throw Exception(
+          err.isEmpty ? 'Daemon rejected the transaction' : err);
+    }
+    return monero.PendingTransaction_txid(_ptr, ', ');
+  }
+}
+
+/// A confirmed (or in-flight) Monero transaction as seen by the wallet.
+/// Immutable snapshot — call MoneroWallet.transactions() again to
+/// pick up new arrivals.
+class MoneroTx {
+  const MoneroTx._({
+    required this.hash,
+    required this.amountPiconero,
+    required this.feePiconero,
+    required this.isIncoming,
+    required this.timestampSec,
+    required this.blockHeight,
+    required this.isPending,
+    required this.isFailed,
+    required this.confirmations,
+    required this.paymentId,
+  });
+  final String hash;
+  final int amountPiconero;
+  final int feePiconero;
+  final bool isIncoming;
+  final int timestampSec;
+  final int blockHeight;
+  final bool isPending;
+  final bool isFailed;
+  final int confirmations;
+  final String paymentId;
+
+  double get amountXmr => amountPiconero / 1e12;
+  double get feeXmr => feePiconero / 1e12;
+  DateTime get timestamp =>
+      DateTime.fromMillisecondsSinceEpoch(timestampSec * 1000);
 }
 
 /// Process-wide singleton holding the current wallet (if any).
