@@ -73,14 +73,14 @@ class _CoinScreenState extends State<CoinScreen> {
   }
 
   Future<void> _bootMonero(String mnemonic) async {
-    // Approximate Monero tip as of this build. Only used when creating
-    // a fresh wallet file — existing on-disk wallets keep whatever
-    // restoreHeight they were originally created with. Picked a few
-    // thousand blocks below tip so a new install on a slow connection
-    // still catches very recent deposits without scanning ~2 years of
-    // empty history. Bump on each release; replace with a Settings UI
-    // (or a daemon /get_height probe at create time) when wired up.
-    const restoreHeight = 3788000;
+    // Fallback restoreHeight only used if the daemon doesn't respond
+    // to /get_height within ~15s during wallet creation. In the normal
+    // path MoneroWallet.open queries the daemon for real tip and calls
+    // Wallet_setRefreshFromBlockHeight with (tip - 5000). This value
+    // is intentionally conservative — a couple weeks before the real
+    // May-2026 tip — so even on a degraded boot the wallet won't skip
+    // recent receives. Bump on each release as a safety net.
+    const restoreHeight = 3650000;
     // Repaint while open() is still streaming stage updates so the
     // user sees progress instead of just a blank '…XMR'.
     final stageTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
