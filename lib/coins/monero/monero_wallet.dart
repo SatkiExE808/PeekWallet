@@ -428,6 +428,23 @@ class MoneroWallet {
     );
   }
 
+  /// Get the user-written note for a transaction. monero_c stores
+  /// these in the wallet file alongside the spend key — encrypted at
+  /// rest, never leaves the device. Returns empty string for txes
+  /// that have no note set yet.
+  String getUserNote(String txid) {
+    if (_closed) return '';
+    return monero.Wallet_getUserNote(_ptr, txid: txid);
+  }
+
+  /// Attach a free-text note to a transaction. Persists immediately
+  /// to the on-disk wallet file. Passing an empty string clears the
+  /// note. Throws if closed.
+  void setUserNote({required String txid, required String note}) {
+    _ensureLive('setUserNote');
+    monero.Wallet_setUserNote(_ptr, txid: txid, note: note);
+  }
+
   /// Build a transaction without broadcasting it. Returns a PendingTx
   /// the UI can show fees / totals on; call [commit] to actually
   /// relay it. Throws if the native side reports an error (insufficient
@@ -484,8 +501,9 @@ class MoneroWallet {
     final out = <MoneroTx>[];
     for (var i = 0; i < count; i++) {
       final t = monero.TransactionHistory_transaction(history, index: i);
+      final txid = monero.TransactionInfo_hash(t);
       out.add(MoneroTx._(
-        hash: monero.TransactionInfo_hash(t),
+        hash: txid,
         amountPiconero: monero.TransactionInfo_amount(t),
         feePiconero: monero.TransactionInfo_fee(t),
         // TransactionInfo_Direction is an enum { In, Out } in the
@@ -499,6 +517,7 @@ class MoneroWallet {
         isFailed: monero.TransactionInfo_isFailed(t),
         confirmations: monero.TransactionInfo_confirmations(t),
         paymentId: monero.TransactionInfo_paymentId(t),
+        note: monero.Wallet_getUserNote(_ptr, txid: txid),
       ));
     }
     // Newest first.
@@ -581,6 +600,7 @@ class MoneroTx {
     required this.isFailed,
     required this.confirmations,
     required this.paymentId,
+    required this.note,
   });
   final String hash;
   final int amountPiconero;
@@ -592,6 +612,10 @@ class MoneroTx {
   final bool isFailed;
   final int confirmations;
   final String paymentId;
+
+  /// Free-text user note. Persisted in the encrypted on-disk wallet
+  /// file via Wallet_setUserNote. Empty when not set.
+  final String note;
 
   double get amountXmr => amountPiconero / 1e12;
   double get feeXmr => feePiconero / 1e12;

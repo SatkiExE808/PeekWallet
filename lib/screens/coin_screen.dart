@@ -350,7 +350,22 @@ class _CoinScreenState extends State<CoinScreen> {
                     // handles overflow. Removed the previous .take(20)
                     // cap; older TXes were invisible with no way to
                     // page back to them.
-                    for (final tx in _transactions) _TxRow(tx: tx),
+                    for (final tx in _transactions)
+                      _TxRow(
+                        tx: tx,
+                        wallet: _moneroWallet,
+                        onNoteEdited: () {
+                          // Refresh the cached list so the new note
+                          // shows on the row without waiting for the
+                          // 5-s history-poll tick.
+                          if (_moneroWallet != null) {
+                            try {
+                              final fresh = _moneroWallet!.transactions();
+                              setState(() => _transactions = fresh);
+                            } catch (_) {/* leave old list */}
+                          }
+                        },
+                      ),
                 ] else ...[
                   Center(
                     child: Container(
@@ -448,8 +463,17 @@ class _ActionRow extends StatelessWidget {
 }
 
 class _TxRow extends StatelessWidget {
-  const _TxRow({required this.tx});
+  const _TxRow({
+    required this.tx,
+    this.wallet,
+    this.onNoteEdited,
+  });
   final MoneroTx tx;
+  /// When set, the detail sheet shows an "edit note" affordance that
+  /// writes through wallet.setUserNote. Pass null for wallets we
+  /// can't write back to (closed, watch-only).
+  final MoneroWallet? wallet;
+  final VoidCallback? onNoteEdited;
 
   @override
   Widget build(BuildContext context) {
@@ -557,7 +581,48 @@ class _TxRow extends StatelessWidget {
             _kv('Status', tx.isFailed ? 'Failed' : (tx.isPending ? 'Pending' : 'Confirmed')),
             if (tx.paymentId.isNotEmpty)
               _kv('Payment ID', tx.paymentId),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
+            // Note section — editable if a wallet handle was provided.
+            // Empty notes show an "Add" prompt; non-empty show the
+            // note plus Edit. Saves persist to the on-disk wallet via
+            // Wallet_setUserNote.
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Note',
+                    style: TextStyle(color: PeekColors.text2, fontSize: 12),
+                  ),
+                ),
+                if (wallet != null)
+                  TextButton.icon(
+                    onPressed: () => _editNote(ctx),
+                    icon: const Icon(Icons.edit, size: 14),
+                    label: Text(
+                      tx.note.isEmpty ? 'Add' : 'Edit',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: PeekColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: PeekColors.border),
+              ),
+              child: Text(
+                tx.note.isEmpty ? '— No note —' : tx.note,
+                style: TextStyle(
+                  color: tx.note.isEmpty ? PeekColors.text3 : PeekColors.text,
+                  fontSize: 13,
+                  fontStyle: tx.note.isEmpty ? FontStyle.italic : FontStyle.normal,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             const Text('TX ID', style: TextStyle(color: PeekColors.text2, fontSize: 12)),
             const SizedBox(height: 4),
             Container(
@@ -609,6 +674,64 @@ class _TxRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _editNote(BuildContext ctx) async {
+    final w = wallet;
+    if (w == null) return;
+    final controller = TextEditingController(text: tx.note);
+    final updated = await showDialog<String>(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Transaction note'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 4,
+          minLines: 2,
+          maxLength: 200,
+          decoration: const InputDecoration(
+            hintText: 'Free-text — only you can read this.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel'),
+          ),
+          if (tx.note.isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(''),
+              child: const Text('Clear'),
+            ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (updated == null) return;
+    try {
+      w.setUserNote(txid: tx.hash, note: updated);
+      onNoteEdited?.call();
+      if (!ctx.mounted) return;
+      // The detail sheet is already open — close it so the user sees
+      // the refreshed note when they tap the row again. (Updating in
+      // place would mean rebuilding the sheet which is harder.)
+      Navigator.of(ctx).pop();
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(updated.isEmpty ? 'Note cleared' : 'Note saved'),
+        ),
+      );
+    } catch (e) {
+      if (!ctx.mounted) return;
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(content: Text('Could not save note: $e')),
+      );
+    }
   }
 }
 
