@@ -9,13 +9,14 @@ import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
 /// Two-step Send flow:
-///   1. Form — destination, amount, fee priority
-///   2. Confirm — show parsed total + fee + txCount, then commit
+///   1. Form — recipients (1..N), fee priority, optional "Send all"
+///   2. Confirm — show parsed totals + fee + txCount, then commit
 ///
-/// Pending tx is built on step-1 -> step-2 transition (we need the
-/// fee from monero_c, which only knows it after createTransaction
-/// has built the actual TX object). Cancel from confirm discards the
-/// pending tx; it never hits the daemon.
+/// Multi-recipient mode (S2-4): the form holds a list of recipient
+/// rows, each with its own address + amount controllers. "Add
+/// recipient" appends a row; per-row × removes it. Send-all is
+/// mutually exclusive with multi-recipient (a sweep is by definition
+/// a single-destination of everything).
 class SendXmrScreen extends StatefulWidget {
   const SendXmrScreen({super.key, required this.wallet});
   final MoneroWallet wallet;
@@ -25,8 +26,7 @@ class SendXmrScreen extends StatefulWidget {
 }
 
 class _SendXmrScreenState extends State<SendXmrScreen> {
-  final _addr = TextEditingController();
-  final _amount = TextEditingController();
+  final List<_RecipientRow> _recipients = [_RecipientRow()];
   int _priority = 2; // 1=slow, 2=normal, 4=fast
   bool _busy = false;
   bool _sweepAll = false;
@@ -36,33 +36,42 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
 
   @override
   void dispose() {
-    _addr.dispose();
-    _amount.dispose();
+    for (final r in _recipients) {
+      r.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _scanAddress() async {
+  void _addRecipient() {
+    if (_sweepAll) return;
+    setState(() => _recipients.add(_RecipientRow()));
+  }
+
+  void _removeRecipient(int i) {
+    if (_recipients.length <= 1) return;
+    setState(() => _recipients.removeAt(i).dispose());
+  }
+
+  Future<void> _scanAddressFor(int i) async {
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => const QrScanScreen(title: 'Scan recipient address'),
       ),
     );
     if (scanned != null && scanned.isNotEmpty) {
-      _addr.text = scanned;
-      // Re-validate immediately so user sees green/red on the field.
+      _recipients[i].addr.text = scanned;
       setState(() => _err = null);
     }
   }
 
-  Future<void> _pickFromBook() async {
+  Future<void> _pickFromBookFor(int i) async {
     final picked = await Navigator.of(context).push<AddressBookEntry>(
       MaterialPageRoute(
         builder: (_) => const AddressBookScreen(pickForCoin: 'XMR'),
       ),
     );
     if (picked != null) {
-      _addr.text = picked.address;
-      // Mark the entry as used so it sorts to the top next time.
+      _recipients[i].addr.text = picked.address;
       AddressBook.I.recordUse(picked.id);
       setState(() => _err = null);
     }
@@ -73,70 +82,60 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       _err = null;
       _busy = true;
     });
-    final addr = _addr.text.trim();
-    if (!_isLikelyXmrAddress(addr)) {
-      setState(() {
-        _err = 'That doesn\'t look like a Monero address (95 chars, starts with 4 or 8).';
-        _busy = false;
-      });
-      return;
-    }
 
-    // Sweep-all path: skip the amount parsing entirely — monero_c
-    // computes "everything spendable minus fee" itself.
-    if (_sweepAll) {
-      try {
-        final pt = widget.wallet.buildMultiTransaction(
-          recipients: [TxRecipient(address: addr, amount: BigInt.zero)],
-          isSweepAll: true,
-          priority: _priority,
-        );
+    // Validate every recipient row before going to FFI.
+    final txRecipients = <TxRecipient>[];
+    final totalBalance = BigInt.from(widget.wallet.balancePiconero);
+    var runningTotal = BigInt.zero;
+    for (var i = 0; i < _recipients.length; i++) {
+      final row = _recipients[i];
+      final addr = row.addr.text.trim();
+      final amountText = row.amount.text.trim();
+      final tag = _recipients.length == 1 ? '' : ' (row ${i + 1})';
+      if (!_isLikelyXmrAddress(addr)) {
         setState(() {
-          _pending = pt;
+          _err = 'Address doesn\'t look like Monero$tag.';
           _busy = false;
         });
-      } catch (e) {
-        setState(() {
-          _err = _humanizeError(e);
-          _busy = false;
-        });
+        return;
       }
+      if (_sweepAll) {
+        // sweep ignores amounts; only one row makes sense.
+        txRecipients.add(TxRecipient(address: addr, amount: BigInt.zero));
+        break;
+      }
+      BigInt amt;
+      try {
+        amt = xmrDecimalToPiconero(amountText);
+      } on FormatException catch (e) {
+        setState(() {
+          _err = '${e.message}$tag';
+          _busy = false;
+        });
+        return;
+      }
+      if (amt <= BigInt.zero) {
+        setState(() {
+          _err = 'Amount must be greater than 0$tag.';
+          _busy = false;
+        });
+        return;
+      }
+      runningTotal += amt;
+      txRecipients.add(TxRecipient(address: addr, amount: amt));
+    }
+    if (!_sweepAll && runningTotal > totalBalance) {
+      setState(() {
+        _err = 'Total exceeds your balance.';
+        _busy = false;
+      });
       return;
     }
 
-    // Normal send: exact decimal-to-piconero parsing — never via
-    // `* 1e12` doubles, which silently loses precision once amounts
-    // exceed ~9007 XMR.
-    final amountText = _amount.text.trim();
-    BigInt piconero;
     try {
-      piconero = xmrDecimalToPiconero(amountText);
-    } on FormatException catch (e) {
-      setState(() {
-        _err = e.message;
-        _busy = false;
-      });
-      return;
-    }
-    if (piconero <= BigInt.zero) {
-      setState(() {
-        _err = 'Enter an amount greater than 0.';
-        _busy = false;
-      });
-      return;
-    }
-    if (piconero > BigInt.from(widget.wallet.balancePiconero)) {
-      setState(() {
-        _err = 'Insufficient balance.';
-        _busy = false;
-      });
-      return;
-    }
-
-    try {
-      final pt = widget.wallet.buildTransaction(
-        destAddress: addr,
-        amountPiconero: piconero,
+      final pt = widget.wallet.buildMultiTransaction(
+        recipients: txRecipients,
+        isSweepAll: _sweepAll,
         priority: _priority,
       );
       setState(() {
@@ -185,18 +184,12 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
         ),
       ),
     );
-    // FLAG_SECURE on the confirm step — the screen displays the
-    // recipient, the full amount, and the fee at the moment the user
-    // is most likely to want to take a photo of the screen to share
-    // with someone else verifying the destination. The form step
-    // (just an empty form) and the result step (only a tx hash, no
-    // amounts) don't need it.
     return _pending != null && _broadcastTxid == null
         ? ScreenshotGuard(child: scaffold)
         : scaffold;
   }
 
-  // --- Step 1: form ------------------------------------------------------
+  // --- Step 1: form ---
 
   Widget _formView() {
     final balance = widget.wallet.balanceXmr;
@@ -208,54 +201,36 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: _addr,
-          autocorrect: false,
-          textCapitalization: TextCapitalization.none,
-          decoration: InputDecoration(
-            labelText: 'Recipient address',
-            hintText: '4… or 8…',
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.contact_page_outlined, size: 18),
-                  tooltip: 'Address book',
-                  onPressed: _pickFromBook,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  tooltip: 'Scan QR',
-                  onPressed: _scanAddress,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.content_paste, size: 18),
-                  tooltip: 'Paste',
-                  onPressed: () async {
-                    final data = await Clipboard.getData('text/plain');
-                    if (data?.text != null) {
-                      _addr.text = data!.text!.trim();
-                    }
-                  },
-                ),
-              ],
+
+        // Per-recipient rows.
+        for (var i = 0; i < _recipients.length; i++) ...[
+          _RecipientCard(
+            index: i,
+            total: _recipients.length,
+            row: _recipients[i],
+            sweepAll: _sweepAll,
+            onRemove: _recipients.length > 1
+                ? () => _removeRecipient(i)
+                : null,
+            onScan: () => _scanAddressFor(i),
+            onPickBook: () => _pickFromBookFor(i),
+          ),
+          if (i < _recipients.length - 1) const SizedBox(height: 8),
+        ],
+
+        if (!_sweepAll) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _addRecipient,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add recipient'),
             ),
           ),
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: _amount,
-          enabled: !_sweepAll,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-          ],
-          decoration: InputDecoration(
-            labelText: 'Amount (XMR)',
-            hintText: _sweepAll ? 'Sweep — amount set automatically' : '0.0',
-          ),
-        ),
-        const SizedBox(height: 6),
+        ],
+
+        const SizedBox(height: 10),
         CheckboxListTile(
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
@@ -263,17 +238,24 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           onChanged: (v) => setState(() {
             _sweepAll = v ?? false;
             _err = null;
+            if (_sweepAll && _recipients.length > 1) {
+              // Sweep only sends to ONE address. Trim extras so the
+              // form's state matches what we'll actually build.
+              for (final r in _recipients.skip(1)) {
+                r.dispose();
+              }
+              _recipients.removeRange(1, _recipients.length);
+            }
           }),
           title: const Text('Send all', style: TextStyle(fontSize: 14)),
           subtitle: const Text(
-            'Sweep every spendable output to the recipient — fee taken '
-            'from the swept amount. Useful when moving everything to '
-            'cold storage or a new wallet.',
+            'Sweep every spendable output to the first recipient — fee '
+            'taken from the swept amount. Disables multi-recipient.',
             style: TextStyle(color: PeekColors.text3, fontSize: 11),
           ),
           dense: true,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         const Text(
           'Fee priority',
           style: TextStyle(color: PeekColors.text2, fontSize: 12),
@@ -299,7 +281,8 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           child: _busy
               ? const SizedBox(
                   width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Review send'),
         ),
@@ -307,7 +290,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     );
   }
 
-  // --- Step 2: confirm ---------------------------------------------------
+  // --- Step 2: confirm ---
 
   Widget _confirmView() {
     final pt = _pending!;
@@ -315,12 +298,30 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ConfirmRow(label: 'To', value: _addr.text.trim(), mono: true),
-        _ConfirmRow(label: 'Amount', value: '${pt.amountXmr.toStringAsFixed(9)} XMR'),
+        // Per-recipient breakdown for the audit-trail confirm.
+        for (var i = 0; i < _recipients.length; i++) ...[
+          _ConfirmRow(
+            label: _recipients.length == 1
+                ? 'To'
+                : 'To #${i + 1}',
+            value: _recipients[i].addr.text.trim(),
+            mono: true,
+          ),
+          if (!_sweepAll)
+            _ConfirmRow(
+              label: '',
+              value: '${_parseXmr(_recipients[i].amount.text).toStringAsFixed(9)} XMR',
+            ),
+        ],
+        const Divider(color: PeekColors.border),
+        _ConfirmRow(
+          label: _sweepAll ? 'Sending (sweep)' : 'Total amount',
+          value: '${pt.amountXmr.toStringAsFixed(9)} XMR',
+        ),
         _ConfirmRow(label: 'Network fee', value: '${pt.feeXmr.toStringAsFixed(9)} XMR'),
         const Divider(color: PeekColors.border),
         _ConfirmRow(
-          label: 'Total',
+          label: 'Total + fee',
           value: '${total.toStringAsFixed(9)} XMR',
           emphasize: true,
         ),
@@ -352,7 +353,8 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
                 child: _busy
                     ? const SizedBox(
                         width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Send'),
               ),
@@ -363,11 +365,9 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     );
   }
 
-  // --- Step 3: result ----------------------------------------------------
+  // --- Step 3: result ---
 
   Widget _resultView() {
-    // Capture the messenger so the post-await SnackBar isn't tied to
-    // a (possibly disposed) BuildContext.
     final messenger = ScaffoldMessenger.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -419,6 +419,132 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       ],
     );
   }
+
+  double _parseXmr(String s) {
+    try {
+      final pico = xmrDecimalToPiconero(s);
+      return pico.toDouble() / 1e12;
+    } catch (_) {
+      return 0;
+    }
+  }
+}
+
+/// Holds the controllers + lifecycle for one recipient row.
+class _RecipientRow {
+  final TextEditingController addr = TextEditingController();
+  final TextEditingController amount = TextEditingController();
+  void dispose() {
+    addr.dispose();
+    amount.dispose();
+  }
+}
+
+class _RecipientCard extends StatelessWidget {
+  const _RecipientCard({
+    required this.index,
+    required this.total,
+    required this.row,
+    required this.sweepAll,
+    required this.onRemove,
+    required this.onScan,
+    required this.onPickBook,
+  });
+  final int index;
+  final int total;
+  final _RecipientRow row;
+  final bool sweepAll;
+  final VoidCallback? onRemove;
+  final VoidCallback onScan;
+  final VoidCallback onPickBook;
+
+  @override
+  Widget build(BuildContext context) {
+    final showHeader = total > 1;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: PeekColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: PeekColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showHeader)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Recipient #${index + 1}',
+                    style: const TextStyle(
+                      color: PeekColors.text2,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (onRemove != null)
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: PeekColors.text3,
+                    onPressed: onRemove,
+                    tooltip: 'Remove',
+                  ),
+              ],
+            ),
+          if (showHeader) const SizedBox(height: 4),
+          TextField(
+            controller: row.addr,
+            autocorrect: false,
+            textCapitalization: TextCapitalization.none,
+            decoration: InputDecoration(
+              labelText: 'Recipient address',
+              hintText: '4… or 8…',
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.contact_page_outlined, size: 18),
+                    tooltip: 'Address book',
+                    onPressed: onPickBook,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.qr_code_scanner, size: 18),
+                    tooltip: 'Scan QR',
+                    onPressed: onScan,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.content_paste, size: 18),
+                    tooltip: 'Paste',
+                    onPressed: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data?.text != null) {
+                        row.addr.text = data!.text!.trim();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: row.amount,
+            enabled: !sweepAll || index > 0,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+            ],
+            decoration: InputDecoration(
+              labelText: 'Amount (XMR)',
+              hintText: sweepAll ? 'Sweep — amount set automatically' : '0.0',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ConfirmRow extends StatelessWidget {
@@ -436,7 +562,7 @@ class _ConfirmRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -465,33 +591,24 @@ class _ConfirmRow extends StatelessWidget {
 }
 
 bool _isLikelyXmrAddress(String s) {
-  // Quick pre-validation before monero_c parses it for real in
-  // createTransaction. Catches obvious paste-typos at the form layer
-  // so the user sees "looks wrong" before "wallet couldn't build".
-  //
-  // 95-char primary addresses start with '4' (network byte 0x12).
-  // 95-char subaddresses start with '8' (network byte 0x2A).
-  // 106-char integrated addresses start with '4' (network byte 0x13).
   if (s.isEmpty) return false;
   final first = s.codeUnitAt(0);
-  final isFour = first == 0x34; // '4'
-  final isEight = first == 0x38; // '8'
+  final isFour = first == 0x34;
+  final isEight = first == 0x38;
   switch (s.length) {
     case 95:
       if (!isFour && !isEight) return false;
       break;
     case 106:
-      if (!isFour) return false; // 8-prefix is only valid at 95 chars
+      if (!isFour) return false;
       break;
     default:
       return false;
   }
-  // Monero base58 alphabet (no 0, O, I, l).
   return RegExp(r'^[1-9A-HJ-NP-Za-km-z]+$').hasMatch(s);
 }
 
 String _humanizeError(Object e) {
   final s = e.toString();
-  // Strip the leading "Exception: " that Dart adds.
   return s.startsWith('Exception: ') ? s.substring(11) : s;
 }
