@@ -1019,6 +1019,49 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
     }
   }
 
+  Future<void> _editLabel(_SubaddrRow row) async {
+    final w = widget.wallet;
+    if (w == null) return;
+    final controller = TextEditingController(text: row.label);
+    final newLabel = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Label subaddress #${row.index}'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 50,
+          decoration: const InputDecoration(
+            hintText: 'e.g. "Customer payments", "Side gig"',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          if (row.label.isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(''),
+              child: const Text('Clear'),
+            ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newLabel == null) return;
+    try {
+      w.setSubaddressLabel(index: row.index, label: newLabel);
+      _reload();
+    } catch (e) {
+      setState(() => _genError = 'Could not save label: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final messenger = ScaffoldMessenger.of(context);
@@ -1134,6 +1177,9 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
                     row: row,
                     isSelected: row.index == _selectedIndex,
                     onTap: () => setState(() => _selectedIndex = row.index),
+                    onLabelEdit: row.index == 0
+                        ? null // Primary address is unlabelable
+                        : () => _editLabel(row),
                   ),
               ],
             ],
@@ -1160,10 +1206,14 @@ class _SubaddrTile extends StatelessWidget {
     required this.row,
     required this.isSelected,
     required this.onTap,
+    this.onLabelEdit,
   });
   final _SubaddrRow row;
   final bool isSelected;
   final VoidCallback onTap;
+  /// When non-null, long-press on the tile opens the label editor.
+  /// Null for the primary address (which can't be renamed).
+  final VoidCallback? onLabelEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1174,6 +1224,7 @@ class _SubaddrTile extends StatelessWidget {
         : addr;
     return InkWell(
       onTap: onTap,
+      onLongPress: onLabelEdit,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -1228,6 +1279,14 @@ class _SubaddrTile extends StatelessWidget {
                 ],
               ),
             ),
+            if (onLabelEdit != null)
+              IconButton(
+                icon: const Icon(Icons.edit, size: 16),
+                color: PeekColors.text3,
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Edit label',
+                onPressed: onLabelEdit,
+              ),
             Icon(
               isSelected ? Icons.check_circle : Icons.chevron_right,
               color: isSelected ? PeekColors.accent : PeekColors.text3,

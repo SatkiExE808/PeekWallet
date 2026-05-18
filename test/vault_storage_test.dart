@@ -176,6 +176,52 @@ void main() {
     });
   });
 
+  group('failed-attempt counter', () {
+    test('starts at zero', () async {
+      expect(await vault.failedAttempts(), 0);
+    });
+
+    test('bumps + persists', () async {
+      expect(await vault.bumpFailedAttempts(), 1);
+      expect(await vault.bumpFailedAttempts(), 2);
+      expect(await vault.failedAttempts(), 2);
+    });
+
+    test('reset clears both attempts and lockout', () async {
+      await vault.bumpFailedAttempts();
+      await vault.bumpFailedAttempts();
+      await vault.setLockoutUntil(
+          DateTime.now().toUtc().add(const Duration(minutes: 5)));
+      await vault.resetFailedAttempts();
+      expect(await vault.failedAttempts(), 0);
+      expect(await vault.lockoutUntil(), isNull);
+    });
+
+    test('lockoutUntil returns null when expired and clears the key',
+        () async {
+      // Set a deadline in the past — accessor should treat it as
+      // already expired AND wipe the key.
+      await vault.setLockoutUntil(
+          DateTime.now().toUtc().subtract(const Duration(seconds: 1)));
+      expect(await vault.lockoutUntil(), isNull);
+      // Subsequent read finds no key.
+      expect(await vault.lockoutUntil(), isNull);
+    });
+
+    test('lockoutUntil returns the future deadline unmodified', () async {
+      final deadline = DateTime.now()
+          .toUtc()
+          .add(const Duration(minutes: 5))
+          // Trim sub-second precision — round-trip through ISO 8601
+          // is millisecond-accurate but DateTime can have microseconds.
+          .copyWith(microsecond: 0);
+      await vault.setLockoutUntil(deadline);
+      final got = await vault.lockoutUntil();
+      expect(got, isNotNull);
+      expect(got!.toIso8601String(), deadline.toIso8601String());
+    });
+  });
+
   group('biometric stash', () {
     test('save/read/clear cycle', () async {
       await vault.save('seed', 'pw12345678');

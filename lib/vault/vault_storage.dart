@@ -26,6 +26,8 @@ class VaultStorage {
 
   static const _blobKey = 'vault.encrypted_seed.v2';
   static const _biometricPasswordKey = 'vault.biometric_password.v1';
+  static const _failedAttemptsKey = 'vault.failed_attempts.v1';
+  static const _lockoutUntilKey = 'vault.lockout_until.v1';
   static const _iterations = 200000;
   static const _saltLen = 16;
   static const _nonceLen = 12;
@@ -136,6 +138,57 @@ class VaultStorage {
   Future<bool> biometricEnabled() async =>
       await _storage.containsKey(key: _biometricPasswordKey);
 
+  // ── Failed-attempt rate limiting ────────────────────────────
+
+  /// Read the running failed-unlock counter. Returns 0 when no
+  /// failures have been recorded.
+  Future<int> failedAttempts() async {
+    final raw = await _storage.read(key: _failedAttemptsKey);
+    return int.tryParse(raw ?? '') ?? 0;
+  }
+
+  /// Bump the failed-attempt counter by one. Persists across app
+  /// restarts so an attacker who force-closes the app can't reset
+  /// the count.
+  Future<int> bumpFailedAttempts() async {
+    final current = await failedAttempts();
+    final next = current + 1;
+    await _storage.write(key: _failedAttemptsKey, value: '$next');
+    return next;
+  }
+
+  /// Zero the failed-attempt counter. Called on every successful
+  /// unlock.
+  Future<void> resetFailedAttempts() async {
+    await _storage.delete(key: _failedAttemptsKey);
+    await _storage.delete(key: _lockoutUntilKey);
+  }
+
+  /// Persist a "no unlock attempts allowed until X" timestamp. The
+  /// lock screen consults this on every render and disables the
+  /// unlock button until the clock passes it.
+  Future<void> setLockoutUntil(DateTime when) async {
+    await _storage.write(
+      key: _lockoutUntilKey,
+      value: when.toUtc().toIso8601String(),
+    );
+  }
+
+  /// Read the current lockout deadline, or null when no lockout is
+  /// in effect (or the deadline has already passed).
+  Future<DateTime?> lockoutUntil() async {
+    final raw = await _storage.read(key: _lockoutUntilKey);
+    if (raw == null || raw.isEmpty) return null;
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return null;
+    if (DateTime.now().toUtc().isAfter(dt)) {
+      // Already expired — clear it so future reads are fast.
+      await _storage.delete(key: _lockoutUntilKey);
+      return null;
+    }
+    return dt;
+  }
+
   Future<SecretKey> _deriveKey(String password, List<int> salt) async {
     final pbkdf2 = Pbkdf2(
       macAlgorithm: Hmac.sha256(),
@@ -188,6 +241,16 @@ class VaultError implements Exception {
   final String message;
   @override
   String toString() => message;
+}
+
+/// Thrown when the unlock rate-limiter has locked the user out. The
+/// lock screen catches this specifically to render a countdown
+/// instead of the generic "wrong password" message.
+class VaultLockoutError extends VaultError {
+  VaultLockoutError(this.until)
+      : super(
+            'Too many failed attempts. Wait until ${until.toLocal()} to try again.');
+  final DateTime until;
 }
 
 /// Result of a successful unlock: the BIP39 phrase, the optional

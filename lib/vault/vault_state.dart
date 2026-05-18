@@ -82,14 +82,56 @@ class VaultState extends ChangeNotifier {
   /// elsewhere in the app can use WalletStore as the source of
   /// truth.
   Future<void> unlock(String password) async {
-    final seed = await _storage.unlock(password);
-    _mnemonic = seed.mnemonic;
-    _passphrase = seed.passphrase;
-    _walletFilePassword = seed.walletFilePassword;
-    _cachedPassword = password;
-    await _maybeMigrateLegacyWallet(password, seed);
-    notifyListeners();
+    // Rate-limit before we burn 200k PBKDF2 iterations on a guess.
+    final lockoutUntil = await _storage.lockoutUntil();
+    if (lockoutUntil != null) {
+      throw VaultLockoutError(lockoutUntil);
+    }
+    try {
+      final seed = await _storage.unlock(password);
+      // Success — clear the failed-attempt counter.
+      await _storage.resetFailedAttempts();
+      _mnemonic = seed.mnemonic;
+      _passphrase = seed.passphrase;
+      _walletFilePassword = seed.walletFilePassword;
+      _cachedPassword = password;
+      await _maybeMigrateLegacyWallet(password, seed);
+      notifyListeners();
+    } on VaultError catch (e) {
+      // Only "wrong password" should bump the counter — "no wallet"
+      // and other errors aren't brute-force attempts.
+      if (e.message == 'Wrong password') {
+        final attempts = await _storage.bumpFailedAttempts();
+        final lockout = _lockoutForAttempts(attempts);
+        if (lockout != null) {
+          await _storage.setLockoutUntil(DateTime.now().toUtc().add(lockout));
+        }
+      }
+      rethrow;
+    }
   }
+
+  /// Map a failed-attempt count to a lockout duration. Conservative
+  /// schedule — the goal is to make a casual phone-found attacker
+  /// give up, not to brick the wallet on a forgotten password (the
+  /// real user can always wait it out).
+  ///
+  /// Returns null when no lockout is yet warranted.
+  Duration? _lockoutForAttempts(int attempts) {
+    if (attempts < 5) return null;
+    if (attempts < 10) return const Duration(seconds: 30);
+    if (attempts < 15) return const Duration(minutes: 1);
+    if (attempts < 20) return const Duration(minutes: 5);
+    if (attempts < 30) return const Duration(minutes: 30);
+    return const Duration(hours: 6);
+  }
+
+  /// Used by the lock screen to render countdown UI.
+  Future<DateTime?> currentLockout() => _storage.lockoutUntil();
+
+  /// Used by the lock screen to show "N attempts remaining before
+  /// next lockout".
+  Future<int> currentFailedAttempts() => _storage.failedAttempts();
 
   /// Idempotent: if WalletStore is empty AND we just unlocked a
   /// legacy single-seed vault, fold the legacy seed into a new

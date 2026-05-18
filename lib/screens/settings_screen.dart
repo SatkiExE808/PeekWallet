@@ -29,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
+  int _autoLockSeconds = Prefs.defaultAutoLockSeconds;
 
   @override
   void initState() {
@@ -46,11 +47,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final saved = await Prefs.I.moneroDaemonUri();
     final bioEnabled = await VaultState.I.biometricEnabled();
     final bioAvail = await BiometricAuth.I.isAvailable();
+    final autoLock = await Prefs.I.autoLockSeconds();
     setState(() {
       _savedUri = saved;
       _nodeController.text = saved ?? '';
       _biometricEnabled = bioEnabled;
       _biometricAvailable = bioAvail;
+      _autoLockSeconds = autoLock;
       _loading = false;
     });
   }
@@ -132,6 +135,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _message = 'Saved. Lock + unlock the app to switch your wallet to the new node.';
       _messageColor = Colors.green;
     });
+  }
+
+  String _autoLockLabel(int seconds) {
+    if (seconds <= 0) return 'Immediately';
+    if (seconds >= 86400) return 'Never';
+    if (seconds < 60) return '$seconds s';
+    if (seconds < 3600) return '${seconds ~/ 60} min';
+    return '${seconds ~/ 3600} h';
+  }
+
+  Future<void> _pickAutoLock() async {
+    const options = <(int, String)>[
+      (0, 'Immediately'),
+      (30, '30 seconds'),
+      (60, '1 minute'),
+      (120, '2 minutes (default)'),
+      (300, '5 minutes'),
+      (900, '15 minutes'),
+      (3600, '1 hour'),
+      (86400, 'Never'),
+    ];
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: PeekColors.bg2,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Text(
+                'Auto-lock after backgrounding',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'How long PeekWallet can stay unlocked while you\'re using '
+                'other apps. Returning within this window keeps you logged '
+                'in; longer and the password is required again.',
+                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final (sec, label) in options)
+              ListTile(
+                title: Text(label),
+                trailing: sec == _autoLockSeconds
+                    ? const Icon(Icons.check, color: PeekColors.accent)
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(sec),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) {
+      await Prefs.I.setAutoLockSeconds(picked);
+      setState(() => _autoLockSeconds = picked);
+    }
   }
 
   Future<void> _exportLogs() async {
@@ -437,6 +505,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           builder: (_) => const AddressBookScreen(),
                         ),
                       ),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.timer_outlined,
+                          color: PeekColors.text2),
+                      title: const Text('Auto-lock'),
+                      subtitle: Text(
+                        _autoLockLabel(_autoLockSeconds),
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: PeekColors.text3),
+                      onTap: _pickAutoLock,
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,

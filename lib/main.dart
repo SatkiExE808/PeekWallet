@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'prefs/prefs.dart';
 import 'prices/price_feed.dart';
 import 'theme.dart';
 import 'shell.dart';
@@ -31,11 +32,9 @@ class PeekWalletApp extends StatelessWidget {
   }
 }
 
-/// How long the app may sit in the background before we re-lock the
-/// vault. Two minutes balances "user briefly switched to a 2FA app and
-/// came back" against "phone left on a table at a café". Lockable on
-/// every app boot regardless.
-const Duration _backgroundLockTimeout = Duration(minutes: 2);
+// Auto-lock interval is configurable in Settings → Auto-lock; defaults
+// to 2 min. Read fresh on every backgrounding so the new setting takes
+// effect immediately, no app restart needed.
 
 /// Top-level state machine:
 /// - hasWallet unknown → loading splash
@@ -80,17 +79,11 @@ class _RouterState extends State<_Router> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        // App sent to background. Start the lock countdown; if the
-        // user returns within the timeout, we cancel it in `resumed`.
-        // No-op if not unlocked (locking a locked vault is silly).
         if (!VaultState.I.isUnlocked) return;
         _bgLockTimer?.cancel();
-        _bgLockTimer = Timer(_backgroundLockTimeout, () {
-          if (VaultState.I.isUnlocked) VaultState.I.lock();
-        });
+        unawaited(_armBackgroundLock());
         break;
       case AppLifecycleState.resumed:
-        // User came back — cancel the pending lock.
         _bgLockTimer?.cancel();
         _bgLockTimer = null;
         break;
@@ -100,6 +93,22 @@ class _RouterState extends State<_Router> with WidgetsBindingObserver {
         // notification panel). Doing anything here would over-lock.
         break;
     }
+  }
+
+  Future<void> _armBackgroundLock() async {
+    // Read fresh on every backgrounding so the user's most-recent
+    // Settings change takes effect immediately.
+    final seconds = await Prefs.I.autoLockSeconds();
+    if (seconds <= 0) {
+      // 0 = lock immediately.
+      if (VaultState.I.isUnlocked) VaultState.I.lock();
+      return;
+    }
+    // A very large value (>~24h) is interpreted as "never auto-lock".
+    if (seconds >= 86400) return;
+    _bgLockTimer = Timer(Duration(seconds: seconds), () {
+      if (VaultState.I.isUnlocked) VaultState.I.lock();
+    });
   }
 
   @override
