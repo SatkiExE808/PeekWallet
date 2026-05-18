@@ -32,6 +32,8 @@ String? explorerTxUrl({required String coinId, required String txid}) {
       return 'https://solscan.io/tx/$txid';
     case 'TRX':
       return 'https://tronscan.org/#/transaction/$txid';
+    case 'BCH':
+      return 'https://blockchair.com/bitcoin-cash/transaction/$txid';
     default:
       return null;
   }

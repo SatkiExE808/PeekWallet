@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import 'add_wallet/add_wallet_flow.dart';
+import 'bch_coin_screen.dart';
 import 'bitcoin_coin_screen.dart';
 import 'coin_screen.dart';
 import 'ethereum_coin_screen.dart';
@@ -124,6 +125,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
                                 break;
                               case 'TRX':
                                 page = TronCoinScreen(walletMeta: meta);
+                                break;
+                              case 'BCH':
+                                page = BitcoinCashCoinScreen(walletMeta: meta);
                                 break;
                               default:
                                 page = CoinScreen(

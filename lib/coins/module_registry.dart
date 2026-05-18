@@ -1,4 +1,5 @@
 import 'bitcoin/bitcoin_module.dart';
+import 'bitcoin_cash/bch_module.dart';
 import 'coin_module.dart';
 import 'ethereum/ethereum_module.dart';
 import 'monero/monero_module.dart';
@@ -18,7 +19,7 @@ const List<CoinModule> kCoinModules = <CoinModule>[
   PolygonModule(),
   SolanaModule(),
   TronModule(),
-  // BCH — pending Sprint 4
+  BitcoinCashModule(),
 ];
 
 CoinModule? coinModuleFor(String coinId) {
