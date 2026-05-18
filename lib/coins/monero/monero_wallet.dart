@@ -155,7 +155,7 @@ class MoneroWallet {
     bool activeSsl = false;
     String lastError = '';
     for (final url in candidates) {
-      final ep = _DaemonEndpoint.parse(url);
+      final ep = MoneroDaemonEndpoint.parse(url);
       stage('init ${ep.hostPort} (ssl=${ep.useSsl})');
       final ok = monero.Wallet_init(
         w,
@@ -382,19 +382,33 @@ const List<String> kMoneroFallbackNodes = [
 ///   https://host:port        -> host:port ssl
 ///   http://host[:port]       -> host:port no ssl  (default 18081)
 ///   host[:port]              -> host:port no ssl  (default 18081)
-class _DaemonEndpoint {
-  const _DaemonEndpoint(this.hostPort, this.useSsl);
+///
+/// Exposed publicly so the Settings UI can preview what a user-entered
+/// URL will be parsed to, and validate before saving.
+class MoneroDaemonEndpoint {
+  const MoneroDaemonEndpoint(this.hostPort, this.useSsl);
   final String hostPort;
   final bool useSsl;
 
-  static _DaemonEndpoint parse(String input) {
+  static MoneroDaemonEndpoint parse(String input) {
     final raw = input.trim();
     final hasScheme = raw.contains('://');
     final uri = Uri.parse(hasScheme ? raw : 'tcp://$raw');
     final ssl = uri.scheme == 'https';
     final host = uri.host;
     final port = uri.hasPort ? uri.port : (ssl ? 443 : 18081);
-    return _DaemonEndpoint('$host:$port', ssl);
+    return MoneroDaemonEndpoint('$host:$port', ssl);
+  }
+
+  /// True when [input] parses to a non-empty host. Used as a cheap
+  /// pre-save sanity check in the Settings form.
+  static bool isValid(String input) {
+    try {
+      final ep = parse(input);
+      return ep.hostPort.split(':').first.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
