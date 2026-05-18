@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../coins/coin.dart';
+import '../coins/monero/monero_engine.dart';
+import '../coins/monero/monero_wallet.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 
-/// Receive-focused coin detail page: shows the primary address, a
-/// QR code, and Copy. Send / History / sync-driven balance land here
-/// in subsequent commits.
+/// Coin detail page. For Monero, shows the live native-engine balance
+/// + sync progress; other coins still show placeholder text until
+/// their own backends land.
 class CoinScreen extends StatefulWidget {
   const CoinScreen({super.key, required this.coin});
   final Coin coin;
@@ -21,10 +25,23 @@ class _CoinScreenState extends State<CoinScreen> {
   String? _address;
   String? _error;
 
+  /// 1s poll of MoneroSession for balance + sync %. Cheap enough — the
+  /// FFI calls are non-blocking reads of cached native state.
+  Timer? _poll;
+  int? _syncPct;
+  double? _balanceXmr;
+  String? _engineError;
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -39,6 +56,46 @@ class _CoinScreenState extends State<CoinScreen> {
     } catch (e) {
       setState(() => _error = 'Address derivation failed: $e');
     }
+
+    if (widget.coin.id == 'XMR' && moneroNativeAvailable()) {
+      final engine = MoneroEngine.I.status();
+      if (!engine.loaded) {
+        setState(() => _engineError = engine.error);
+        return;
+      }
+      await _bootMonero(mn);
+    }
+  }
+
+  Future<void> _bootMonero(String mnemonic) async {
+    // Recent tip - 5000 ≈ ~1 week of history. Fast first sync, won't
+    // miss recent deposits. Settings UI for tweaking this lands later.
+    const restoreHeight = 3676000;
+    final w = await MoneroSession.I.start(
+      mnemonic: mnemonic,
+      restoreHeight: restoreHeight,
+      daemonUri: kDefaultMoneroDaemon,
+    );
+    if (w == null) {
+      setState(() => _engineError = MoneroSession.I.lastError ?? 'unknown');
+      return;
+    }
+    _poll = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _syncPct = w.syncProgressPct;
+        _balanceXmr = w.balanceXmr;
+      });
+    });
+  }
+
+  String _balanceText() {
+    if (widget.coin.id != 'XMR') return '… ${widget.coin.symbol}';
+    if (_engineError != null) return '… ${widget.coin.symbol}';
+    if (_balanceXmr == null) return '… ${widget.coin.symbol}';
+    final synced = (_syncPct ?? 0) >= 100;
+    if (!synced) return 'Syncing ${_syncPct ?? 0}%';
+    return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
   }
 
   @override
@@ -66,14 +123,19 @@ class _CoinScreenState extends State<CoinScreen> {
                 ],
               ),
               const SizedBox(height: 6),
-              const Text(
-                '… XMR',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
+              Text(
+                _balanceText(),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
               ),
-              const Text(
-                'Sync engine wires in next — address is live now so you can already receive.',
-                style: TextStyle(color: PeekColors.text3, fontSize: 11),
-              ),
+              if (widget.coin.id == 'XMR') const _EngineStatusBanner(),
+              if (_engineError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Engine: $_engineError',
+                    style: const TextStyle(color: PeekColors.red, fontSize: 11),
+                  ),
+                ),
               const SizedBox(height: 20),
               if (_error != null)
                 Container(
@@ -118,27 +180,43 @@ class _CoinScreenState extends State<CoinScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          await Clipboard.setData(ClipboardData(text: _address!));
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Address copied')),
-                          );
-                        },
-                        icon: const Icon(Icons.copy, size: 16),
-                        label: const Text('Copy address'),
-                      ),
-                    ),
-                  ],
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: _address!));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Address copied')),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copy address'),
                 ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Sanity check: shows whether libmonero_wallet2_api_c.so loaded on
+/// this device.
+class _EngineStatusBanner extends StatelessWidget {
+  const _EngineStatusBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = MoneroEngine.I.status();
+    final color = s.loaded ? PeekColors.green : PeekColors.red;
+    final label = s.loaded
+        ? '✓ Native monero_c engine loaded'
+        : '✗ Engine not loaded: ${s.error}';
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 6),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 11),
       ),
     );
   }

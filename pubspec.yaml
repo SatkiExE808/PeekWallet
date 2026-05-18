@@ -69,6 +69,7 @@ dependencies:
 
   # FFI helpers used by the monero bindings.
   ffi: ^2.1.4
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
