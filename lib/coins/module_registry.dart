@@ -1,5 +1,6 @@
 import 'bitcoin/bitcoin_module.dart';
 import 'coin_module.dart';
+import 'ethereum/ethereum_module.dart';
 import 'monero/monero_module.dart';
 
 /// Single source of truth for which coins PeekWallet supports. The
@@ -10,8 +11,8 @@ import 'monero/monero_module.dart';
 const List<CoinModule> kCoinModules = <CoinModule>[
   MoneroModule(),
   BitcoinModule(),
+  EthereumModule(),
   LitecoinModule(),
-  // Ethereum             — pending Sprint 4
   // Solana / Tron / BCH  — pending Sprint 4
 ];
 

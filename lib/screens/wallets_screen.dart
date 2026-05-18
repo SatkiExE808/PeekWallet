@@ -8,6 +8,7 @@ import '../wallets/wallet_store.dart';
 import 'add_wallet/add_wallet_flow.dart';
 import 'bitcoin_coin_screen.dart';
 import 'coin_screen.dart';
+import 'ethereum_coin_screen.dart';
 
 /// Lists every wallet in the WalletStore. Tap a row to open its coin
 /// page; tap "+" to add a new wallet via the multi-step flow.
@@ -105,17 +106,26 @@ class _WalletsScreenState extends State<WalletsScreen> {
                         color: PeekColors.text3),
                     onTap: coin == null
                         ? null
-                        : () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    (meta.coinId == 'BTC' || meta.coinId == 'LTC')
-                                        ? BitcoinCoinScreen(walletMeta: meta)
-                                        : CoinScreen(
-                                            coin: _LegacyCoinAdapter(coin),
-                                            walletMeta: meta,
-                                          ),
-                              ),
-                            ),
+                        : () {
+                            late final Widget page;
+                            switch (meta.coinId) {
+                              case 'BTC':
+                              case 'LTC':
+                                page = BitcoinCoinScreen(walletMeta: meta);
+                                break;
+                              case 'ETH':
+                                page = EthereumCoinScreen(walletMeta: meta);
+                                break;
+                              default:
+                                page = CoinScreen(
+                                  coin: _LegacyCoinAdapter(coin),
+                                  walletMeta: meta,
+                                );
+                            }
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => page),
+                            );
+                          },
                     onLongPress: () => _showWalletMenu(meta),
                   ),
                 );
