@@ -65,7 +65,12 @@ class MoneroWallet {
 
     stage('locating wallet dir');
     final docs = await getApplicationDocumentsDirectory();
-    final walletDir = Directory('${docs.path}/peek_xmr');
+    // Bumped to _v2 to force a fresh wallet file on devices that
+    // were stuck syncing against the stale xmr-rpc.iamhch.com proxy
+    // (whose tip sat ~115k blocks behind reality). Old wallet files
+    // under peek_xmr/ are left on disk but ignored — the seed in
+    // secure storage is the source of truth.
+    final walletDir = Directory('${docs.path}/peek_xmr_v2');
     if (!walletDir.existsSync()) walletDir.createSync(recursive: true);
     final walletPath = '${walletDir.path}/wallet';
 
@@ -135,13 +140,14 @@ class MoneroWallet {
       );
     }
 
-    // Try the user's daemon first, then known-good public nodes. We
-    // *only* gate on Wallet_init's return value — Wallet_connected
-    // reports a cached status that stays 0 until refresh actually
-    // pulls something, so using it as a boot-time probe causes the
-    // loop to reject every candidate. The real connectivity test is
-    // whether daemonTipHeight goes >0 once refresh runs (UI surfaces
-    // that as "Connecting to daemon…" vs sync %).
+    // Try the user's daemon first, then known-good public nodes. For
+    // each candidate we kick refresh and wait briefly for the daemon
+    // to report a tip. A stale daemon — one whose underlying node
+    // hasn't kept up with the chain — accepts Wallet_init just fine
+    // and reports a tip ~hundreds-of-thousands of blocks behind real
+    // tip (that's exactly how xmr-rpc.iamhch.com parked us at 98%
+    // forever scanning toward a fake-2024 head). Reject anything
+    // below kMinSensibleTip and fall through to the next candidate.
     final candidates = <String>{daemonUri, ...kMoneroFallbackNodes}.toList();
     String? activeHostPort;
     bool activeSsl = false;
@@ -154,23 +160,43 @@ class MoneroWallet {
         daemonAddress: ep.hostPort,
         useSsl: ep.useSsl,
       );
-      if (ok) {
+      if (!ok) {
+        lastError = monero.Wallet_errorString(w);
+        stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
+        continue;
+      }
+      // Kick refresh and poll for a sensible tip. monero_c falls back
+      // to a compile-time approximate_blockchain_height if the daemon
+      // never responds, so we have to wait for the value to *exceed*
+      // that approximation rather than just be >0.
+      monero.Wallet_startRefresh(w);
+      int observedTip = 0;
+      for (var i = 0; i < 16; i++) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        observedTip = monero.Wallet_daemonBlockChainHeight(w);
+        if (observedTip >= kMinSensibleTip) break;
+      }
+      if (observedTip >= kMinSensibleTip) {
         activeHostPort = ep.hostPort;
         activeSsl = ep.useSsl;
         break;
       }
       lastError = monero.Wallet_errorString(w);
-      stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
+      stage('${ep.hostPort} stale (tip=$observedTip < $kMinSensibleTip${lastError.isEmpty ? "" : ", $lastError"}) — trying next');
+      // Pause refresh before trying the next candidate so we don't
+      // accidentally race two refresh threads against the same wallet.
+      try {
+        monero.Wallet_pauseRefresh(w);
+      } catch (_) {/* best effort */}
     }
 
     if (activeHostPort == null) {
       throw Exception(
-          'Wallet_init rejected every candidate. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
+          'No Monero node returned a current chain tip (≥ $kMinSensibleTip). '
+          'Last error: ${lastError.isEmpty ? "(none)" : lastError}');
     }
 
-    stage('attached $activeHostPort (ssl=$activeSsl) — starting refresh');
-    monero.Wallet_startRefresh(w);
-    stage('ready');
+    stage('attached $activeHostPort (ssl=$activeSsl) — synced refresh');
 
     return MoneroWallet._(w, keys.primaryAddress);
   }
@@ -312,19 +338,29 @@ class MoneroSession {
   }
 }
 
-/// Default daemon for the Monero wallet — Peek's CORS-friendly proxy
-/// in front of Cake's public node. Override per device via Settings →
-/// Monero Node (saved in shared prefs).
-const String kDefaultMoneroDaemon = 'https://xmr-rpc.iamhch.com';
+/// Default daemon for the Monero wallet. Cake's well-maintained public
+/// node — used by Cake Wallet itself, kept current with the chain.
+/// xmr-rpc.iamhch.com (Peek's old proxy in front of an older Cake
+/// node) was previously the default but its underlying node went
+/// stale; left in kMoneroFallbackNodes for now in case it comes back.
+const String kDefaultMoneroDaemon = 'https://xmr-node.cakewallet.com:18081';
 
 /// Public Monero RPC nodes we fall back to when the user's preferred
-/// daemon (or our own proxy) is unreachable. Order matters — first
-/// one to respond wins. All advertise SSL.
+/// daemon is unreachable *or* serving a stale chain tip. Order
+/// matters — first one to report a sensible tip wins.
 const List<String> kMoneroFallbackNodes = [
-  'https://xmr-node.cakewallet.com:18081',
   'https://nodes.hashvault.pro:18081',
   'https://node.sethforprivacy.com:443',
+  'https://xmr-rpc.iamhch.com',
 ];
+
+/// Minimum chain height we trust a daemon to be reporting. Anything
+/// below this is treated as a stale / dead node and the fallback loop
+/// moves on. Bake-time constant; bump on each release. As of May 2026
+/// real tip is roughly 3,790,000+ and grows ~720 blocks/day, so a
+/// 30k-block floor leaves comfortable margin for an "almost-current"
+/// node without accepting one that's months behind.
+const int kMinSensibleTip = 3760000;
 
 /// Splits a user-friendly daemon URL into the host:port + useSsl pair
 /// that monero_c's Wallet_init expects. Accepts:
