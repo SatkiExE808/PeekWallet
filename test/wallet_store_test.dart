@@ -129,6 +129,42 @@ void main() {
       expect(decrypted.walletFilePassword, isNotEmpty);
     });
 
+    test('walletFilePassword: add-wallet-flow → coin-screen round trip', () async {
+      // Reproduces the exact sequence the XMR 25-word restore takes:
+      //   1. add_wallet_flow generates an id + derives the wallet-file
+      //      password via deriveWalletFilePassword(masterPwd, id) and
+      //      hands that to monero_c at restore time.
+      //   2. WalletStore.create(withId: id, ...) stores the wallet.
+      //   3. coin_screen later calls WalletStore.open(walletId: id)
+      //      and uses the walletFilePassword field for monero_c open.
+      //
+      // For the open to succeed, the value from (1) MUST equal the
+      // value returned by (3). This test pins that invariant.
+      const masterPwd = 'correct-horse-battery-staple';
+      final id = WalletStore.I.generateId();
+      final filePwdAtRestore =
+          await WalletStore.I.deriveWalletFilePassword(masterPwd, id);
+
+      await WalletStore.I.create(
+        withId: id,
+        name: 'XMR 25-word',
+        coinId: 'XMR',
+        format: SeedFormat.monero25,
+        seedMaterial: {'seed': 'word1 word2 word3', 'seedOffset': ''},
+        password: masterPwd,
+      );
+
+      final decrypted = await WalletStore.I.open(
+        walletId: id,
+        password: masterPwd,
+      );
+      expect(decrypted.walletFilePassword, filePwdAtRestore,
+          reason:
+              'Wallet-file password must be reproducible by the open path. '
+              'If this fails, the add-wallet-flow → monero_c file is encrypted '
+              'with one password and coin-screen tries the other.');
+    });
+
     test('walletFilePassword is deterministic across opens', () async {
       final meta = await WalletStore.I.create(
         name: 'X',

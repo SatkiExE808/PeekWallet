@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:monero/monero.dart' as monero;
 import 'package:path_provider/path_provider.dart';
 
+import '../../util/peek_logger.dart';
 import '../../wallets/seed_format.dart';
 import '../coin_module.dart';
 import 'monero_keys.dart';
@@ -209,44 +210,97 @@ class MoneroModule implements CoinModule {
       case SeedFormat.monero25:
       case SeedFormat.moneroPolyseed:
       case SeedFormat.keysOnly:
-        // The on-disk wallet was already created during
-        // generateNew / restoreFrom — try to just open it.
-        try {
-          return await MoneroWallet.openFromPath(
-            walletPath: walletPath,
-            walletPassword: walletFilePassword,
-            daemonUri: daemonUri,
-            restoreHeight: restoreHeight,
-            onStage: onStage,
-          );
-        } catch (e) {
-          // Recovery path: pre-fix builds wrote the wallet file with
-          // a different password than WalletStore.open() now hands
-          // us. If we have the seed material we can blow the file
-          // away and re-create it with the right password — same
-          // self-healing the BIP39 path has had.
-          final msg = e.toString().toLowerCase();
-          final isPwdMismatch =
-              msg.contains('invalid password') || msg.contains('failed to open');
-          if (!isPwdMismatch) rethrow;
-          onStage?.call('wallet file password mismatch — re-creating from seed');
-          await _wipeWalletDir(walletPath);
-          await _recreateFromSeedMaterial(
-            walletId: walletId,
-            format: format,
-            seedMaterial: seedMaterial,
-            walletFilePassword: walletFilePassword,
-            restoreHeight: restoreHeight,
-          );
-          return MoneroWallet.openFromPath(
-            walletPath: walletPath,
-            walletPassword: walletFilePassword,
-            daemonUri: daemonUri,
-            restoreHeight: restoreHeight,
-            onStage: onStage,
-          );
-        }
+        return _openOrSelfHeal(
+          walletId: walletId,
+          format: format,
+          seedMaterial: seedMaterial,
+          walletPath: walletPath,
+          walletFilePassword: walletFilePassword,
+          daemonUri: daemonUri,
+          restoreHeight: restoreHeight,
+          onStage: onStage,
+        );
     }
+  }
+
+  /// Open the on-disk wallet at [walletPath]; if it fails for any
+  /// password-related reason, wipe the path and re-create the wallet
+  /// from the stored seed material under the CURRENT
+  /// walletFilePassword, then open again.
+  ///
+  /// Verbose stage logging at every step so when something goes wrong
+  /// the user can see exactly which call failed and paste it back.
+  Future<MoneroWallet> _openOrSelfHeal({
+    required String walletId,
+    required SeedFormat format,
+    required Map<String, dynamic> seedMaterial,
+    required String walletPath,
+    required String walletFilePassword,
+    required String daemonUri,
+    required int restoreHeight,
+    void Function(String stage)? onStage,
+  }) async {
+    void stage(String s) {
+      PeekLogger.I.log('xmr', s);
+      onStage?.call(s);
+    }
+
+    final wm = monero.WalletManagerFactory_getWalletManager();
+    final fileExists = monero.WalletManager_walletExists(wm, walletPath);
+    stage('open: file exists=$fileExists at $walletPath');
+
+    if (fileExists) {
+      try {
+        return await MoneroWallet.openFromPath(
+          walletPath: walletPath,
+          walletPassword: walletFilePassword,
+          daemonUri: daemonUri,
+          restoreHeight: restoreHeight,
+          onStage: onStage,
+        );
+      } catch (e) {
+        final msg = e.toString().toLowerCase();
+        // Cast a wide net — any open failure where we have the seed
+        // material is recoverable. "invalid password" + "failed to
+        // open" are the common ones; "wallet keys file not found"
+        // covers half-deleted state; we DON'T self-heal for clean
+        // "file not found" (that's the normal "wallet doesn't exist
+        // yet" case, handled by the !fileExists branch).
+        final recoverable = msg.contains('invalid password') ||
+            msg.contains('failed to open') ||
+            msg.contains('wrong password') ||
+            msg.contains('keys file');
+        if (!recoverable) {
+          stage('open failed with unrecoverable error: $e');
+          rethrow;
+        }
+        stage('open failed ($e) — self-heal: wipe + recreate from seed');
+      }
+    }
+
+    // Either the file never existed (first open after a fresh restore
+    // that we somehow lost — re-do the restore) OR the open failed
+    // recoverably. Wipe + recreate.
+    stage('self-heal: wiping wallet dir');
+    await _wipeWalletDir(walletPath);
+
+    stage('self-heal: re-creating wallet from $format seed');
+    await _recreateFromSeedMaterial(
+      walletId: walletId,
+      format: format,
+      seedMaterial: seedMaterial,
+      walletFilePassword: walletFilePassword,
+      restoreHeight: restoreHeight,
+    );
+
+    stage('self-heal: opening newly-recreated wallet');
+    return MoneroWallet.openFromPath(
+      walletPath: walletPath,
+      walletPassword: walletFilePassword,
+      daemonUri: daemonUri,
+      restoreHeight: restoreHeight,
+      onStage: onStage,
+    );
   }
 
   /// Wipe the wallet files at [walletPath] so we can recreate them
