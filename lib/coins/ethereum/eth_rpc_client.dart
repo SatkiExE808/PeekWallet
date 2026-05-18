@@ -111,6 +111,21 @@ class EthRpcClient {
     return res as String;
   }
 
+  /// Generic eth_call. Used for reading ERC-20 view methods
+  /// (balanceOf, decimals, etc.) without sending a transaction.
+  /// Returns the result as a 0x-prefixed hex string.
+  Future<String> ethCall({
+    required String to,
+    required String data,
+    String tag = 'latest',
+  }) async {
+    final res = await _rpc('eth_call', [
+      {'to': to, 'data': data},
+      tag,
+    ]);
+    return res as String;
+  }
+
   /// Chain id reported by the RPC. Mainnet = 1, Sepolia = 11155111.
   /// Used as a sanity check before signing — we don't want to sign
   /// a mainnet tx against a testnet endpoint.

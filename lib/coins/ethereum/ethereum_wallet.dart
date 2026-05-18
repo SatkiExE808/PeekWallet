@@ -5,6 +5,8 @@ import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
 
 import '../../util/peek_logger.dart';
+import 'erc20.dart';
+import 'erc20_tokens.dart';
 import 'eth_network.dart';
 import 'eth_rpc_client.dart';
 import 'eth_tx_builder.dart';
@@ -96,6 +98,35 @@ class EthereumWallet {
       return const [];
     }
   }
+
+  /// Read the raw ERC-20 balance (in base units, not display units)
+  /// for [token]. Wraps eth_call balanceOf.
+  Future<BigInt> tokenBalanceRaw(Erc20Token token) async {
+    if (_closed) return BigInt.zero;
+    try {
+      final result = await _rpc.ethCall(
+        to: token.contract,
+        data: encodeBalanceOfCall(address.addressLower),
+      );
+      return decodeUint256(result);
+    } catch (e) {
+      PeekLogger.I.log(_logTag,
+          '${token.symbol} balance fetch failed: $e');
+      return BigInt.zero;
+    }
+  }
+
+  /// Convenience: convert raw → display units via 10^decimals.
+  /// Returns a double for display only; for arithmetic on amounts
+  /// you'd want BigInt to avoid precision loss on tokens with 18+
+  /// decimals + large balances.
+  double tokenBalanceDisplay(BigInt raw, Erc20Token token) {
+    return raw.toDouble() /
+        BigInt.from(10).pow(token.decimals).toDouble();
+  }
+
+  /// Default token list for this wallet's chain.
+  List<Erc20Token> get defaultTokens => defaultTokensFor(network.chainId);
 
   /// Live fee suggestion bundle for the send screen.
   Future<EthFeeSuggestion> feeSuggestion() async {

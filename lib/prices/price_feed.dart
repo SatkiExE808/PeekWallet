@@ -40,6 +40,12 @@ class PriceFeed extends ChangeNotifier {
     'TRX': 'tron',
     'MATIC': 'matic-network',
     'DOGE': 'dogecoin',
+    // Stablecoins — required for ERC-20 token rows to show fiat.
+    // Always ~$1 but querying explicitly handles depegs (rare) and
+    // non-USD pricing (e.g. user has display currency = EUR).
+    'USDT': 'tether',
+    'USDC': 'usd-coin',
+    'DAI': 'dai',
   };
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(

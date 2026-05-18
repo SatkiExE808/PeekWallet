@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../coins/ethereum/erc20_tokens.dart';
 import '../coins/ethereum/ethereum_module.dart';
 import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/ethereum/etherscan_client.dart';
@@ -32,6 +33,10 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   String? _err;
   BigInt _balanceWei = BigInt.zero;
   List<EthereumTx> _txes = const [];
+  /// Token balances keyed by contract address. Populated on each
+  /// _refresh() so the UI can show USDT/USDC/DAI rows under the
+  /// native ETH/MATIC row.
+  Map<String, BigInt> _tokenBalances = const {};
   Timer? _poll;
   bool _refreshing = false;
 
@@ -95,10 +100,27 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     try {
       final wei = await w.balanceWei();
       final txes = await w.transactions();
+      // Fetch token balances in parallel — cheap eth_call's that
+      // skip if the wallet is closed mid-fetch. We don't fail the
+      // whole refresh on individual token errors; the wallet's
+      // tokenBalanceRaw swallows them and returns zero.
+      final tokens = w.defaultTokens;
+      final tokenResults = <String, BigInt>{};
+      if (tokens.isNotEmpty) {
+        final balances = await Future.wait(
+            tokens.map((t) => w.tokenBalanceRaw(t)));
+        for (var i = 0; i < tokens.length; i++) {
+          if (balances[i] > BigInt.zero) {
+            tokenResults[tokens[i].contract] = balances[i];
+          }
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         _balanceWei = wei;
         _txes = txes;
+        _tokenBalances = tokenResults;
         _err = null;
       });
       final eth = EthereumTx.weiToEth(wei);
@@ -344,6 +366,20 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                         TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
+                if (w != null && _tokenBalances.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  const Text('Tokens',
+                      style: TextStyle(
+                          color: PeekColors.text2, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  for (final token in w.defaultTokens)
+                    if (_tokenBalances[token.contract] != null)
+                      _TokenRow(
+                        token: token,
+                        rawBalance: _tokenBalances[token.contract]!,
+                        wallet: w,
+                      ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -384,6 +420,85 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Display row for one ERC-20 token. Shows the user's balance in
+/// display units (USDT/USDC have 6 decimals; DAI has 18) and the
+/// fiat conversion if the price feed has a quote for that symbol.
+/// Read-only for now — tapping does nothing. Send-token is a
+/// follow-up that needs a token-aware send screen.
+class _TokenRow extends StatelessWidget {
+  const _TokenRow({
+    required this.token,
+    required this.rawBalance,
+    required this.wallet,
+  });
+  final Erc20Token token;
+  final BigInt rawBalance;
+  final EthereumWallet wallet;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = wallet.tokenBalanceDisplay(rawBalance, token);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: AnimatedBuilder(
+        animation: PriceFeed.I,
+        builder: (_, _) {
+          final fiat = PriceFeed.I.formatFiat(token.symbol, display);
+          return Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: PeekColors.surface2,
+                child: Text(
+                  token.symbol.substring(0, 1),
+                  style: const TextStyle(
+                      color: PeekColors.text, fontSize: 11),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(token.symbol,
+                        style: const TextStyle(
+                            color: PeekColors.text,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                    Text(token.name,
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _fmt(display, token.decimals == 6 ? 2 : 4),
+                    style: const TextStyle(
+                        color: PeekColors.text, fontSize: 13),
+                  ),
+                  if (fiat.isNotEmpty)
+                    Text('≈ $fiat',
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static String _fmt(double v, int digits) {
+    if (v == 0) return '0';
+    if (v < 0.0001) return v.toStringAsExponential(2);
+    return v.toStringAsFixed(digits);
   }
 }
 
