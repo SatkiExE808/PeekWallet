@@ -203,7 +203,10 @@ class MoneroWallet {
         final adjusted = observedTip - 5000;
         stage('clamp restoreHeight $restoreHeight -> $adjusted (tip=$observedTip)');
         try {
-          monero.Wallet_setRefreshFromBlockHeight(w, adjusted);
+          monero.Wallet_setRefreshFromBlockHeight(
+            w,
+            refresh_from_block_height: adjusted,
+          );
         } catch (e) {
           stage('setRefreshFromBlockHeight failed: $e — using $restoreHeight');
         }
