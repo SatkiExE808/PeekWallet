@@ -17,6 +17,7 @@ class EtherscanClient {
 
   /// Blockscout's hosted Ethereum mainnet API. The Etherscan-
   /// compatible surface lives at /api with module=… parameters.
+  /// For Polygon and other EVM chains we override via [baseUrl].
   static const _defaultBase = 'https://eth.blockscout.com/api';
 
   final String _base;

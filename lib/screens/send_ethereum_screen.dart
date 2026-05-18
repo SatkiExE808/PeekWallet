@@ -112,7 +112,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   Future<void> _scanQr() async {
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => const QrScanScreen(title: 'Scan Ethereum address'),
+        builder: (_) => QrScanScreen(
+            title: 'Scan ${widget.wallet.network.symbol} address'),
       ),
     );
     if (scanned != null && scanned.isNotEmpty) {
@@ -210,7 +211,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   Widget build(BuildContext context) {
     return ScreenshotGuard(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Send Ethereum')),
+        appBar: AppBar(title: Text('Send ${widget.wallet.network.name}')),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -223,10 +224,11 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
 
   Widget _buildForm() {
     final amountWei = _parseAmountWei();
+    final symbol = widget.wallet.network.symbol;
     final fiat = amountWei == null
         ? ''
         : PriceFeed.I.formatFiat(
-            'ETH', EthereumTx.weiToEth(amountWei));
+            symbol, EthereumTx.weiToEth(amountWei));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -268,9 +270,10 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Expanded(
-              child: Text('Amount (ETH or wei)',
-                  style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+            Expanded(
+              child: Text('Amount ($symbol or wei)',
+                  style: const TextStyle(
+                      color: PeekColors.text2, fontSize: 12)),
             ),
             TextButton(
               onPressed: _balanceWei == BigInt.zero ? null : _onMax,
@@ -327,8 +330,10 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
               children: [
                 _kvRow('To',
                     '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
-                _kvRow('Amount',
-                    '${EthereumTx.weiToEth(amount).toStringAsFixed(6)} ETH'),
+                _kvRow(
+                    'Amount',
+                    '${EthereumTx.weiToEth(amount).toStringAsFixed(6)} '
+                        '${widget.wallet.network.symbol}'),
                 _kvRow('Max fee per gas',
                     '${_gwei(fee.maxFeeWei)} gwei'),
                 _kvRow('Priority fee per gas',
@@ -414,7 +419,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Text(
-                          '${EthereumTx.weiToEth(_balanceWei).toStringAsFixed(6)} ETH available',
+                          '${EthereumTx.weiToEth(_balanceWei).toStringAsFixed(6)} '
+                          '${widget.wallet.network.symbol} available',
                           style: const TextStyle(
                               color: PeekColors.text, fontSize: 13),
                         ),

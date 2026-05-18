@@ -5,6 +5,7 @@ import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
 
 import '../../util/peek_logger.dart';
+import 'eth_network.dart';
 import 'eth_rpc_client.dart';
 import 'eth_tx_builder.dart';
 import 'ethereum_keys.dart';
@@ -25,13 +26,23 @@ class EthereumWallet {
     required this.mnemonic,
     required this.passphrase,
     required this.address,
-  })  : _client = EtherscanClient(),
-        _rpc = EthRpcClient();
+    required this.network,
+  })  : _client = EtherscanClient(baseUrl: network.blockscoutBaseUrl),
+        _rpc = EthRpcClient(endpoint: network.rpcUrl);
 
+  /// Open an EVM wallet for the given seed + network. Defaults to
+  /// Ethereum mainnet; pass [kPolygonMainnet] (or any other
+  /// [EthereumNetwork]) to target a different chain.
   factory EthereumWallet.open({
     required String mnemonic,
     String passphrase = '',
+    EthereumNetwork network = kEthMainnet,
   }) {
+    // Every common EVM wallet uses coinType=60 for every EVM chain
+    // — the account-based model means the same private key holds
+    // balances on all of them simultaneously. We follow that
+    // convention, so the [network.coinType] field is informational
+    // only at the moment.
     final addr = deriveEthereumAddress(
       mnemonic: mnemonic,
       passphrase: passphrase,
@@ -40,12 +51,15 @@ class EthereumWallet {
       mnemonic: mnemonic,
       passphrase: passphrase,
       address: addr,
+      network: network,
     );
   }
 
   final String mnemonic;
   final String passphrase;
   final EthereumAddressDerivation address;
+  /// Which EVM chain this wallet talks to.
+  final EthereumNetwork network;
   final EtherscanClient _client;
   final EthRpcClient _rpc;
   bool _closed = false;
@@ -62,13 +76,15 @@ class EthereumWallet {
     if (_closed) return BigInt.zero;
     try {
       final b = await _client.balanceWei(address.addressLower);
-      PeekLogger.I.log('eth', 'balance fetched: $b wei');
+      PeekLogger.I.log(_logTag, 'balance fetched: $b wei');
       return b;
     } catch (e) {
-      PeekLogger.I.log('eth', 'balance fetch failed: $e');
+      PeekLogger.I.log(_logTag, 'balance fetch failed: $e');
       rethrow;
     }
   }
+
+  String get _logTag => network.symbol.toLowerCase();
 
   /// Recent transactions, newest first.
   Future<List<EthereumTx>> transactions() async {
@@ -76,7 +92,7 @@ class EthereumWallet {
     try {
       return await _client.transactions(address.addressLower);
     } catch (e) {
-      PeekLogger.I.log('eth', 'history fetch failed: $e');
+      PeekLogger.I.log(_logTag, 'history fetch failed: $e');
       return const [];
     }
   }
@@ -118,9 +134,10 @@ class EthereumWallet {
     if (_closed) throw StateError('Wallet is closed');
 
     final chainId = await _rpc.chainId();
-    if (chainId != 1) {
+    if (chainId != network.chainId) {
       throw StateError(
-          'RPC reports chainId=$chainId, refusing to sign — expected 1 (mainnet)');
+          'RPC reports chainId=$chainId, refusing to sign — '
+          'expected ${network.chainId} (${network.name})');
     }
 
     final nonceVal = await _rpc.getTransactionCount(address.addressLower);
@@ -131,7 +148,7 @@ class EthereumWallet {
     );
 
     PeekLogger.I.log(
-      'eth',
+      _logTag,
       'send requested: $valueWei wei to '
           '${destAddress.length >= 12 ? '${destAddress.substring(0, 10)}…' : destAddress} '
           'nonce=$nonceVal gas=$gasLimit maxFee=$maxFeeWei',
@@ -158,11 +175,11 @@ class EthereumWallet {
       expectedPublicKey: pubKey,
     );
 
-    PeekLogger.I.log('eth',
+    PeekLogger.I.log(_logTag,
         'broadcasting tx ${built.txHash} (gas $gasLimit @ $maxFeeWei wei)');
     final txid = await _rpc.sendRawTransaction(built.rawHex);
     if (txid.toLowerCase() != built.txHash.toLowerCase()) {
-      PeekLogger.I.log('eth',
+      PeekLogger.I.log(_logTag,
           'WARNING: RPC returned txid $txid but we computed ${built.txHash}');
     }
     return built;

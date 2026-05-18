@@ -114,6 +114,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                                 page = BitcoinCoinScreen(walletMeta: meta);
                                 break;
                               case 'ETH':
+                              case 'MATIC':
                                 page = EthereumCoinScreen(walletMeta: meta);
                                 break;
                               default:

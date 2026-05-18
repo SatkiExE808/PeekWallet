@@ -13,6 +13,7 @@ const List<CoinModule> kCoinModules = <CoinModule>[
   BitcoinModule(),
   EthereumModule(),
   LitecoinModule(),
+  PolygonModule(),
   // Solana / Tron / BCH  — pending Sprint 4
 ];
 

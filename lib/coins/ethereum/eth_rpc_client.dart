@@ -17,6 +17,8 @@ class EthRpcClient {
       : _endpoint = endpoint ?? _defaultEndpoint,
         _http = httpClient ?? http.Client();
 
+  /// Default endpoint = Ethereum mainnet. Polygon/Arbitrum/etc. pass
+  /// their own [endpoint] when constructing.
   static const _defaultEndpoint = 'https://eth.llamarpc.com';
 
   final String _endpoint;

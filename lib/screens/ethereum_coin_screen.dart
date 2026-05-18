@@ -58,7 +58,17 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         walletId: widget.walletMeta.id,
         password: password,
       );
-      final mod = const EthereumModule();
+      // Same screen serves ETH and any other EVM chain (Polygon
+      // for now) — pick the module from coinId.
+      final EvmCoinModule mod;
+      switch (widget.walletMeta.coinId) {
+        case 'MATIC':
+          mod = const PolygonModule();
+          break;
+        case 'ETH':
+        default:
+          mod = const EthereumModule();
+      }
       final w = await mod.open(
         walletId: widget.walletMeta.id,
         format: widget.walletMeta.format,
@@ -97,10 +107,13 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     }
   }
 
+  String get _symbol => _wallet?.network.symbol ?? widget.walletMeta.coinId;
+  String get _coinName => _wallet?.network.name ?? 'Ethereum';
+
   String _balanceText() {
-    if (_wallet == null) return '… ETH';
+    if (_wallet == null) return '… $_symbol';
     final eth = EthereumTx.weiToEth(_balanceWei);
-    return '${eth.toStringAsFixed(6)} ETH';
+    return '${eth.toStringAsFixed(6)} $_symbol';
   }
 
   Future<void> _openSendScreen(EthereumWallet w) async {
@@ -142,10 +155,11 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Receive ETH',
+              Text(
+                'Receive $_symbol',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 16),
               Center(
@@ -206,7 +220,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     final w = _wallet;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ethereum'),
+        title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -227,17 +241,24 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
               children: [
                 Row(
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: Color(0xFF627EEA),
+                    CircleAvatar(
+                      backgroundColor: _symbol == 'MATIC'
+                          ? const Color(0xFF8247E5)
+                          : const Color(0xFF627EEA),
                       radius: 18,
-                      child: Icon(Icons.diamond,
-                          color: Colors.white, size: 18),
+                      child: Icon(
+                        _symbol == 'MATIC'
+                            ? Icons.hexagon
+                            : Icons.diamond,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'ETH balance',
-                      style:
-                          TextStyle(color: PeekColors.text2, fontSize: 13),
+                    Text(
+                      '$_symbol balance',
+                      style: const TextStyle(
+                          color: PeekColors.text2, fontSize: 13),
                     ),
                     const Spacer(),
                     if (_refreshing)
@@ -261,7 +282,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                       return const SizedBox.shrink();
                     }
                     final fiat = PriceFeed.I.formatFiat(
-                        'ETH', EthereumTx.weiToEth(_balanceWei));
+                        _symbol, EthereumTx.weiToEth(_balanceWei));
                     if (fiat.isEmpty) return const SizedBox.shrink();
                     return Padding(
                       padding: const EdgeInsets.only(top: 2),
@@ -338,13 +359,13 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                           ? 'Loading…'
                           : 'No transactions yet — give your receive '
                               'address to a sender, refresh, and incoming '
-                              'ETH appears here.',
+                              '$_symbol appears here.',
                       style: const TextStyle(
                           color: PeekColors.text3, fontSize: 12),
                     ),
                   )
                 else
-                  for (final tx in _txes) _EthTxRow(tx: tx),
+                  for (final tx in _txes) _EthTxRow(tx: tx, symbol: _symbol),
               ],
             ),
           ),
@@ -355,15 +376,18 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
 }
 
 class _EthTxRow extends StatelessWidget {
-  const _EthTxRow({required this.tx});
+  const _EthTxRow({required this.tx, required this.symbol});
   final EthereumTx tx;
+  /// Coin symbol — "ETH" or "MATIC". Drives the amount label so the
+  /// same row layout renders for either chain.
+  final String symbol;
 
   @override
   Widget build(BuildContext context) {
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     final amount =
-        '$sign${tx.netEth.abs().toStringAsFixed(6)} ETH';
+        '$sign${tx.netEth.abs().toStringAsFixed(6)} $symbol';
     final subtitle = tx.confirmed
         ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
         : 'Pending';
@@ -448,8 +472,8 @@ class _EthTxRow extends StatelessWidget {
                     fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              _kv('Net amount', '${tx.netEth.toStringAsFixed(6)} ETH'),
-              _kv('Gas fee', '${tx.gasFeeEth.toStringAsFixed(6)} ETH'),
+              _kv('Net amount', '${tx.netEth.toStringAsFixed(6)} $symbol'),
+              _kv('Gas fee', '${tx.gasFeeEth.toStringAsFixed(6)} $symbol'),
               _kv('Status', tx.confirmed ? 'Confirmed' : 'Pending'),
               _kv('Block height',
                   tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
