@@ -33,16 +33,16 @@ class BiometricAuth {
   /// password entry in all "false" cases.
   Future<bool> authenticate({String reason = 'Unlock PeekWallet'}) async {
     try {
+      // local_auth 3.x: options are direct named params on authenticate,
+      // not wrapped in AuthenticationOptions. biometricOnly: true so the
+      // device PIN can't unlock the wallet (would silently downgrade
+      // the security model — user falls back to typing the password
+      // instead). persistAcrossBackgrounding so the prompt survives
+      // the user briefly switching apps.
       return await _auth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          // Don't let the system PIN/pattern unlock the wallet —
-          // that would silently downgrade the security model. If
-          // biometric isn't available the user can fall back to
-          // typing the password.
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
       );
     } on PlatformException {
       return false;
