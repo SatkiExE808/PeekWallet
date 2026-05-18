@@ -249,31 +249,56 @@ class MoneroModule implements CoinModule {
     }
   }
 
-  /// Quarantine + delete the broken wallet directory so we can
-  /// recreate from seed. Best-effort: if the rename fails for any
-  /// reason we still try createSync() afterwards so the next step
-  /// doesn't crash on a missing parent.
+  /// Wipe the wallet files at [walletPath] so we can recreate them
+  /// fresh with the right password. We delete the specific files
+  /// monero_c writes (`<path>`, `<path>.keys`, and `<path>.address.txt`)
+  /// rather than rmdir-ing the parent, because rmdir can race with
+  /// the WalletManager's still-flushing sync thread on some Android
+  /// builds and leave the directory in a half-deleted state where
+  /// WalletManager_walletExists() incorrectly returns true.
+  ///
+  /// We then VERIFY via WalletManager_walletExists() that monero_c
+  /// agrees the wallet is gone. If anything's still there we delete
+  /// the parent dir as a fallback and re-create it empty.
   Future<void> _wipeWalletDir(String walletPath) async {
     final dir = Directory(walletPath).parent;
     if (!dir.existsSync()) return;
-    try {
-      final quarantine = Directory('${dir.path}.broken-${DateTime.now().microsecondsSinceEpoch}');
-      dir.renameSync(quarantine.path);
-      // Best-effort async delete — don't block on it.
-      unawaited(Future(() {
-        try {
-          quarantine.deleteSync(recursive: true);
-        } catch (_) {/* leak the dir; next boot can clean it up */}
-      }));
-    } catch (_) {
-      // Rename failed (perhaps platform-specific). Fall back to a
-      // direct delete; if THAT fails we just continue and let the
-      // re-create overwrite or fail loudly.
+
+    // Targeted delete of monero_c's known artifacts. .keys is the
+    // important one for walletExists() detection; the cache file and
+    // address.txt are clean-up.
+    for (final suffix in ['', '.keys', '.address.txt']) {
+      final f = File('$walletPath$suffix');
       try {
-        dir.deleteSync(recursive: true);
-      } catch (_) {/* best effort */}
+        if (f.existsSync()) f.deleteSync();
+      } catch (_) {/* best effort, falls through to the parent-dir wipe */}
     }
-    dir.createSync(recursive: true);
+
+    // Verify monero_c agrees the wallet is gone. If walletExists()
+    // still returns true, fall back to nuking the parent dir.
+    final wm = monero.WalletManagerFactory_getWalletManager();
+    final stillThere = monero.WalletManager_walletExists(wm, walletPath);
+    if (stillThere) {
+      try {
+        // Quarantine first (rename is atomic + monero_c can't hold
+        // file handles on a renamed path), then async-delete.
+        final quarantine = Directory(
+            '${dir.path}.broken-${DateTime.now().microsecondsSinceEpoch}');
+        dir.renameSync(quarantine.path);
+        unawaited(Future(() {
+          try {
+            quarantine.deleteSync(recursive: true);
+          } catch (_) {/* leak the dir; next boot can clean it up */}
+        }));
+      } catch (_) {
+        try {
+          dir.deleteSync(recursive: true);
+        } catch (_) {/* best effort */}
+      }
+      // Recreate the parent so _walletPathFor's existsSync() check
+      // doesn't trigger a second createSync.
+      if (!dir.existsSync()) dir.createSync(recursive: true);
+    }
   }
 
   /// Run the appropriate restore-from-seed monero_c call to
@@ -339,6 +364,13 @@ class MoneroModule implements CoinModule {
     final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
+    // Same belt-and-suspenders as the restore paths: if a stale
+    // wallet from a previous failed attempt is at this path,
+    // createWallet will error with "Wallet already exists" — wipe
+    // first so we always get a clean creation.
+    if (monero.WalletManager_walletExists(wm, walletPath)) {
+      await _wipeWalletDir(walletPath);
+    }
     final w = monero.WalletManager_createWallet(
       wm,
       path: walletPath,
@@ -390,7 +422,18 @@ class MoneroModule implements CoinModule {
     }
     final walletPath = await _walletPathFor(walletId);
 
+    // Belt-and-suspenders: if a stale wallet file from a previous
+    // failed attempt is sitting at this exact path, WalletManager_-
+    // recoveryWallet will try to OPEN it with our password and
+    // report "invalid password" when (inevitably) it doesn't match.
+    // Wipe any artifacts at the path BEFORE we ask monero_c to
+    // create the wallet so it always takes the "create fresh"
+    // branch internally.
     final wm = monero.WalletManagerFactory_getWalletManager();
+    if (monero.WalletManager_walletExists(wm, walletPath)) {
+      await _wipeWalletDir(walletPath);
+    }
+
     final w = monero.WalletManager_recoveryWallet(
       wm,
       path: walletPath,
@@ -438,6 +481,9 @@ class MoneroModule implements CoinModule {
     final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
+    if (monero.WalletManager_walletExists(wm, walletPath)) {
+      await _wipeWalletDir(walletPath);
+    }
     final w = monero.WalletManager_createWallet(
       wm,
       path: walletPath,
@@ -491,6 +537,9 @@ class MoneroModule implements CoinModule {
     final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
+    if (monero.WalletManager_walletExists(wm, walletPath)) {
+      await _wipeWalletDir(walletPath);
+    }
     final w = monero.WalletManager_createWalletFromPolyseed(
       wm,
       path: walletPath,
@@ -555,6 +604,9 @@ class MoneroModule implements CoinModule {
     final walletPath = await _walletPathFor(walletId);
 
     final wm = monero.WalletManagerFactory_getWalletManager();
+    if (monero.WalletManager_walletExists(wm, walletPath)) {
+      await _wipeWalletDir(walletPath);
+    }
     final w = monero.WalletManager_createWalletFromKeys(
       wm,
       path: walletPath,
