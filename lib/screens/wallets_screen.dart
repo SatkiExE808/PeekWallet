@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../coins/coin.dart';
 import '../coins/module_registry.dart';
+import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../wallets/balance_cache.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import 'add_wallet/add_wallet_flow.dart';
@@ -34,15 +36,20 @@ class _WalletsScreenState extends State<WalletsScreen> {
     super.initState();
     _entries = WalletStore.I.list();
     WalletStore.I.addListener(_refresh);
+    // Rebuild when any wallet pushes a new balance snapshot so the
+    // subtitles + portfolio total update live.
+    BalanceCache.I.addListener(_refresh);
   }
 
   @override
   void dispose() {
     WalletStore.I.removeListener(_refresh);
+    BalanceCache.I.removeListener(_refresh);
     super.dispose();
   }
 
   void _refresh() {
+    if (!mounted) return;
     setState(() {
       _entries = WalletStore.I.list();
     });
@@ -81,15 +88,24 @@ class _WalletsScreenState extends State<WalletsScreen> {
             if (entries.isEmpty) {
               return _EmptyState(onAdd: _add);
             }
-            return ListView.separated(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              itemCount: entries.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 6),
-              itemBuilder: (_, i) {
-                final meta = entries[i];
-                final coin = coinModuleFor(meta.coinId);
-                return Card(
+            return FutureBuilder<Map<String, CachedBalance>>(
+              future: BalanceCache.I.all(),
+              builder: (ctx, cacheSnap) {
+                final cache = cacheSnap.data ?? const {};
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  itemCount: entries.length + 1,
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
+                  itemBuilder: (_, i) {
+                    if (i == 0) {
+                      return _PortfolioHeader(
+                          entries: entries, cache: cache);
+                    }
+                    final meta = entries[i - 1];
+                    final coin = coinModuleFor(meta.coinId);
+                    final cached = cache[meta.id];
+                    return Card(
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: coin?.color ?? PeekColors.text3,
@@ -100,11 +116,18 @@ class _WalletsScreenState extends State<WalletsScreen> {
                     ),
                     title: Text(meta.name,
                         style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(
-                      '${coin?.symbol ?? meta.coinId} · ${meta.format.displayName}',
-                      style: const TextStyle(
-                          color: PeekColors.text2, fontSize: 12),
-                    ),
+                    subtitle: cached != null
+                        ? Text(
+                            '${cached.displayAmount}'
+                            '${cached.fiatValue > 0 ? ' · ${_fmtFiat(cached.fiatValue, cached.fiatCurrency)}' : ''}',
+                            style: const TextStyle(
+                                color: PeekColors.text2, fontSize: 12),
+                          )
+                        : Text(
+                            '${coin?.symbol ?? meta.coinId} · ${meta.format.displayName}',
+                            style: const TextStyle(
+                                color: PeekColors.text2, fontSize: 12),
+                          ),
                     trailing: const Icon(Icons.chevron_right,
                         color: PeekColors.text3),
                     onTap: coin == null
@@ -144,10 +167,30 @@ class _WalletsScreenState extends State<WalletsScreen> {
                 );
               },
             );
+              },
+            );
           },
         ),
       ),
     );
+  }
+
+  /// Format a fiat value with a leading symbol matching the cached
+  /// currency. Most wallets show "$" for USD; we use that-or-the-code
+  /// (e.g. "EUR 12.34") for other currencies.
+  static String _fmtFiat(double value, String currency) {
+    final c = currency.toLowerCase();
+    final symbol = switch (c) {
+      'usd' => '\$',
+      'eur' => '€',
+      'gbp' => '£',
+      'jpy' => '¥',
+      'cny' => '¥',
+      'hkd' => 'HK\$',
+      _ => '${currency.toUpperCase()} ',
+    };
+    final digits = (c == 'jpy' || c == 'cny') ? 0 : 2;
+    return '≈ $symbol${value.toStringAsFixed(digits)}';
   }
 
   Future<void> _showWalletMenu(WalletMeta meta) async {
@@ -231,7 +274,91 @@ class _WalletsScreenState extends State<WalletsScreen> {
     );
     if (yes == true) {
       await WalletStore.I.delete(meta.id);
+      // Also drop the cached balance so it doesn't dangle in the
+      // portfolio total after the wallet is gone.
+      await BalanceCache.I.forget(meta.id);
     }
+  }
+}
+
+/// Header card at the top of the wallets list showing the sum of all
+/// cached fiat values. Updates live as the BalanceCache changes (each
+/// coin screen pushes after refresh, so opening any wallet refreshes
+/// the total).
+class _PortfolioHeader extends StatelessWidget {
+  const _PortfolioHeader({required this.entries, required this.cache});
+  final List<WalletMeta> entries;
+  final Map<String, CachedBalance> cache;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: PriceFeed.I,
+      builder: (_, _) {
+        double total = 0;
+        String currency = PriceFeed.I.currency;
+        int counted = 0;
+        for (final meta in entries) {
+          final c = cache[meta.id];
+          if (c == null) continue;
+          counted++;
+          // If the cached entry is in a different fiat than the
+          // user's current preference, skip rather than show a wrong
+          // total. The number will populate after the next wallet
+          // refresh in the new currency.
+          if (c.fiatCurrency == currency && c.fiatValue > 0) {
+            total += c.fiatValue;
+          }
+        }
+        return Card(
+          color: PeekColors.surface,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Total portfolio',
+                        style: TextStyle(
+                            color: PeekColors.text2, fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        total > 0
+                            ? _WalletsScreenState._fmtFiat(total, currency)
+                                .replaceFirst('≈ ', '')
+                            : '—',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$counted of ${entries.length}',
+                      style: const TextStyle(
+                          color: PeekColors.text3, fontSize: 11),
+                    ),
+                    const Text('wallets cached',
+                        style: TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

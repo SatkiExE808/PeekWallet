@@ -13,6 +13,7 @@ import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../util/explorer_links.dart';
+import '../wallets/balance_cache.dart';
 import 'send_solana_screen.dart';
 
 /// Solana coin page. Receive + balance + history; send is a follow-up
@@ -92,6 +93,16 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
         _txes = txes;
         _err = null;
       });
+      final sol = balance / 1000000000.0;
+      final price = PriceFeed.I.prices['SOL'];
+      unawaited(BalanceCache.I.put(CachedBalance(
+        walletId: widget.walletMeta.id,
+        symbol: 'SOL',
+        displayAmount: '${sol.toStringAsFixed(6)} SOL',
+        fiatValue: price == null ? 0 : sol * price,
+        fiatCurrency: PriceFeed.I.currency,
+        updatedAt: DateTime.now(),
+      )));
     } catch (e) {
       if (!mounted) return;
       setState(() => _err = e.toString());

@@ -11,6 +11,7 @@ import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
 import '../prices/price_feed.dart';
 import '../util/explorer_links.dart';
+import '../wallets/balance_cache.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
@@ -234,6 +235,7 @@ class _CoinScreenState extends State<CoinScreen> {
         _daemonError = w.daemonError;
         if (newTx != null) _transactions = newTx;
       });
+      _pushBalanceCache(w.balanceXmr);
     });
   }
 
@@ -324,6 +326,7 @@ class _CoinScreenState extends State<CoinScreen> {
         _daemonError = w.daemonError;
         if (newTx != null) _transactions = newTx;
       });
+      _pushBalanceCache(w.balanceXmr);
     });
   }
 
@@ -353,6 +356,26 @@ class _CoinScreenState extends State<CoinScreen> {
       buf.write(s[i]);
     }
     return buf.toString();
+  }
+
+  /// Snapshot the current balance into the wallets-list cache so
+  /// the wallets-list subtitle + portfolio total can render without
+  /// re-fetching. No-op if balance is null (wallet still loading)
+  /// or the screen is running in legacy single-wallet mode (where
+  /// there's no walletMeta to key the cache by).
+  void _pushBalanceCache(double? balance) {
+    if (balance == null) return;
+    final meta = widget.walletMeta;
+    if (meta == null) return;
+    final price = PriceFeed.I.prices['XMR'];
+    BalanceCache.I.put(CachedBalance(
+      walletId: meta.id,
+      symbol: 'XMR',
+      displayAmount: '${balance.toStringAsFixed(8)} XMR',
+      fiatValue: price == null ? 0 : balance * price,
+      fiatCurrency: PriceFeed.I.currency,
+      updatedAt: DateTime.now(),
+    ));
   }
 
   String _balanceText() {

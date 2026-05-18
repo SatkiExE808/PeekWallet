@@ -13,6 +13,7 @@ import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../util/explorer_links.dart';
+import '../wallets/balance_cache.dart';
 import 'send_ethereum_screen.dart';
 
 /// Ethereum coin page. Lighter than the Bitcoin one because we don't
@@ -100,6 +101,16 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         _txes = txes;
         _err = null;
       });
+      final eth = EthereumTx.weiToEth(wei);
+      final price = PriceFeed.I.prices[_symbol];
+      unawaited(BalanceCache.I.put(CachedBalance(
+        walletId: widget.walletMeta.id,
+        symbol: _symbol,
+        displayAmount: '${eth.toStringAsFixed(6)} $_symbol',
+        fiatValue: price == null ? 0 : eth * price,
+        fiatCurrency: PriceFeed.I.currency,
+        updatedAt: DateTime.now(),
+      )));
     } catch (e) {
       if (!mounted) return;
       setState(() => _err = e.toString());

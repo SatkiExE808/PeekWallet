@@ -10,6 +10,7 @@ import '../coins/bitcoin_cash/blockchair_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/explorer_links.dart';
+import '../wallets/balance_cache.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -91,6 +92,16 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
         _txes = txes;
         _err = null;
       });
+      final bch = sat / 100000000.0;
+      final price = PriceFeed.I.prices['BCH'];
+      unawaited(BalanceCache.I.put(CachedBalance(
+        walletId: widget.walletMeta.id,
+        symbol: 'BCH',
+        displayAmount: '${bch.toStringAsFixed(8)} BCH',
+        fiatValue: price == null ? 0 : bch * price,
+        fiatCurrency: PriceFeed.I.currency,
+        updatedAt: DateTime.now(),
+      )));
     } catch (e) {
       if (!mounted) return;
       setState(() => _err = e.toString());

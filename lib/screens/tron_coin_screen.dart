@@ -10,6 +10,7 @@ import '../coins/tron/trongrid_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/explorer_links.dart';
+import '../wallets/balance_cache.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -91,6 +92,16 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
         _txes = txes;
         _err = null;
       });
+      final trx = sun / 1000000.0;
+      final price = PriceFeed.I.prices['TRX'];
+      unawaited(BalanceCache.I.put(CachedBalance(
+        walletId: widget.walletMeta.id,
+        symbol: 'TRX',
+        displayAmount: '${trx.toStringAsFixed(6)} TRX',
+        fiatValue: price == null ? 0 : trx * price,
+        fiatCurrency: PriceFeed.I.currency,
+        updatedAt: DateTime.now(),
+      )));
     } catch (e) {
       if (!mounted) return;
       setState(() => _err = e.toString());

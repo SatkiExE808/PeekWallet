@@ -13,6 +13,7 @@ import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../util/explorer_links.dart';
+import '../wallets/balance_cache.dart';
 import 'send_bitcoin_screen.dart';
 
 /// Bitcoin coin page. Separate from CoinScreen (which is Monero-
@@ -100,6 +101,18 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
         _txes = txes;
         _err = null;
       });
+      // Push to cache so the wallets-list subtitle + portfolio total
+      // can display this balance without re-fetching.
+      final btc = sat / 100000000.0;
+      final price = PriceFeed.I.prices[_symbol];
+      unawaited(BalanceCache.I.put(CachedBalance(
+        walletId: widget.walletMeta.id,
+        symbol: _symbol,
+        displayAmount: '${btc.toStringAsFixed(8)} $_symbol',
+        fiatValue: price == null ? 0 : btc * price,
+        fiatCurrency: PriceFeed.I.currency,
+        updatedAt: DateTime.now(),
+      )));
     } catch (e) {
       if (!mounted) return;
       setState(() => _err = e.toString());
