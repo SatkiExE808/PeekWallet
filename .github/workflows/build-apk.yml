@@ -59,6 +59,17 @@ jobs:
       - name: Unit tests
         run: flutter test
 
+      - name: Cache monero_c prebuilt bundle
+        id: cache-monero
+        uses: actions/cache@v4
+        with:
+          path: .cache/monero_c
+          # Bump when scripts/prepare_monero.sh's VERSION changes.
+          key: monero_c-v0.18.4.6-RC1
+
+      - name: Fetch monero_c native libraries
+        run: ./scripts/prepare_monero.sh
+
       - name: Generate dev release keystore
         working-directory: android
         run: |
