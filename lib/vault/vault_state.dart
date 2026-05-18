@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../coins/monero/monero_wallet.dart';
+import 'biometric_auth.dart';
 import 'vault_storage.dart';
 
 /// App-wide vault state. Holds the decrypted mnemonic (+ BIP39
@@ -62,6 +63,54 @@ class VaultState extends ChangeNotifier {
     _mnemonic = seed.mnemonic;
     _passphrase = seed.passphrase;
     _walletFilePassword = seed.walletFilePassword;
+    notifyListeners();
+  }
+
+  /// True when the user has previously opted in to biometric unlock.
+  /// Surfaced in the lock screen so we know whether to auto-prompt
+  /// for fingerprint/face on launch.
+  Future<bool> biometricEnabled() => _storage.biometricEnabled();
+
+  /// Run a biometric prompt; on success, decrypt the seed using the
+  /// password stashed in OS-backed secure storage and unlock the
+  /// session. Returns false on cancel / auth failure / missing
+  /// stash, so the caller can fall through to password entry.
+  Future<bool> unlockBiometric() async {
+    if (!await _storage.biometricEnabled()) return false;
+    if (!await BiometricAuth.I.isAvailable()) return false;
+    final authed = await BiometricAuth.I.authenticate();
+    if (!authed) return false;
+    final password = await _storage.readBiometricPassword();
+    if (password == null) return false;
+    try {
+      await unlock(password);
+      return true;
+    } catch (_) {
+      // The stashed password got out of sync with the actual seed
+      // password somehow (user changed it via some future flow).
+      // Clear the stash so we stop trying biometric and force a
+      // clean password entry.
+      await _storage.clearBiometricPassword();
+      return false;
+    }
+  }
+
+  /// Opt in to biometric unlock. Requires the wallet to already be
+  /// unlocked (i.e. we have the current password). On Android, the
+  /// password is written into encryptedSharedPreferences; on iOS,
+  /// the Keychain with first_unlock accessibility.
+  Future<void> enableBiometric(String currentPassword) async {
+    // Re-verify the password before stashing it — if the user
+    // typo'd we don't want to lock biometric to the wrong value.
+    await _storage.unlock(currentPassword);
+    await _storage.saveBiometricPassword(currentPassword);
+    notifyListeners();
+  }
+
+  /// Turn off biometric unlock. The encrypted seed stays put, the
+  /// user just has to type their password from now on.
+  Future<void> disableBiometric() async {
+    await _storage.clearBiometricPassword();
     notifyListeners();
   }
 

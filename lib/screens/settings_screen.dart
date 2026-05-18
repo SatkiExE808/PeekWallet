@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
 import '../theme.dart';
+import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
+import 'reveal_seed_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,6 +23,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _message;
   MaterialColor? _messageColor;
 
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,11 +40,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final saved = await Prefs.I.moneroDaemonUri();
+    final bioEnabled = await VaultState.I.biometricEnabled();
+    final bioAvail = await BiometricAuth.I.isAvailable();
     setState(() {
       _savedUri = saved;
       _nodeController.text = saved ?? '';
+      _biometricEnabled = bioEnabled;
+      _biometricAvailable = bioAvail;
       _loading = false;
     });
+  }
+
+  Future<void> _toggleBiometric(bool wantOn) async {
+    if (!wantOn) {
+      await VaultState.I.disableBiometric();
+      setState(() => _biometricEnabled = false);
+      return;
+    }
+    // Confirm the password before stashing it. Even though the
+    // wallet is unlocked, we don't trust the in-memory state —
+    // a wrong password here would lock the user out of biometric
+    // unlock until they disabled + re-enabled.
+    final password = await _askPassword(
+      title: 'Enable biometric unlock',
+      hint: 'Enter your app password to confirm',
+    );
+    if (password == null) return;
+    try {
+      await VaultState.I.enableBiometric(password);
+      setState(() => _biometricEnabled = true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not enable: $e')),
+      );
+    }
+  }
+
+  Future<String?> _askPassword({
+    required String title,
+    required String hint,
+  }) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          autofocus: true,
+          decoration: InputDecoration(labelText: 'Password', hintText: hint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return (result == null || result.isEmpty) ? null : result;
   }
 
   Future<void> _save() async {
@@ -192,8 +258,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                     const SizedBox(height: 28),
-                    const _SectionDivider(label: 'Vault'),
+                    const _SectionDivider(label: 'Security'),
                     const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.fingerprint, color: PeekColors.text2),
+                      title: const Text('Biometric unlock'),
+                      subtitle: Text(
+                        _biometricAvailable
+                            ? 'Use fingerprint / face to unlock instead of typing the password'
+                            : 'Not available on this device (no enrolled biometric)',
+                        style: const TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      value: _biometricEnabled,
+                      onChanged: _biometricAvailable ? _toggleBiometric : null,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.visibility_outlined, color: PeekColors.text2),
+                      title: const Text('Reveal recovery phrase'),
+                      subtitle: const Text(
+                        'View your BIP39 seed + Monero spend/view keys',
+                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const RevealSeedScreen()),
+                      ),
+                    ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.lock_outline, color: PeekColors.text2),
