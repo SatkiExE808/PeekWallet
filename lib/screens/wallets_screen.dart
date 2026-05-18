@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../coins/bitcoin/bitcoin_wallet.dart';
+import '../coins/bitcoin_cash/bch_wallet.dart';
 import '../coins/coin.dart';
 import '../coins/ethereum/custom_token_store.dart';
+import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/module_registry.dart';
+import '../coins/solana/solana_wallet.dart';
+import '../coins/tron/tron_wallet.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
+import '../vault/vault_state.dart';
 import '../wallets/balance_cache.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -32,6 +38,7 @@ class WalletsScreen extends StatefulWidget {
 
 class _WalletsScreenState extends State<WalletsScreen> {
   late Future<List<WalletMeta>> _entries;
+  bool _autoLoading = false;
 
   @override
   void initState() {
@@ -41,6 +48,12 @@ class _WalletsScreenState extends State<WalletsScreen> {
     // Rebuild when any wallet pushes a new balance snapshot so the
     // subtitles + portfolio total update live.
     BalanceCache.I.addListener(_refresh);
+    // Eagerly fetch balances for any wallet that doesn't have a
+    // cached value yet, so the home screen shows real numbers on
+    // first launch instead of "—".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeAutoLoadBalances();
+    });
   }
 
   @override
@@ -64,12 +77,149 @@ class _WalletsScreenState extends State<WalletsScreen> {
     _refresh();
   }
 
+  /// Fetch balances for every wallet that doesn't have a cached
+  /// value yet. Each non-XMR coin is one or two HTTP calls; XMR is
+  /// skipped (boot is heavy and the user has to open the coin
+  /// screen for sync state anyway).
+  ///
+  /// Triggered automatically on the first frame so users see real
+  /// numbers without having to tap each wallet. Also exposed as a
+  /// manual "refresh" via the AppBar so the user can force-pull.
+  Future<void> _maybeAutoLoadBalances({bool force = false}) async {
+    if (_autoLoading) return;
+    final entries = await WalletStore.I.list();
+    if (entries.isEmpty) return;
+    final cache = await BalanceCache.I.all();
+
+    // Pick wallets whose cache entry is stale (or missing) AND that
+    // we know how to balance-probe without booting monero_c.
+    final targets = entries.where((m) {
+      if (m.coinId == 'XMR') return false; // skip — too expensive
+      if (!force && cache.containsKey(m.id)) return false;
+      return true;
+    }).toList();
+    if (targets.isEmpty) return;
+
+    final password = VaultState.I.cachedPassword;
+    if (password == null) return; // locked — can't decrypt seeds
+
+    setState(() => _autoLoading = true);
+    try {
+      // Fan out — most chains are independent HTTP. We don't try
+      // to limit concurrency because the user has at most a few
+      // wallets per chain and the public endpoints handle it fine.
+      await Future.wait(targets.map((m) =>
+          _probeBalance(m, password).catchError((_) {/* skip */})));
+    } finally {
+      if (mounted) setState(() => _autoLoading = false);
+    }
+  }
+
+  /// Open a wallet, fetch its native balance, push to BalanceCache,
+  /// then close. The result of [BalanceCache.put] notifies listeners
+  /// so the portfolio header + per-row subtitle update live.
+  Future<void> _probeBalance(WalletMeta meta, String password) async {
+    final decrypted = await WalletStore.I.open(
+      walletId: meta.id, password: password);
+    final coinMod = coinModuleFor(meta.coinId);
+    if (coinMod == null) return;
+    final w = await coinMod.open(
+      walletId: meta.id,
+      format: meta.format,
+      seedMaterial: decrypted.seedMaterial,
+      walletFilePassword: decrypted.walletFilePassword,
+      daemonUri: '', // unused for non-XMR
+      restoreHeight: 0,
+    );
+
+    String symbol;
+    String displayAmount;
+    double fiatTokens;
+    try {
+      switch (meta.coinId) {
+        case 'BTC':
+        case 'LTC':
+          final btc = w as BitcoinWallet;
+          final sat = await btc.balanceSat();
+          symbol = btc.params.symbol;
+          final amount = sat / 100000000.0;
+          displayAmount = '${amount.toStringAsFixed(8)} $symbol';
+          fiatTokens = amount;
+          break;
+        case 'ETH':
+        case 'MATIC':
+          final eth = w as EthereumWallet;
+          final wei = await eth.balanceWei();
+          symbol = eth.network.symbol;
+          final amount = wei.toDouble() / 1e18;
+          displayAmount = '${amount.toStringAsFixed(6)} $symbol';
+          fiatTokens = amount;
+          break;
+        case 'SOL':
+          final sol = w as SolanaWallet;
+          final lamports = await sol.balanceLamports();
+          symbol = 'SOL';
+          final amount = lamports / 1000000000.0;
+          displayAmount = '${amount.toStringAsFixed(6)} SOL';
+          fiatTokens = amount;
+          break;
+        case 'TRX':
+          final trx = w as TronWallet;
+          final sun = await trx.balanceSun();
+          symbol = 'TRX';
+          final amount = sun / 1000000.0;
+          displayAmount = '${amount.toStringAsFixed(6)} TRX';
+          fiatTokens = amount;
+          break;
+        case 'BCH':
+          final bch = w as BitcoinCashWallet;
+          final sat = await bch.balanceSat();
+          symbol = 'BCH';
+          final amount = sat / 100000000.0;
+          displayAmount = '${amount.toStringAsFixed(8)} BCH';
+          fiatTokens = amount;
+          break;
+        default:
+          return;
+      }
+      final price = PriceFeed.I.prices[symbol];
+      await BalanceCache.I.put(CachedBalance(
+        walletId: meta.id,
+        symbol: symbol,
+        displayAmount: displayAmount,
+        fiatValue: price == null ? 0 : fiatTokens * price,
+        fiatCurrency: PriceFeed.I.currency,
+        updatedAt: DateTime.now(),
+      ));
+    } finally {
+      // Each wallet impl has its own .close() — call dynamically.
+      try {
+        (w as dynamic).close();
+      } catch (_) {/* not all wallets have close */}
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Wallets'),
         actions: [
+          IconButton(
+            icon: _autoLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: PeekColors.accent),
+                  )
+                : const Icon(Icons.refresh),
+            tooltip: 'Refresh balances',
+            onPressed: _autoLoading
+                ? null
+                : () => _maybeAutoLoadBalances(force: true),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add wallet',
