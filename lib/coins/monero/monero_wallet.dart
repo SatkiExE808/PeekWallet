@@ -65,12 +65,12 @@ class MoneroWallet {
 
     stage('locating wallet dir');
     final docs = await getApplicationDocumentsDirectory();
-    // Bumped to _v2 to force a fresh wallet file on devices that
-    // were stuck syncing against the stale xmr-rpc.iamhch.com proxy
-    // (whose tip sat ~115k blocks behind reality). Old wallet files
-    // under peek_xmr/ are left on disk but ignored — the seed in
-    // secure storage is the source of truth.
-    final walletDir = Directory('${docs.path}/peek_xmr_v2');
+    // peek_xmr_v3 — the v2 dir was created with a hardcoded
+    // restoreHeight that overshot the real chain tip by ~110k blocks
+    // (May-2026 tip is ~3,676,500, not the 3,790,000+ I'd assumed).
+    // That left existing wallets "synced" but skipping all real blocks.
+    // Fresh dir + a sane fallback constant + daemon-tip clamp below.
+    final walletDir = Directory('${docs.path}/peek_xmr_v3');
     if (!walletDir.existsSync()) walletDir.createSync(recursive: true);
     final walletPath = '${walletDir.path}/wallet';
 
@@ -79,6 +79,7 @@ class MoneroWallet {
 
     dynamic w;
     var fileExists = monero.WalletManager_walletExists(wm, walletPath);
+    var justCreated = false;
 
     if (fileExists) {
       stage('opening existing wallet file');
@@ -127,6 +128,7 @@ class MoneroWallet {
 
     if (!fileExists) {
       stage('creating new wallet from keys');
+      justCreated = true;
       w = monero.WalletManager_createWalletFromKeys(
         wm,
         path: walletPath,
@@ -174,7 +176,43 @@ class MoneroWallet {
           'Wallet_init rejected every candidate. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
     }
 
-    stage('attached $activeHostPort (ssl=$activeSsl) — starting refresh');
+    stage('attached $activeHostPort (ssl=$activeSsl)');
+
+    // For freshly-created wallets only: ask the daemon what the real
+    // chain tip is and adjust where scanning starts. The hint passed
+    // in by the caller is necessarily a baked-in compile-time guess —
+    // if it's higher than today's tip the wallet skips every real
+    // block (which is exactly what happened in peek_xmr_v2); if it's
+    // much lower the user wastes time scanning months of empty
+    // history. Clamp to (real tip - 5000) so we cover ~1 week of
+    // recent receives without burning hours of decryption.
+    //
+    // Wallet_daemonBlockChainHeight populates ~5–15s after Wallet_init
+    // succeeds (it takes one real /get_height RPC to fill in). Poll
+    // up to 15s; if we never get a value, fall back to the caller's
+    // hint — slow but bounded.
+    if (justCreated) {
+      stage('querying daemon tip…');
+      int observedTip = 0;
+      for (var i = 0; i < 30; i++) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        observedTip = monero.Wallet_daemonBlockChainHeight(w);
+        if (observedTip > 1000000) break;
+      }
+      if (observedTip > 1000000) {
+        final adjusted = observedTip - 5000;
+        stage('clamp restoreHeight $restoreHeight -> $adjusted (tip=$observedTip)');
+        try {
+          monero.Wallet_setRefreshFromBlockHeight(w, adjusted);
+        } catch (e) {
+          stage('setRefreshFromBlockHeight failed: $e — using $restoreHeight');
+        }
+      } else {
+        stage('daemon tip not reported in 15s — using hint $restoreHeight');
+      }
+    }
+
+    stage('starting refresh');
     monero.Wallet_startRefresh(w);
     stage('ready');
 
