@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Solana's signature purple→cyan diagonal gradient. -->
+    <linearGradient id="solGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9945FF"/>
+      <stop offset="100%" stop-color="#14F195"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="32" fill="#0B0E1A"/>
+  <!-- Three parallel diagonal bars — the canonical Solana mark.
+       Each bar has parallelogram-style angled ends. -->
+  <g fill="url(#solGrad)">
+    <!-- Top bar -->
+    <path d="M19 19h22l5-5H24z"/>
+    <!-- Middle bar -->
+    <path d="M19 30h22l5 5H24z"/>
+    <!-- Bottom bar -->
+    <path d="M19 41h22l5 5H24z" transform="translate(0,-5)"/>
+    <path d="M19 41h22l5 5H24z"/>
+  </g>
+</svg>

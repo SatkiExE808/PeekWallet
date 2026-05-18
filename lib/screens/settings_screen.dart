@@ -260,7 +260,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _pickCurrency() async {
     const currencies = <String>[
       'usd', 'eur', 'gbp', 'jpy', 'cny', 'krw', 'rub',
-      'aud', 'cad', 'inr', 'try', 'brl', 'sgd', 'hkd', 'twd',
+      'aud', 'cad', 'inr', 'try', 'brl',
+      // Asian fiats prioritized — most PeekWallet users in HK/MY/SG/TW.
+      'sgd', 'hkd', 'twd', 'myr', 'thb', 'idr', 'php', 'vnd',
     ];
     final picked = await showModalBottomSheet<String>(
       context: context,

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#FF6600"/>
+  <!-- Monero logo: stylized M formed by two triangles meeting at
+       the bottom centre. Two outer bars + the inverted V in the
+       middle, in white on Monero orange. -->
+  <g fill="#FFFFFF">
+    <!-- Left outer bar -->
+    <polygon points="15,18 15,46 22.5,46 22.5,33 32,42.5 41.5,33 41.5,46 49,46 49,18 41.5,18 32,28 22.5,18"/>
+  </g>
+</svg>

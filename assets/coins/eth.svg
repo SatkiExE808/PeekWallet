@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#627EEA"/>
+  <!-- ETH diamond logo: stacked triangles. Upper half = lighter,
+       lower half = darker, classic Ethereum brand mark. -->
+  <g fill="#FFFFFF">
+    <polygon points="32,9 31.6,10.4 31.6,32.4 32,32.8 44.5,25.4" fill-opacity="0.6"/>
+    <polygon points="32,9 19.5,25.4 32,32.8 32,22.2"/>
+    <polygon points="32,35.2 31.8,35.5 31.8,44.6 32,55 44.5,27.7" fill-opacity="0.6"/>
+    <polygon points="32,55 32,35.2 19.5,27.7"/>
+    <polygon points="32,32.8 44.5,25.4 32,22.2" fill-opacity="0.2"/>
+    <polygon points="19.5,25.4 32,32.8 32,22.2" fill-opacity="0.6"/>
+  </g>
+</svg>

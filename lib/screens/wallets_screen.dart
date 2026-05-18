@@ -334,9 +334,19 @@ class _WalletsScreenState extends State<WalletsScreen> {
       'jpy' => '¥',
       'cny' => '¥',
       'hkd' => 'HK\$',
+      'sgd' => 'S\$',
+      'twd' => 'NT\$',
+      'myr' => 'RM',
+      'thb' => '฿',
+      'idr' => 'Rp',
+      'php' => '₱',
+      'vnd' => '₫',
       _ => '${currency.toUpperCase()} ',
     };
-    final digits = (c == 'jpy' || c == 'cny') ? 0 : 2;
+    // Currencies where the smallest unit isn't a hundredth (JPY,
+    // CNY, IDR, VND, KRW) display whole-number-only by convention.
+    final wholeOnly = const {'jpy', 'cny', 'idr', 'vnd', 'krw'}.contains(c);
+    final digits = wholeOnly ? 0 : 2;
     return '≈ $symbol${value.toStringAsFixed(digits)}';
   }
 

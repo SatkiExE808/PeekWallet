@@ -105,6 +105,10 @@ dependencies:
   # this — we only construct deeplinks from public txids.
   url_launcher: ^6.3.1
 
+  # SVG renderer for the per-coin avatars. The bundled SVGs live in
+  # assets/coins/. Pure-Dart parser/painter — no native deps.
+  flutter_svg: ^2.0.10
+
   # Bitcoin support — BIP32 hierarchical key derivation + bech32
   # encoding for BIP84 native SegWit addresses. Pure-Dart, no native
   # libs needed (unlike monero_c). Balance + history fetched live
@@ -140,6 +144,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Coin logo SVGs — one per supported chain. Loaded by
+  # lib/util/coin_avatar.dart and rendered via flutter_svg.
+  assets:
+    - assets/coins/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#8247E5"/>
+  <!-- Polygon mark: two overlapping hexagons. The canonical brand
+       has a darker hex behind a lighter foreground hex shifted
+       slightly down-right, evoking the "Polygon" layered look. -->
+  <g fill="#FFFFFF">
+    <!-- Background hex (translucent) -->
+    <polygon points="22,20 30,15 38,20 38,29 30,34 22,29"
+             fill-opacity="0.55"/>
+    <!-- Foreground hex -->
+    <polygon points="26,32 34,27 42,32 42,42 34,47 26,42"/>
+  </g>
+</svg>

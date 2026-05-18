@@ -35,6 +35,11 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
   String? _err;
   int _balanceSat = 0;
   List<BitcoinTx> _txes = const [];
+  /// When the live fetch fails (litecoinspace 521, network down,
+  /// etc.) we fall back to whatever was last in BalanceCache so the
+  /// user keeps seeing a balance instead of "0". null = no cached
+  /// snapshot was ever taken; render zeroes.
+  DateTime? _balanceFromCacheAt;
   Timer? _poll;
   bool _refreshing = false;
 
@@ -53,6 +58,25 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
 
   Future<void> _open() async {
     setState(() => _err = null);
+    // Bring up the cached balance immediately so the user sees a
+    // number even before the live fetch returns (or fails). The
+    // refresh below will overwrite if it succeeds; if it 521s we
+    // keep this value rather than reverting to 0.
+    final cached = await BalanceCache.I.get(widget.walletMeta.id);
+    if (cached != null && mounted) {
+      // Parse the cached display amount back to satoshis — it's
+      // always "X.XXXXXXXX BTC" / "X.XXXXXXXX LTC" so a regex pulls
+      // the number out without coupling to the formatter.
+      final m =
+          RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
+      if (m != null) {
+        final coins = double.tryParse(m.group(1)!) ?? 0;
+        setState(() {
+          _balanceSat = (coins * 100000000).round();
+          _balanceFromCacheAt = cached.updatedAt;
+        });
+      }
+    }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
       setState(() => _err = 'Vault is locked.');
@@ -103,7 +127,9 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
         _err = null;
       });
       // Push to cache so the wallets-list subtitle + portfolio total
-      // can display this balance without re-fetching.
+      // can display this balance without re-fetching, AND so we
+      // have something to fall back to next time the explorer is
+      // down (litecoinspace.org 521s every few hours).
       final btc = sat / 100000000.0;
       final price = PriceFeed.I.prices[_symbol];
       unawaited(BalanceCache.I.put(CachedBalance(
@@ -114,12 +140,29 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
         fiatCurrency: PriceFeed.I.currency,
         updatedAt: DateTime.now(),
       )));
+      // Live fetch succeeded — clear the "stale cache" stamp.
+      if (mounted) {
+        setState(() => _balanceFromCacheAt = null);
+      }
     } catch (e) {
       if (!mounted) return;
+      // Keep whatever balance we already had on screen (either from
+      // cache or from the previous successful fetch). Only surface
+      // the error so the user knows the live number might be stale.
       setState(() => _err = e.toString());
     } finally {
       if (mounted) setState(() => _refreshing = false);
     }
+  }
+
+  /// Human-readable "5 min ago" / "3 hours ago" / "yesterday" for
+  /// the cached-balance staleness badge.
+  String _relTime(DateTime then) {
+    final d = DateTime.now().difference(then);
+    if (d.inSeconds < 60) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    return '${d.inDays}d ago';
   }
 
   String get _symbol => _wallet?.params.symbol ?? widget.walletMeta.coinId;
@@ -293,6 +336,16 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                     );
                   },
                 ),
+                if (_balanceFromCacheAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '⚠ Showing cached value (${_relTime(_balanceFromCacheAt!)}). '
+                      'Live fetch failed — retry or check Custom RPC endpoints.',
+                      style: const TextStyle(
+                          color: PeekColors.accent, fontSize: 11),
+                    ),
+                  ),
                 if (_err != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),

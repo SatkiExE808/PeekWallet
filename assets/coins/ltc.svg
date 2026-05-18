@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#345D9D"/>
+  <!-- Stylized "Ł" (L with horizontal strike) — the canonical
+       Litecoin glyph. Two strokes: the L vertical/foot and the
+       crossbar through the upper third. -->
+  <g fill="#FFFFFF">
+    <path d="M22.4 16.6h7.9v15.5l8.8-2.9-1.5 5.5-8.7 2.9-2.4 8.8h17.7l-1.5 5.6H17.5l3.7-13.7-3.7 1.2 1.5-5.6 3.7-1.2 4.2-15.5z"/>
+  </g>
+</svg>
