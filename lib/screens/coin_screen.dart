@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -394,6 +396,72 @@ class _CoinScreenState extends State<CoinScreen> {
     return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
   }
 
+  /// Manual fallback when the auto self-heal didn't recover the
+  /// wallet. Confirms with the user (this wipes the on-disk wallet
+  /// file — the chain cache, sync state, and any subaddress labels
+  /// are lost) then nukes the dir + re-triggers the open flow,
+  /// which now passes through the seed-based re-create path.
+  Future<void> _resetWalletAndRetry() async {
+    final meta = widget.walletMeta;
+    if (meta == null) return;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset wallet file?'),
+        content: const Text(
+          'This deletes the on-disk wallet file and recreates it from '
+          'your stored seed. The chain-sync cache is lost so the wallet '
+          'will need to rescan from your restore height (could take a '
+          'while). Your seed is NOT touched — funds are safe.\n\n'
+          'Use this if you\'re stuck with a persistent "invalid '
+          'password" error.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: PeekColors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reset & rescan'),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+
+    // Close the failed session (if any), then nuke the directory.
+    try {
+      MoneroSession.I.stopFor(meta.id);
+    } catch (_) {/* best effort */}
+
+    final docs = await getApplicationDocumentsDirectory();
+    final walletDir = Directory('${docs.path}/peek_xmr/${meta.id}');
+    if (walletDir.existsSync()) {
+      try {
+        walletDir.deleteSync(recursive: true);
+      } catch (_) {/* best effort */}
+    }
+
+    if (!mounted) return;
+    // Reset state + re-run the open flow. The opener will now go
+    // through the seed-based re-create path because no file exists.
+    setState(() {
+      _engineError = null;
+      _moneroWallet = null;
+      _balanceXmr = null;
+      _syncPct = null;
+      _isSynced = false;
+      _currentHeight = 0;
+      _tipHeight = 0;
+    });
+    await _bootMoneroFromMeta(meta);
+  }
+
   Future<void> _refresh() async {
     // Pull-to-refresh on the coin screen — force a daemon refresh +
     // tx history reload. We don't await the actual sync (that could
@@ -473,7 +541,7 @@ class _CoinScreenState extends State<CoinScreen> {
                     style: const TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ),
-              if (_engineError != null)
+              if (_engineError != null) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
@@ -481,6 +549,30 @@ class _CoinScreenState extends State<CoinScreen> {
                     style: const TextStyle(color: PeekColors.red, fontSize: 11),
                   ),
                 ),
+                // Manual self-heal fallback for the "invalid password"
+                // class of failures: if auto-detection didn't catch
+                // the user's specific failure mode, give them an
+                // explicit button to wipe the on-disk wallet file
+                // and re-create it from the stored seed.
+                if (widget.coin.id == 'XMR' &&
+                    widget.walletMeta != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _resetWalletAndRetry,
+                          icon: const Icon(Icons.restart_alt, size: 16),
+                          label: const Text('Reset & rescan from seed'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: PeekColors.red,
+                            side: const BorderSide(color: PeekColors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
               if (widget.coin.id == 'XMR' &&
                   _engineError == null &&
                   _daemonError != null)
