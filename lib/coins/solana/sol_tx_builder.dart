@@ -36,17 +36,15 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
+import 'pda.dart' as pda;
 import 'solana_keys.dart';
 
 /// SystemProgram's well-known address. Constant string;
 /// "11111111111111111111111111111111" in base58 = 32 zero bytes.
 final Uint8List _systemProgramId = Uint8List(32);
 
-/// SPL Token Program address: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA.
-/// All SPL token operations (transfer, mint, burn) target this
-/// program. The address is stable across all Solana clusters.
-final Uint8List _tokenProgramId =
-    base58Decode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')!;
+// SPL Token Program address is exposed by pda.dart — we use
+// pda.splTokenProgramId throughout. (Was duplicated here pre-PDA.)
 
 /// Result of building+signing a Solana transfer transaction.
 class BuiltSolanaTransaction {
@@ -173,20 +171,14 @@ Future<BuiltSolanaTransaction> buildAndSignTransfer({
 ///
 /// Pre-conditions:
 ///   - [sourceATA] is the sender's token account for the mint
-///     (32-byte base58 pubkey).
-///   - [destATA] is the recipient's token account for the mint.
-///   - Both ATAs MUST already exist on-chain. If [destATA] doesn't,
-///     the tx will be accepted by the RPC but rejected at runtime
-///     with "InvalidAccountData" or similar. The caller's job is
-///     to surface a helpful message in that case ("ask the
-///     recipient to receive SOL first to create their token
-///     account").
-///
-/// The Token Program Transfer instruction:
-///   discriminator: 3 (one byte)
-///   data:          [3, amount_u64_LE]
-///   accounts:      [source_ATA (writable), dest_ATA (writable),
-///                   owner (signer, readonly)]
+///     (32-byte base58 pubkey). Must already exist; we just looked
+///     up the balance so this is always the case.
+///   - [destATA] is the recipient's token account.
+///   - [destOwner] / [mint] / [createDestATA]: if [createDestATA]
+///     is true we prepend a CreateAssociatedTokenAccount instruction
+///     so the recipient gets an ATA even if they've never received
+///     this mint before. The funding (rent ~0.002 SOL) comes from
+///     the sender's native SOL balance.
 Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
   required Uint8List ownerPubkey,
   required Uint8List ownerPrivateSeed,
@@ -194,6 +186,9 @@ Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
   required String destATABase58,
   required BigInt amountRaw,
   required Uint8List recentBlockhash,
+  bool createDestATA = false,
+  Uint8List? destOwner,
+  Uint8List? mint,
 }) async {
   if (amountRaw <= BigInt.zero) {
     throw const InvalidSolanaAddressException(
@@ -202,6 +197,10 @@ Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
   if (recentBlockhash.length != 32) {
     throw const InvalidSolanaAddressException(
         'Recent blockhash must be 32 bytes');
+  }
+  if (createDestATA && (destOwner == null || mint == null)) {
+    throw ArgumentError(
+        'destOwner + mint are required when createDestATA=true');
   }
 
   final sourceBytes = base58Decode(sourceATABase58);
@@ -214,26 +213,79 @@ Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
         'Token account address must decode to 32 bytes');
   }
 
-  // Account list order (matters for the message header counts):
-  //   - owner: signer + readonly  → goes first
-  //   - sourceATA: writable + non-signer
-  //   - destATA: writable + non-signer
-  //   - TokenProgram: read-only + non-signer
+  // Build the account list. Order matters for the message header
+  // counts; signers first, then writable non-signers, then read-only
+  // signers, then read-only non-signers.
+  //
+  // For a transfer alone:
+  //   [owner (signer), sourceATA (writable), destATA (writable),
+  //    TokenProgram (readonly)]
+  //
+  // For transfer + CreateATA, we also need: destOwner (readonly),
+  // mint (readonly), SystemProgram (readonly), ATA Program (readonly).
+  // We dedupe so we don't list TokenProgram twice.
   final accountKeys = <Uint8List>[
-    ownerPubkey,
-    sourceBytes,
-    destBytes,
-    _tokenProgramId,
+    ownerPubkey, // 0: signer + writable (pays for rent if creating)
+    sourceBytes, // 1: writable non-signer
+    destBytes, // 2: writable non-signer
   ];
+  if (createDestATA) {
+    accountKeys.addAll([
+      destOwner!, // 3: readonly non-signer
+      mint!, // 4: readonly non-signer
+      pda.systemProgramId, // 5: readonly non-signer
+      pda.ataProgramId, // 6: readonly non-signer
+    ]);
+  }
+  accountKeys.add(pda.splTokenProgramId);
+  // Token Program lands at index (accountKeys.length - 1) — for
+  // a bare transfer that's 3; for create+transfer it's 7.
+  final tokenProgramIdx = accountKeys.length - 1;
+
+  // Header counts:
+  //   numRequiredSignatures = 1 (just the owner)
+  //   numReadonlySigned     = 0
+  //   numReadonlyUnsigned   = however many trailing readonly accounts.
+  //   The order above puts writables (source, dest) immediately after
+  //   the signer and readonlies (destOwner, mint, systemProgram,
+  //   ataProgram, tokenProgram) after that.
+  final numReadonlyUnsigned = createDestATA ? 5 : 1;
   const numRequiredSignatures = 1;
   const numReadonlySigned = 0;
-  const numReadonlyUnsigned = 1; // TokenProgram
+
+  final instructions = <_CompiledInstruction>[];
+
+  if (createDestATA) {
+    // CreateAssociatedTokenAccountIdempotent instruction:
+    //   data: [1] (the idempotent variant — safe to send even if
+    //         the ATA already exists; that's the cheapest safety
+    //         net for the case where the user's pre-flight check
+    //         said "no ATA" but a race created one in between)
+    //   accounts (per ATA program spec):
+    //     0: funding (signer + writable) — pays rent
+    //     1: ATA address (writable)
+    //     2: ATA owner (readonly)
+    //     3: mint (readonly)
+    //     4: SystemProgram (readonly)
+    //     5: TokenProgram (readonly)
+    instructions.add(_CompiledInstruction(
+      programIdIndex: 6, // ataProgramId in accountKeys
+      accountIndices: Uint8List.fromList([
+        0, // funding = owner
+        2, // ATA address = destATA
+        3, // owner of ATA = destOwner
+        4, // mint
+        5, // SystemProgram
+        tokenProgramIdx,
+      ]),
+      data: Uint8List.fromList([1]), // idempotent variant
+    ));
+  }
 
   // Transfer instruction: discriminator 3 + amount u64 LE.
   final transferData = Uint8List(1 + 8);
   transferData[0] = 3;
   final amountLE = ByteData(8);
-  // BigInt → u64 LE: serialize the low 64 bits.
   var n = amountRaw;
   for (var i = 0; i < 8; i++) {
     amountLE.setUint8(i, (n & BigInt.from(0xff)).toInt());
@@ -241,11 +293,11 @@ Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
   }
   transferData.setRange(1, 9, amountLE.buffer.asUint8List());
 
-  final instruction = _CompiledInstruction(
-    programIdIndex: 3, // TokenProgram
+  instructions.add(_CompiledInstruction(
+    programIdIndex: tokenProgramIdx,
     accountIndices: Uint8List.fromList([1, 2, 0]), // source, dest, owner
     data: transferData,
-  );
+  ));
 
   final message = _serializeMessage(
     header: [
@@ -255,7 +307,7 @@ Future<BuiltSolanaTransaction> buildAndSignSplTransfer({
     ],
     accountKeys: accountKeys,
     recentBlockhash: recentBlockhash,
-    instructions: [instruction],
+    instructions: instructions,
   );
 
   final alg = Ed25519();

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
+import 'pda.dart' as pda;
 import 'sol_tx_builder.dart';
 import 'solana_keys.dart';
 import 'solana_rpc_client.dart';
@@ -179,15 +180,38 @@ class SolanaWallet {
           'Receive the token here first.');
     }
 
-    final destATA = await _rpc.firstTokenAccountAddress(
+    // Look up the recipient's existing ATA. If they have one, use
+    // it directly. If they don't, derive the canonical ATA address
+    // client-side via PDA so we know where to send AND emit a
+    // CreateAssociatedTokenAccount instruction (idempotent variant)
+    // ahead of the transfer. The funding (~0.002 SOL rent) comes
+    // from our SOL balance.
+    var destATA = await _rpc.firstTokenAccountAddress(
       ownerBase58: destOwnerAddress,
       mintBase58: token.mint,
     );
-    if (destATA == null) {
+    var shouldCreate = false;
+    final destOwnerBytes = base58Decode(destOwnerAddress);
+    final mintBytes = base58Decode(token.mint);
+    if (destOwnerBytes == null || destOwnerBytes.length != 32) {
       throw StateError(
-          'Recipient has no ${token.symbol} token account. Ask them '
-          'to receive any SOL first to create one — or wait until we '
-          'add ATA-auto-create.');
+          'Recipient address $destOwnerAddress does not decode to 32 bytes');
+    }
+    if (mintBytes == null || mintBytes.length != 32) {
+      throw StateError('Token mint ${token.mint} is malformed');
+    }
+    if (destATA == null) {
+      final derived = pda.associatedTokenAddress(
+        owner: destOwnerBytes,
+        mint: mintBytes,
+      );
+      destATA = base58Encode(derived);
+      shouldCreate = true;
+      PeekLogger.I.log(
+        'sol',
+        '${token.symbol} send: recipient has no ATA; will create '
+            '${destATA.substring(0, 10)}… (rent ~0.002 SOL from sender)',
+      );
     }
 
     final blockhashStr = await _rpc.latestBlockhash();
@@ -209,6 +233,9 @@ class SolanaWallet {
       destATABase58: destATA,
       amountRaw: amountRaw,
       recentBlockhash: blockhash,
+      createDestATA: shouldCreate,
+      destOwner: shouldCreate ? destOwnerBytes : null,
+      mint: shouldCreate ? mintBytes : null,
     );
 
     final sigFromRpc = await _rpc.sendTransaction(built.rawBase64);
