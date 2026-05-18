@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import 'send_bitcoin_screen.dart';
@@ -255,19 +256,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor: _symbol == 'LTC'
-                          ? const Color(0xFFBFBBBB)
-                          : const Color(0xFFF7931A),
-                      radius: 18,
-                      child: Icon(
-                        _symbol == 'LTC'
-                            ? Icons.toll
-                            : Icons.currency_bitcoin,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
+                    coinAvatar(_symbol),
                     const SizedBox(width: 12),
                     Text(
                       '$_symbol balance',

@@ -14,6 +14,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import 'send_ethereum_screen.dart';
@@ -426,19 +427,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor: _symbol == 'MATIC'
-                          ? const Color(0xFF8247E5)
-                          : const Color(0xFF627EEA),
-                      radius: 18,
-                      child: Icon(
-                        _symbol == 'MATIC'
-                            ? Icons.hexagon
-                            : Icons.diamond,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
+                    coinAvatar(_symbol),
                     const SizedBox(width: 12),
                     Text(
                       '$_symbol balance',

@@ -11,6 +11,7 @@ import '../coins/tron/trongrid_client.dart';
 import 'send_tron_screen.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import '../vault/vault_state.dart';
@@ -290,12 +291,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
               children: [
                 Row(
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: Color(0xFFEB0029),
-                      radius: 18,
-                      child: Icon(Icons.flash_on,
-                          color: Colors.white, size: 18),
-                    ),
+                    coinAvatar('TRX'),
                     const SizedBox(width: 12),
                     const Text(
                       'TRX balance',

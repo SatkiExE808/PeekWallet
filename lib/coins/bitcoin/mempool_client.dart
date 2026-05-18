@@ -33,7 +33,7 @@ class MempoolClient {
       Uri.parse('$_base/address/$address'),
     ).timeout(const Duration(seconds: 8));
     if (r.statusCode != 200) {
-      throw Exception('Mempool API returned ${r.statusCode}');
+      throw _MempoolApiError(r.statusCode, _base);
     }
     final json = jsonDecode(r.body) as Map<String, dynamic>;
     final chain = json['chain_stats'] as Map<String, dynamic>;
@@ -72,7 +72,7 @@ class MempoolClient {
       Uri.parse('$_base/address/$address/txs'),
     ).timeout(const Duration(seconds: 8));
     if (r.statusCode != 200) {
-      throw Exception('Mempool API returned ${r.statusCode}');
+      throw _MempoolApiError(r.statusCode, _base);
     }
     final list = jsonDecode(r.body) as List;
     return list
@@ -177,6 +177,32 @@ class MempoolClient {
   }
 
   void close() => _http.close();
+}
+
+/// Friendlier error than a bare "API returned 521" — includes the
+/// failing endpoint so the user knows whether it was their custom
+/// override or the public default, and a hint about how to recover.
+/// 5xx codes mean the explorer is down (Cloudflare 521 = origin
+/// down, common with litecoinspace.org); 4xx codes usually mean the
+/// endpoint URL is wrong.
+class _MempoolApiError implements Exception {
+  const _MempoolApiError(this.statusCode, this.endpoint);
+  final int statusCode;
+  final String endpoint;
+
+  @override
+  String toString() {
+    final hint = statusCode >= 500
+        ? 'The explorer at $endpoint is down or unreachable. '
+            'Try again in a minute, or set a different endpoint via '
+            'Settings → Custom RPC endpoints.'
+        : statusCode == 404
+            ? 'Address not found at $endpoint. This usually means a '
+                'brand-new address with no on-chain history — balance is 0.'
+            : 'Endpoint $endpoint rejected the request with status '
+                '$statusCode. If you set a custom URL, double-check the path.';
+    return 'Explorer error ($statusCode): $hint';
+  }
 }
 
 /// Unspent output ready to be consumed by a new transaction.

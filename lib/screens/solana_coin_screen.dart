@@ -13,6 +13,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import 'send_solana_screen.dart';
@@ -306,12 +307,7 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
               children: [
                 Row(
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: Color(0xFF9945FF),
-                      radius: 18,
-                      child: Icon(Icons.bolt,
-                          color: Colors.white, size: 18),
-                    ),
+                    coinAvatar('SOL'),
                     const SizedBox(width: 12),
                     const Text(
                       'SOL balance',

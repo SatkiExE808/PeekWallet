@@ -9,6 +9,7 @@ import '../coins/bitcoin_cash/bch_wallet.dart';
 import '../coins/bitcoin_cash/blockchair_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import 'send_bch_screen.dart';
@@ -241,12 +242,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
               children: [
                 Row(
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: Color(0xFF0AC18E),
-                      radius: 18,
-                      child: Icon(Icons.attach_money,
-                          color: Colors.white, size: 18),
-                    ),
+                    coinAvatar('BCH'),
                     const SizedBox(width: 12),
                     const Text(
                       'BCH balance',

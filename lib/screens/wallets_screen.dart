@@ -5,6 +5,7 @@ import '../coins/ethereum/custom_token_store.dart';
 import '../coins/module_registry.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/coin_avatar.dart';
 import '../wallets/balance_cache.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -108,13 +109,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                     final cached = cache[meta.id];
                     return Card(
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: coin?.color ?? PeekColors.text3,
-                      child: Icon(
-                        coin?.icon ?? Icons.help_outline,
-                        color: Colors.white,
-                      ),
-                    ),
+                    leading: coinAvatar(meta.coinId),
                     title: Text(meta.name,
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: cached != null
