@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../coins/monero/monero_keys.dart';
 import '../theme.dart';
-import '../vault/vault_state.dart';
 import '../vault/vault_storage.dart';
 
 /// Two-step viewer for the wallet's recovery material:
