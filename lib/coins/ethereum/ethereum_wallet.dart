@@ -5,6 +5,7 @@ import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
 
 import '../../util/peek_logger.dart';
+import 'custom_token_store.dart';
 import 'erc20.dart';
 import 'erc20_tokens.dart';
 import 'eth_network.dart';
@@ -125,8 +126,64 @@ class EthereumWallet {
         BigInt.from(10).pow(token.decimals).toDouble();
   }
 
-  /// Default token list for this wallet's chain.
+  /// Default token list for this wallet's chain (hardcoded
+  /// USDT/USDC/DAI). [tokensFor] returns these plus any custom
+  /// tokens the user has added for [walletId].
   List<Erc20Token> get defaultTokens => defaultTokensFor(network.chainId);
+
+  /// Default + custom tokens for [walletId], filtered to this chain.
+  Future<List<Erc20Token>> tokensFor(String walletId) async {
+    final custom = await CustomTokenStore.I.listFor(walletId);
+    final onThisChain =
+        custom.where((t) => t.chainId == network.chainId).toList();
+    return [...defaultTokens, ...onThisChain];
+  }
+
+  /// Fetch a token's metadata (symbol, decimals) from its contract.
+  /// Used by the "Add custom token" flow so the user only has to
+  /// paste a contract address.
+  ///
+  /// decimals() returns a uint8 in a 32-byte right-padded slot.
+  /// symbol() returns a dynamic string; the parsing handles the
+  /// ABI dynamic-type layout (offset + length + bytes).
+  Future<({String symbol, int decimals})?> probeToken(
+      String contractAddress) async {
+    if (_closed) return null;
+    try {
+      // decimals(): selector 313ce567, no args, returns uint8 in
+      // a 32-byte slot. We just need the last byte.
+      final decResult = await _rpc.ethCall(
+        to: contractAddress,
+        data: '0x313ce567',
+      );
+      final decBytes = decodeBytes(decResult);
+      final decimals = decBytes.isEmpty ? 18 : decBytes.last;
+
+      // symbol(): selector 95d89b41, returns dynamic string.
+      // ABI layout: [32-byte offset=0x20] [32-byte length] [data...]
+      final symResult = await _rpc.ethCall(
+        to: contractAddress,
+        data: '0x95d89b41',
+      );
+      final symBytes = decodeBytes(symResult);
+      String symbol = '?';
+      if (symBytes.length >= 64) {
+        // First 32 bytes: offset (typically 0x20). Next 32: length.
+        var length = 0;
+        for (var i = 56; i < 64; i++) {
+          length = (length << 8) | symBytes[i];
+        }
+        if (length > 0 && symBytes.length >= 64 + length) {
+          final strBytes = symBytes.sublist(64, 64 + length);
+          symbol = String.fromCharCodes(strBytes);
+        }
+      }
+      return (symbol: symbol, decimals: decimals);
+    } catch (e) {
+      PeekLogger.I.log(_logTag, 'token probe failed: $e');
+      return null;
+    }
+  }
 
   /// Live fee suggestion bundle for the send screen.
   Future<EthFeeSuggestion> feeSuggestion() async {

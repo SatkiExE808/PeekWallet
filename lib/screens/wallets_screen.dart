@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../coins/coin.dart';
+import '../coins/ethereum/custom_token_store.dart';
 import '../coins/module_registry.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
@@ -274,9 +275,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
     );
     if (yes == true) {
       await WalletStore.I.delete(meta.id);
-      // Also drop the cached balance so it doesn't dangle in the
-      // portfolio total after the wallet is gone.
+      // Also drop the cached balance + any custom-token entries so
+      // neither dangles after the wallet is gone.
       await BalanceCache.I.forget(meta.id);
+      await CustomTokenStore.I.forget(meta.id);
     }
   }
 }

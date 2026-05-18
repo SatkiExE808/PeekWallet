@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../coins/ethereum/custom_token_store.dart';
 import '../coins/ethereum/erc20_tokens.dart';
 import '../coins/ethereum/ethereum_module.dart';
 import '../coins/ethereum/ethereum_wallet.dart';
@@ -37,6 +38,9 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   /// _refresh() so the UI can show USDT/USDC/DAI rows under the
   /// native ETH/MATIC row.
   Map<String, BigInt> _tokenBalances = const {};
+  /// All tokens we display (defaults + user-added). Re-fetched on
+  /// each refresh so newly-added custom tokens appear immediately.
+  List<Erc20Token> _tokens = const [];
   Timer? _poll;
   bool _refreshing = false;
 
@@ -100,11 +104,10 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     try {
       final wei = await w.balanceWei();
       final txes = await w.transactions();
-      // Fetch token balances in parallel — cheap eth_call's that
-      // skip if the wallet is closed mid-fetch. We don't fail the
-      // whole refresh on individual token errors; the wallet's
-      // tokenBalanceRaw swallows them and returns zero.
-      final tokens = w.defaultTokens;
+      // Fetch token balances in parallel for the merged default +
+      // custom token list. Individual failures stay quiet (the
+      // wallet's tokenBalanceRaw catches them and returns zero).
+      final tokens = await w.tokensFor(widget.walletMeta.id);
       final tokenResults = <String, BigInt>{};
       if (tokens.isNotEmpty) {
         final balances = await Future.wait(
@@ -121,6 +124,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         _balanceWei = wei;
         _txes = txes;
         _tokenBalances = tokenResults;
+        _tokens = tokens;
         _err = null;
       });
       final eth = EthereumTx.weiToEth(wei);
@@ -148,6 +152,103 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     if (_wallet == null) return '… $_symbol';
     final eth = EthereumTx.weiToEth(_balanceWei);
     return '${eth.toStringAsFixed(6)} $_symbol';
+  }
+
+  /// Dialog flow for adding a custom ERC-20 token by contract
+  /// address. We probe the chain for the token's symbol + decimals
+  /// so the user doesn't have to type them manually.
+  Future<void> _addCustomToken(EthereumWallet w) async {
+    final controller = TextEditingController();
+    final contract = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add custom ERC-20 token'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Paste the token\'s contract address. We\'ll fetch its '
+              'symbol and decimals from the chain.',
+              style: TextStyle(color: PeekColors.text2, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Contract address',
+                hintText: '0x…',
+              ),
+              autocorrect: false,
+              enableSuggestions: false,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Probe'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (contract == null || contract.isEmpty || !mounted) return;
+    if (!contract.startsWith('0x') || contract.length != 42) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Contract must be 0x + 40 hex chars'),
+      ));
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(
+      content: Row(
+        children: [
+          const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(width: 12),
+          Text('Probing ${contract.substring(0, 10)}…'),
+        ],
+      ),
+      duration: const Duration(seconds: 10),
+    ));
+
+    final info = await w.probeToken(contract);
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+    if (info == null || info.symbol == '?') {
+      messenger.showSnackBar(const SnackBar(
+        content: Text(
+            'Could not read token metadata — wrong chain or not an ERC-20?'),
+      ));
+      return;
+    }
+
+    await CustomTokenStore.I.add(
+      widget.walletMeta.id,
+      Erc20Token(
+        symbol: info.symbol,
+        name: '${info.symbol} (custom)',
+        contract: contract.toLowerCase(),
+        decimals: info.decimals,
+        chainId: w.network.chainId,
+      ),
+    );
+    messenger.showSnackBar(SnackBar(
+      content: Text(
+          'Added ${info.symbol} (${info.decimals} decimals)'),
+    ));
+    // Trigger a refresh so the new token's balance loads.
+    unawaited(_refresh());
   }
 
   Future<void> _openSendScreen(EthereumWallet w) async {
@@ -378,20 +479,51 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                         TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
-                if (w != null && _tokenBalances.isNotEmpty) ...[
+                if (w != null) ...[
                   const SizedBox(height: 20),
-                  const Text('Tokens',
-                      style: TextStyle(
-                          color: PeekColors.text2, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  for (final token in w.defaultTokens)
-                    if (_tokenBalances[token.contract] != null)
-                      _TokenRow(
-                        token: token,
-                        rawBalance: _tokenBalances[token.contract]!,
-                        wallet: w,
-                        onTap: () => _openTokenSendScreen(w, token),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Tokens',
+                            style: TextStyle(
+                                color: PeekColors.text2, fontSize: 12)),
                       ),
+                      TextButton.icon(
+                        onPressed: () => _addCustomToken(w),
+                        icon: const Icon(Icons.add, size: 14),
+                        label: const Text('Add token',
+                            style: TextStyle(fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 0),
+                          minimumSize: const Size(0, 24),
+                          tapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (_tokenBalances.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'No tokens yet — receive USDT/USDC/DAI to this '
+                        'address or tap "Add token" to track another '
+                        'ERC-20 by contract address.',
+                        style: TextStyle(
+                            color: PeekColors.text3, fontSize: 11),
+                      ),
+                    )
+                  else
+                    for (final token in _tokens)
+                      if (_tokenBalances[token.contract] != null)
+                        _TokenRow(
+                          token: token,
+                          rawBalance: _tokenBalances[token.contract]!,
+                          wallet: w,
+                          onTap: () => _openTokenSendScreen(w, token),
+                        ),
                 ],
                 const SizedBox(height: 20),
                 Row(
