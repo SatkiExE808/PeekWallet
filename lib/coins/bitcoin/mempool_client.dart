@@ -108,7 +108,129 @@ class MempoolClient {
     return int.parse(r.body.trim());
   }
 
+  /// Unspent outputs for a single address. Each Utxo carries enough
+  /// info to spend it: txid, vout index, value, scriptPubKey hint
+  /// (we don't actually need scriptPubKey for P2WPKH; the recipient
+  /// address is enough to reconstruct it client-side).
+  Future<List<Utxo>> utxos(String address) async {
+    final r = await _http
+        .get(Uri.parse('$_base/address/$address/utxo'))
+        .timeout(const Duration(seconds: 8));
+    if (r.statusCode != 200) {
+      throw Exception('Mempool UTXO API returned ${r.statusCode}');
+    }
+    final list = jsonDecode(r.body) as List;
+    return list
+        .map((m) => Utxo.fromJson(m as Map<String, dynamic>, address))
+        .toList();
+  }
+
+  /// Aggregate UTXOs across many addresses (the gap-limit window of
+  /// receive addresses derived from the seed). Each UTXO retains its
+  /// owning address so the signer knows which derivation index's
+  /// private key to use.
+  Future<List<Utxo>> multiUtxos(List<String> addresses) async {
+    if (addresses.isEmpty) return const [];
+    final per = await Future.wait(addresses.map(utxos));
+    final all = <Utxo>[];
+    for (final list in per) {
+      all.addAll(list);
+    }
+    return all;
+  }
+
+  /// Current recommended fee rates from mempool.space — sat/vB for
+  /// each priority tier. Cached server-side, refreshed every ~30 s.
+  Future<FeeRates> feeRates() async {
+    final r = await _http
+        .get(Uri.parse('$_base/v1/fees/recommended'))
+        .timeout(const Duration(seconds: 6));
+    if (r.statusCode != 200) {
+      throw Exception('Mempool fee API returned ${r.statusCode}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    return FeeRates(
+      fastestSatPerVByte: (json['fastestFee'] as num).toInt(),
+      halfHourSatPerVByte: (json['halfHourFee'] as num).toInt(),
+      hourSatPerVByte: (json['hourFee'] as num).toInt(),
+      economySatPerVByte: (json['economyFee'] as num).toInt(),
+      minimumSatPerVByte: (json['minimumFee'] as num).toInt(),
+    );
+  }
+
+  /// Broadcast a fully signed transaction. Body is the raw tx hex.
+  /// Returns the txid on success; throws with mempool.space's error
+  /// message on rejection (insufficient fee, double-spend, etc.).
+  Future<String> broadcast(String txHex) async {
+    final r = await _http
+        .post(
+          Uri.parse('$_base/tx'),
+          headers: {'Content-Type': 'text/plain'},
+          body: txHex,
+        )
+        .timeout(const Duration(seconds: 15));
+    if (r.statusCode != 200) {
+      throw Exception(
+          'Broadcast rejected (${r.statusCode}): ${r.body.trim()}');
+    }
+    return r.body.trim();
+  }
+
   void close() => _http.close();
+}
+
+/// Unspent output ready to be consumed by a new transaction.
+class Utxo {
+  const Utxo({
+    required this.txid,
+    required this.vout,
+    required this.valueSat,
+    required this.address,
+    required this.confirmed,
+    this.blockHeight,
+  });
+
+  factory Utxo.fromJson(Map<String, dynamic> json, String ownerAddress) {
+    final status = json['status'] as Map<String, dynamic>?;
+    return Utxo(
+      txid: json['txid'] as String,
+      vout: (json['vout'] as num).toInt(),
+      valueSat: (json['value'] as num).toInt(),
+      address: ownerAddress,
+      confirmed: (status?['confirmed'] as bool?) ?? false,
+      blockHeight: status?['block_height'] as int?,
+    );
+  }
+
+  final String txid;
+  final int vout;
+  final int valueSat;
+  /// Which one of our addresses this UTXO pays to — used by the
+  /// signer to look up the matching private key from the BIP84
+  /// derivation chain.
+  final String address;
+  final bool confirmed;
+  final int? blockHeight;
+}
+
+class FeeRates {
+  const FeeRates({
+    required this.fastestSatPerVByte,
+    required this.halfHourSatPerVByte,
+    required this.hourSatPerVByte,
+    required this.economySatPerVByte,
+    required this.minimumSatPerVByte,
+  });
+
+  /// ~10 min confirm target.
+  final int fastestSatPerVByte;
+  /// ~30 min confirm target.
+  final int halfHourSatPerVByte;
+  /// ~1 hour confirm target.
+  final int hourSatPerVByte;
+  final int economySatPerVByte;
+  /// Floor — below this, mempool nodes will drop the tx.
+  final int minimumSatPerVByte;
 }
 
 class AddressBalance {

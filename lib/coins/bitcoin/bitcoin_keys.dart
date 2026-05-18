@@ -46,6 +46,29 @@ class BitcoinAddressDerivation {
   final Uint8List publicKey;
 }
 
+/// Same as [BitcoinAddressDerivation] but with the live BIP32 node
+/// kept. We only build this when we need to SIGN (i.e. for send), so
+/// receive-only callers never materialize private keys.
+///
+/// Hold these in memory only as long as the send screen is open; on
+/// dispose the wrapping wallet drops the reference so the GC can
+/// reclaim it. Private-key bytes don't get logged anywhere (the
+/// PeekLogger redacts them by regex if they ever leak).
+class BitcoinSpendingKey {
+  BitcoinSpendingKey({
+    required this.address,
+    required this.path,
+    required this.node,
+  });
+  final String address;
+  final String path;
+  final bip32.BIP32 node;
+
+  Uint8List get publicKey => Uint8List.fromList(node.publicKey);
+  Uint8List get publicKeyHash => _hash160(publicKey);
+  Uint8List get privateKey => Uint8List.fromList(node.privateKey!);
+}
+
 /// Derive the BIP84 P2WPKH address at (account, addressIndex).
 /// Pass account=0 + index=0..N for normal receive addresses; later
 /// indices are used to rotate addresses for privacy.
@@ -72,6 +95,49 @@ BitcoinAddressDerivation deriveBitcoinAddress({
     path: path,
     publicKey: pubKey,
   );
+}
+
+/// Like [deriveBitcoinAddress] but ALSO holds the BIP32 node so the
+/// caller can sign with it. Returns null if the mnemonic is invalid.
+/// Used exclusively by the Bitcoin send path — receive flows stay on
+/// the publickey-only [deriveBitcoinAddress].
+BitcoinSpendingKey deriveBitcoinSpendingKey({
+  required String mnemonic,
+  String passphrase = '',
+  int account = 0,
+  int addressIndex = 0,
+  bool change = false,
+}) {
+  final seed = bip39.mnemonicToSeed(mnemonic, passphrase: passphrase);
+  final root = bip32.BIP32.fromSeed(Uint8List.fromList(seed));
+  final chain = change ? 1 : 0;
+  final path = "m/84'/0'/$account'/$chain/$addressIndex";
+  final child = root.derivePath(path);
+  final pubKey = Uint8List.fromList(child.publicKey);
+  final h160 = _hash160(pubKey);
+  final addr = segwit.encode(Segwit(_hrpMainnet, 0, Uint8List.fromList(h160)));
+  return BitcoinSpendingKey(address: addr, path: path, node: child);
+}
+
+/// Decodes a bech32 P2WPKH address (mainnet `bc1q…`) into its 20-byte
+/// public-key hash. Throws on any non-P2WPKH or wrong-network address
+/// — the send path is mainnet-only at this stage, so legacy P2PKH
+/// (`1…`) and P2SH (`3…`) addresses are rejected explicitly so the
+/// user gets a clear error rather than building a transaction the
+/// network won't relay.
+Uint8List decodeP2WPKHAddress(String address) {
+  final decoded = segwit.decode(address);
+  if (decoded.hrp != _hrpMainnet) {
+    throw const FormatException('Not a mainnet Bitcoin address');
+  }
+  if (decoded.version != 0) {
+    throw const FormatException(
+        'Only witness v0 (SegWit) addresses supported');
+  }
+  if (decoded.program.length != 20) {
+    throw const FormatException('Not a P2WPKH address (need 20-byte program)');
+  }
+  return Uint8List.fromList(decoded.program);
 }
 
 /// SHA-256 then RIPEMD-160 — the standard "hash160" used everywhere

@@ -104,6 +104,12 @@ dependencies:
   # encoding for BIP84 native SegWit addresses. Pure-Dart, no native
   # libs needed (unlike monero_c). Balance + history fetched live
   # from mempool.space via the http client we already pull in.
+  #
+  # We DO NOT use coinlib here despite its convenient PSBT API: its
+  # Flutter integration requires a per-arch native secp256k1 build,
+  # which adds CI complexity and supply-chain risk for a wallet. The
+  # Bitcoin send path uses bip32's signer (already pointycastle ECDSA)
+  # and a hand-rolled BIP-0143 sighash, tested against the spec vectors.
   bip32: ^2.0.0
   bech32: ^0.2.2
   crypto: ^3.0.6

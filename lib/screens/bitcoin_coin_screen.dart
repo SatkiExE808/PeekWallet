@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import 'send_bitcoin_screen.dart';
 
 /// Bitcoin coin page. Separate from CoinScreen (which is Monero-
 /// specific in its boot path) because the BTC runtime is fundamentally
@@ -106,6 +107,18 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
     if (_wallet == null) return '… BTC';
     final btc = _balanceSat / 100000000.0;
     return '${btc.toStringAsFixed(8)} BTC';
+  }
+
+  Future<void> _openSendScreen(BitcoinWallet w) async {
+    final didSend = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendBitcoinScreen(wallet: w),
+      ),
+    );
+    if (didSend == true) {
+      // Refresh balance + history so the new outgoing tx appears.
+      unawaited(_refresh());
+    }
   }
 
   void _showReceiveSheet() {
@@ -283,7 +296,9 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: null, // Send lands in a follow-up commit
+                          onPressed: _balanceSat == 0
+                              ? null
+                              : () => _openSendScreen(w),
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           label: const Text('Send'),
                         ),
@@ -293,8 +308,9 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                 if (w != null) ...[
                   const SizedBox(height: 6),
                   const Text(
-                    'Sending BTC isn\'t enabled yet — PSBT signing + '
-                    'broadcast lands in a follow-up release.',
+                    'Bitcoin send is experimental — test with small '
+                    'amounts before sending large sums. Source-audit the '
+                    'BIP143 signer if you\'re moving meaningful BTC.',
                     style:
                         TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
