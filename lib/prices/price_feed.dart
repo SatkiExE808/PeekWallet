@@ -46,6 +46,13 @@ class PriceFeed extends ChangeNotifier {
     'USDT': 'tether',
     'USDC': 'usd-coin',
     'DAI': 'dai',
+    // Polygon ecosystem majors. WMATIC tracks MATIC; WETH tracks
+    // ETH. We list them separately so the row labels match the
+    // wallet's display symbol.
+    'WMATIC': 'matic-network',
+    'WETH': 'weth',
+    'LINK': 'chainlink',
+    'AAVE': 'aave',
   };
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(

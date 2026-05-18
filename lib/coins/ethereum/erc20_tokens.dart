@@ -52,6 +52,7 @@ const List<Erc20Token> kDefaultTokens = <Erc20Token>[
     chainId: 1,
   ),
   // ── Polygon ───────────────────────────────────────────────────
+  // Stablecoins first — most-used on Polygon.
   Erc20Token(
     symbol: 'USDT',
     name: 'Tether USD (PoS)',
@@ -70,6 +71,38 @@ const List<Erc20Token> kDefaultTokens = <Erc20Token>[
     symbol: 'DAI',
     name: 'Dai (PoS)',
     contract: '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063',
+    decimals: 18,
+    chainId: 137,
+  ),
+  // Major non-stable tokens commonly bridged to Polygon. Users can
+  // always remove them — surfacing zero-balance entries is filtered
+  // out by the coin screen anyway, so these only show up after the
+  // user has actually received some.
+  Erc20Token(
+    symbol: 'WMATIC',
+    name: 'Wrapped MATIC',
+    contract: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270',
+    decimals: 18,
+    chainId: 137,
+  ),
+  Erc20Token(
+    symbol: 'WETH',
+    name: 'Wrapped Ether (PoS)',
+    contract: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619',
+    decimals: 18,
+    chainId: 137,
+  ),
+  Erc20Token(
+    symbol: 'LINK',
+    name: 'Chainlink (PoS)',
+    contract: '0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39',
+    decimals: 18,
+    chainId: 137,
+  ),
+  Erc20Token(
+    symbol: 'AAVE',
+    name: 'Aave (PoS)',
+    contract: '0xd6df932a45c0f255f85145f286ea0b292b21c90b',
     decimals: 18,
     chainId: 137,
   ),

@@ -600,7 +600,10 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                     if (row is EthereumTx)
                       _EthTxRow(tx: row, symbol: _symbol)
                     else
-                      _TokenTxRow(tx: row as TokenTransfer),
+                      _TokenTxRow(
+                        tx: row as TokenTransfer,
+                        chainSymbol: _symbol,
+                      ),
               ],
             ),
           ),
@@ -699,8 +702,13 @@ class _TokenRow extends StatelessWidget {
 /// in the leading icon — so the user can immediately tell "USDT in"
 /// from "ETH in".
 class _TokenTxRow extends StatelessWidget {
-  const _TokenTxRow({required this.tx});
+  const _TokenTxRow({required this.tx, required this.chainSymbol});
   final TokenTransfer tx;
+  /// The native coin's symbol (ETH / MATIC). Drives which block
+  /// explorer the "Explorer" button opens — etherscan.io vs
+  /// polygonscan.com. Without this the row always opened ETH's
+  /// explorer even on Polygon.
+  final String chainSymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -843,7 +851,7 @@ class _TokenTxRow extends StatelessWidget {
                         // explorer mapping. Most explorers handle
                         // token transfers under the same tx page.
                         final url = explorerTxUrl(
-                            coinId: 'ETH', txid: tx.hash);
+                            coinId: chainSymbol, txid: tx.hash);
                         if (url == null) return;
                         final ok = await openExplorerUrl(url);
                         if (!ok && ctx.mounted) {
