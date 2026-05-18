@@ -140,14 +140,14 @@ class MoneroWallet {
       );
     }
 
-    // Try the user's daemon first, then known-good public nodes. For
-    // each candidate we kick refresh and wait briefly for the daemon
-    // to report a tip. A stale daemon — one whose underlying node
-    // hasn't kept up with the chain — accepts Wallet_init just fine
-    // and reports a tip ~hundreds-of-thousands of blocks behind real
-    // tip (that's exactly how xmr-rpc.iamhch.com parked us at 98%
-    // forever scanning toward a fake-2024 head). Reject anything
-    // below kMinSensibleTip and fall through to the next candidate.
+    // Try the user's daemon first, then known-good public nodes. We
+    // only gate on Wallet_init's return value — earlier attempts to
+    // verify the daemon's reported tip at boot ran into monero_c's
+    // approximate-tip fallback (it returns a compile-time constant
+    // until a real RPC succeeds, which on slow / roaming networks
+    // can take longer than any reasonable boot timeout). Heights are
+    // surfaced in the UI so a stale daemon is visible to the user —
+    // we don't need to refuse to connect over it.
     final candidates = <String>{daemonUri, ...kMoneroFallbackNodes}.toList();
     String? activeHostPort;
     bool activeSsl = false;
@@ -160,43 +160,23 @@ class MoneroWallet {
         daemonAddress: ep.hostPort,
         useSsl: ep.useSsl,
       );
-      if (!ok) {
-        lastError = monero.Wallet_errorString(w);
-        stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
-        continue;
-      }
-      // Kick refresh and poll for a sensible tip. monero_c falls back
-      // to a compile-time approximate_blockchain_height if the daemon
-      // never responds, so we have to wait for the value to *exceed*
-      // that approximation rather than just be >0.
-      monero.Wallet_startRefresh(w);
-      int observedTip = 0;
-      for (var i = 0; i < 16; i++) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        observedTip = monero.Wallet_daemonBlockChainHeight(w);
-        if (observedTip >= kMinSensibleTip) break;
-      }
-      if (observedTip >= kMinSensibleTip) {
+      if (ok) {
         activeHostPort = ep.hostPort;
         activeSsl = ep.useSsl;
         break;
       }
       lastError = monero.Wallet_errorString(w);
-      stage('${ep.hostPort} stale (tip=$observedTip < $kMinSensibleTip${lastError.isEmpty ? "" : ", $lastError"}) — trying next');
-      // Pause refresh before trying the next candidate so we don't
-      // accidentally race two refresh threads against the same wallet.
-      try {
-        monero.Wallet_pauseRefresh(w);
-      } catch (_) {/* best effort */}
+      stage('init failed on ${ep.hostPort}: ${lastError.isEmpty ? "(no detail)" : lastError}');
     }
 
     if (activeHostPort == null) {
       throw Exception(
-          'No Monero node returned a current chain tip (≥ $kMinSensibleTip). '
-          'Last error: ${lastError.isEmpty ? "(none)" : lastError}');
+          'Wallet_init rejected every candidate. Last error: ${lastError.isEmpty ? "(none)" : lastError}');
     }
 
-    stage('attached $activeHostPort (ssl=$activeSsl) — synced refresh');
+    stage('attached $activeHostPort (ssl=$activeSsl) — starting refresh');
+    monero.Wallet_startRefresh(w);
+    stage('ready');
 
     return MoneroWallet._(w, keys.primaryAddress);
   }
@@ -346,21 +326,13 @@ class MoneroSession {
 const String kDefaultMoneroDaemon = 'https://xmr-node.cakewallet.com:18081';
 
 /// Public Monero RPC nodes we fall back to when the user's preferred
-/// daemon is unreachable *or* serving a stale chain tip. Order
-/// matters — first one to report a sensible tip wins.
+/// daemon is unreachable. Order matters — first one Wallet_init
+/// accepts wins.
 const List<String> kMoneroFallbackNodes = [
   'https://nodes.hashvault.pro:18081',
   'https://node.sethforprivacy.com:443',
   'https://xmr-rpc.iamhch.com',
 ];
-
-/// Minimum chain height we trust a daemon to be reporting. Anything
-/// below this is treated as a stale / dead node and the fallback loop
-/// moves on. Bake-time constant; bump on each release. As of May 2026
-/// real tip is roughly 3,790,000+ and grows ~720 blocks/day, so a
-/// 30k-block floor leaves comfortable margin for an "almost-current"
-/// node without accepting one that's months behind.
-const int kMinSensibleTip = 3760000;
 
 /// Splits a user-friendly daemon URL into the host:port + useSsl pair
 /// that monero_c's Wallet_init expects. Accepts:
