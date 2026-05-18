@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../address_book/address_book.dart';
 import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/ethereum/etherscan_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
 /// Ethereum send screen. Same two-step flow as the Bitcoin one —
@@ -107,6 +109,20 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     // Strip leading zeros for canonical parse.
     final trimmed = combined.replaceFirst(RegExp(r'^0+'), '');
     return BigInt.parse(trimmed.isEmpty ? '0' : trimmed);
+  }
+
+  Future<void> _pickFromBook() async {
+    final picked = await Navigator.of(context).push<AddressBookEntry>(
+      MaterialPageRoute(
+        builder: (_) => AddressBookScreen(
+            pickForCoin: widget.wallet.network.id),
+      ),
+    );
+    if (picked != null) {
+      _addrCtrl.text = picked.address;
+      unawaited(AddressBook.I.recordUse(picked.id));
+      setState(() => _error = null);
+    }
   }
 
   Future<void> _scanQr() async {
@@ -246,6 +262,11 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.bookmark_border, size: 18),
+                  tooltip: 'From address book',
+                  onPressed: _pickFromBook,
+                ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
                   tooltip: 'Scan QR',

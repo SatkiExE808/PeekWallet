@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../address_book/address_book.dart';
 import '../coins/bitcoin/bitcoin_wallet.dart';
 import '../coins/bitcoin/mempool_client.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
 /// Bitcoin send screen — destination + amount + fee tier, then a
@@ -115,6 +117,20 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
       return (v * 100000000).round();
     }
     return int.tryParse(raw);
+  }
+
+  Future<void> _pickFromBook() async {
+    final picked = await Navigator.of(context).push<AddressBookEntry>(
+      MaterialPageRoute(
+        builder: (_) => AddressBookScreen(
+            pickForCoin: widget.wallet.params.id),
+      ),
+    );
+    if (picked != null) {
+      _addrCtrl.text = picked.address;
+      unawaited(AddressBook.I.recordUse(picked.id));
+      setState(() => _error = null);
+    }
   }
 
   Future<void> _scanQr() async {
@@ -245,6 +261,11 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.bookmark_border, size: 18),
+                  tooltip: 'From address book',
+                  onPressed: _pickFromBook,
+                ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
                   tooltip: 'Scan QR',
