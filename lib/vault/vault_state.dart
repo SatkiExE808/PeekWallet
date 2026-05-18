@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../util/sensitive_clipboard.dart';
 import 'biometric_auth.dart';
@@ -131,11 +132,14 @@ class VaultState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Permanently removes the encrypted seed.
+  /// Permanently removes the encrypted seed AND every adjacent
+  /// per-user store (biometric stash, address book). On a true reset
+  /// nothing the user added should persist.
   Future<void> wipe() async {
     MoneroSession.I.stop();
     SensitiveClipboard.cancelAll();
     await _storage.wipe();
+    await AddressBook.I.wipe();
     _mnemonic = null;
     _passphrase = '';
     _walletFilePassword = null;

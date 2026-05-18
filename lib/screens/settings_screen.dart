@@ -6,6 +6,7 @@ import '../prefs/prefs.dart';
 import '../theme.dart';
 import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
+import 'address_book_screen.dart';
 import 'reveal_seed_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -308,6 +309,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const RevealSeedScreen()),
+                      ),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.contact_page_outlined,
+                          color: PeekColors.text2),
+                      title: const Text('Address book'),
+                      subtitle: const Text(
+                        'Saved labels for recipients you send to',
+                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                      ),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: PeekColors.text3),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AddressBookScreen(),
+                        ),
                       ),
                     ),
                     ListTile(

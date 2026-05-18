@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
+import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
 /// Two-step Send flow:
@@ -47,6 +49,20 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     if (scanned != null && scanned.isNotEmpty) {
       _addr.text = scanned;
       // Re-validate immediately so user sees green/red on the field.
+      setState(() => _err = null);
+    }
+  }
+
+  Future<void> _pickFromBook() async {
+    final picked = await Navigator.of(context).push<AddressBookEntry>(
+      MaterialPageRoute(
+        builder: (_) => const AddressBookScreen(pickForCoin: 'XMR'),
+      ),
+    );
+    if (picked != null) {
+      _addr.text = picked.address;
+      // Mark the entry as used so it sorts to the top next time.
+      AddressBook.I.recordUse(picked.id);
       setState(() => _err = null);
     }
   }
@@ -182,6 +198,11 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.contact_page_outlined, size: 18),
+                  tooltip: 'Address book',
+                  onPressed: _pickFromBook,
+                ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
                   tooltip: 'Scan QR',
