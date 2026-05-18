@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
+import 'qr_scan_screen.dart';
 
 /// Two-step Send flow:
 ///   1. Form — destination, amount, fee priority
@@ -35,6 +36,19 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     _addr.dispose();
     _amount.dispose();
     super.dispose();
+  }
+
+  Future<void> _scanAddress() async {
+    final scanned = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const QrScanScreen(title: 'Scan recipient address'),
+      ),
+    );
+    if (scanned != null && scanned.isNotEmpty) {
+      _addr.text = scanned;
+      // Re-validate immediately so user sees green/red on the field.
+      setState(() => _err = null);
+    }
   }
 
   Future<void> _build() async {
@@ -165,15 +179,25 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           decoration: InputDecoration(
             labelText: 'Recipient address',
             hintText: '4… or 8…',
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.content_paste, size: 18),
-              tooltip: 'Paste',
-              onPressed: () async {
-                final data = await Clipboard.getData('text/plain');
-                if (data?.text != null) {
-                  _addr.text = data!.text!.trim();
-                }
-              },
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.qr_code_scanner, size: 18),
+                  tooltip: 'Scan QR',
+                  onPressed: _scanAddress,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.content_paste, size: 18),
+                  tooltip: 'Paste',
+                  onPressed: () async {
+                    final data = await Clipboard.getData('text/plain');
+                    if (data?.text != null) {
+                      _addr.text = data!.text!.trim();
+                    }
+                  },
+                ),
+              ],
             ),
           ),
         ),

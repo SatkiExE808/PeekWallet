@@ -84,6 +84,13 @@ dependencies:
   # treatment which we wire separately in lib/util/screenshot_guard.
   flutter_windowmanager_plus: ^1.0.0
 
+  # Camera-based QR scanner — Send screen, eventually also for
+  # importing wallets / address-book entries that arrive as QR.
+  # mobile_scanner uses Google ML Kit on Android, Vision on iOS;
+  # both are platform-native and faster than zxing-dart.
+  mobile_scanner: ^7.0.0
+  permission_handler: ^11.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
