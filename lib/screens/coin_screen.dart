@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../coins/coin.dart';
 import '../coins/monero/monero_engine.dart';
 import '../coins/monero/monero_wallet.dart';
+import '../prefs/prefs.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 
@@ -92,11 +93,13 @@ class _CoinScreenState extends State<CoinScreen> {
       setState(() => _engineError = 'Vault locked — wallet password unavailable');
       return;
     }
+    final daemonUri =
+        await Prefs.I.moneroDaemonUri() ?? kDefaultMoneroDaemon;
     final w = await MoneroSession.I.start(
       mnemonic: mnemonic,
       passphrase: VaultState.I.passphrase,
       restoreHeight: restoreHeight,
-      daemonUri: kDefaultMoneroDaemon,
+      daemonUri: daemonUri,
       walletPassword: walletPwd,
     );
     stageTicker.cancel();
