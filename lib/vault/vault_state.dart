@@ -15,6 +15,7 @@ class VaultState extends ChangeNotifier {
 
   String? _mnemonic;
   String _passphrase = '';
+  String? _walletFilePassword;
   bool _hasWalletKnown = false;
   bool _hasWallet = false;
 
@@ -24,6 +25,12 @@ class VaultState extends ChangeNotifier {
   /// BIP39 passphrase ("25th word"). Empty string when not used.
   /// Coin derivations must include this in their PBKDF2 salt.
   String get passphrase => _passphrase;
+
+  /// Per-vault password used to encrypt on-disk per-coin wallet files
+  /// (e.g. the Monero `.wallet`). Derived from the user's master
+  /// password — see VaultStorage._deriveWalletFilePassword. Null while
+  /// the vault is locked.
+  String? get walletFilePassword => _walletFilePassword;
 
   bool get hasWallet => _hasWallet;
   bool get isUnlocked => _mnemonic != null;
@@ -43,6 +50,7 @@ class VaultState extends ChangeNotifier {
     final seed = await _storage.save(mnemonic, password, passphrase: passphrase);
     _mnemonic = seed.mnemonic;
     _passphrase = seed.passphrase;
+    _walletFilePassword = seed.walletFilePassword;
     _hasWallet = true;
     _hasWalletKnown = true;
     notifyListeners();
@@ -53,6 +61,7 @@ class VaultState extends ChangeNotifier {
     final seed = await _storage.unlock(password);
     _mnemonic = seed.mnemonic;
     _passphrase = seed.passphrase;
+    _walletFilePassword = seed.walletFilePassword;
     notifyListeners();
   }
 
@@ -64,6 +73,7 @@ class VaultState extends ChangeNotifier {
     MoneroSession.I.stop();
     _mnemonic = null;
     _passphrase = '';
+    _walletFilePassword = null;
     notifyListeners();
   }
 
@@ -73,6 +83,7 @@ class VaultState extends ChangeNotifier {
     await _storage.wipe();
     _mnemonic = null;
     _passphrase = '';
+    _walletFilePassword = null;
     _hasWallet = false;
     _hasWalletKnown = true;
     notifyListeners();

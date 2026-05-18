@@ -63,7 +63,12 @@ class VaultStorage {
       ..setRange(_saltLen + _nonceLen + box.cipherText.length, _saltLen + _nonceLen + box.cipherText.length + box.mac.bytes.length, box.mac.bytes);
 
     await _storage.write(key: _blobKey, value: base64Encode(blob));
-    return DecryptedSeed(mnemonic: mnemonic, passphrase: passphrase);
+    final walletFilePwd = await _deriveWalletFilePassword(password, salt);
+    return DecryptedSeed(
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      walletFilePassword: walletFilePwd,
+    );
   }
 
   /// Decrypts the stored seed with `password`. Throws on wrong
@@ -90,9 +95,11 @@ class VaultStorage {
         secretKey: key,
       );
       final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+      final walletFilePwd = await _deriveWalletFilePassword(password, salt);
       return DecryptedSeed(
         mnemonic: json['mnemonic'] as String,
         passphrase: (json['passphrase'] as String?) ?? '',
+        walletFilePassword: walletFilePwd,
       );
     } on SecretBoxAuthenticationError {
       throw const VaultError('Wrong password');
@@ -114,6 +121,31 @@ class VaultStorage {
     );
   }
 
+  /// Derive the password used to encrypt per-coin wallet files (e.g.
+  /// the Monero `.wallet` blob on disk). Distinct from the seed key
+  /// because (a) the underlying PRF input is suffixed with a context
+  /// string so the two derivations can never collide, and (b) the
+  /// iteration count is lower — this is a defense-in-depth password
+  /// behind the seed encryption, not the primary boundary. Without
+  /// this, the on-disk wallet file would be encrypted with a hardcoded
+  /// constant — anyone with the file could open it and read the spend
+  /// key out of it without knowing the user's master password.
+  Future<String> _deriveWalletFilePassword(
+      String password, List<int> salt) async {
+    const ctxLabel = '|peek.wallet-file.v1';
+    final pbkdf2 = Pbkdf2(
+      macAlgorithm: Hmac.sha256(),
+      iterations: 10000,
+      bits: 32 * 8,
+    );
+    final key = await pbkdf2.deriveKey(
+      secretKey: SecretKey(utf8.encode(password + ctxLabel)),
+      nonce: salt,
+    );
+    final bytes = await key.extractBytes();
+    return base64Encode(bytes);
+  }
+
   Uint8List _randomBytes(int n) {
     final rng = Random.secure();
     final out = Uint8List(n);
@@ -131,11 +163,16 @@ class VaultError implements Exception {
   String toString() => message;
 }
 
-/// Result of a successful unlock: the BIP39 phrase plus the optional
-/// 25th-word passphrase. The passphrase is needed alongside the
-/// mnemonic for every derivation (BIP39 mixes it into the PBKDF2 salt).
+/// Result of a successful unlock: the BIP39 phrase, the optional
+/// 25th-word passphrase, and a per-vault password used to encrypt
+/// per-coin on-disk wallet files (e.g. the Monero `.wallet` file).
 class DecryptedSeed {
-  const DecryptedSeed({required this.mnemonic, required this.passphrase});
+  const DecryptedSeed({
+    required this.mnemonic,
+    required this.passphrase,
+    required this.walletFilePassword,
+  });
   final String mnemonic;
   final String passphrase;
+  final String walletFilePassword;
 }
