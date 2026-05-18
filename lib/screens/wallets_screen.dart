@@ -20,6 +20,7 @@ import 'bch_coin_screen.dart';
 import 'bitcoin_coin_screen.dart';
 import 'coin_screen.dart';
 import 'ethereum_coin_screen.dart';
+import 'show_wallet_seed_screen.dart';
 import 'solana_coin_screen.dart';
 import 'tron_coin_screen.dart';
 
@@ -348,6 +349,17 @@ class _WalletsScreenState extends State<WalletsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.vpn_key_outlined,
+                  color: PeekColors.accent),
+              title: const Text('Show recovery phrase'),
+              subtitle: const Text(
+                'Back this up separately from the vault seed.',
+                style:
+                    TextStyle(color: PeekColors.text3, fontSize: 11),
+              ),
+              onTap: () => Navigator.of(ctx).pop('reveal'),
+            ),
+            ListTile(
               leading: const Icon(Icons.edit, color: PeekColors.text2),
               title: const Text('Rename'),
               onTap: () => Navigator.of(ctx).pop('rename'),
@@ -367,6 +379,12 @@ class _WalletsScreenState extends State<WalletsScreen> {
         ),
       ),
     );
+    if (!mounted) return;
+    if (action == 'reveal') {
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ShowWalletSeedScreen(walletMeta: meta),
+      ));
+    }
     if (action == 'rename') await _rename(meta);
     if (action == 'delete') await _delete(meta);
   }
