@@ -64,6 +64,46 @@ class TronGridClient {
         .toList();
   }
 
+  /// Call a view method on a smart contract. Wraps TronGrid's
+  /// `/wallet/triggerconstantcontract` — Tron's equivalent of
+  /// Ethereum's `eth_call`. Returns the raw hex of the first
+  /// `constant_result` entry; the caller decodes it as needed
+  /// (uint256 for balanceOf, etc.).
+  ///
+  /// All addresses passed here MUST be in the "41…" hex form (no
+  /// 0x prefix, no base58 T-prefix); TronGrid rejects mixed forms
+  /// with cryptic errors. The trc20 module's _normalizeAddress
+  /// helper does the conversion.
+  Future<String> triggerConstantContract({
+    required String ownerHexAddress,
+    required String contractHexAddress,
+    required String functionSelector,
+    required String parameterHex,
+  }) async {
+    final body = jsonEncode({
+      'owner_address': ownerHexAddress,
+      'contract_address': contractHexAddress,
+      'function_selector': functionSelector,
+      'parameter': parameterHex,
+      'visible': false,
+    });
+    final r = await _http
+        .post(
+          Uri.parse('$_base/wallet/triggerconstantcontract'),
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        )
+        .timeout(const Duration(seconds: 10));
+    if (r.statusCode != 200) {
+      throw Exception(
+          'TronGrid contract call returned ${r.statusCode}');
+    }
+    final json = jsonDecode(r.body) as Map<String, dynamic>;
+    final result = (json['constant_result'] as List?) ?? const [];
+    if (result.isEmpty) return '';
+    return (result.first as String?) ?? '';
+  }
+
   void close() => _http.close();
 }
 

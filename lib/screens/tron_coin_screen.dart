@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../coins/tron/trc20.dart';
 import '../coins/tron/tron_module.dart';
 import '../coins/tron/tron_wallet.dart';
 import '../coins/tron/trongrid_client.dart';
@@ -33,6 +34,9 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
   String? _err;
   int _balanceSun = 0;
   List<TronTx> _txes = const [];
+  /// TRC-20 balances keyed by base58 contract address. Populated
+  /// in _refresh() alongside the native TRX balance.
+  Map<String, BigInt> _tokenBalances = const {};
   Timer? _poll;
   bool _refreshing = false;
 
@@ -86,10 +90,25 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
     try {
       final sun = await w.balanceSun();
       final txes = await w.transactions();
+      // Fan out TRC-20 balance fetches in parallel; individual
+      // failures stay quiet (the wallet's tokenBalanceRaw catches
+      // them and returns zero rather than rethrow).
+      final tokens = w.defaultTokens;
+      final tokenResults = <String, BigInt>{};
+      if (tokens.isNotEmpty) {
+        final balances = await Future.wait(
+            tokens.map((t) => w.tokenBalanceRaw(t)));
+        for (var i = 0; i < tokens.length; i++) {
+          if (balances[i] > BigInt.zero) {
+            tokenResults[tokens[i].contract] = balances[i];
+          }
+        }
+      }
       if (!mounted) return;
       setState(() {
         _balanceSun = sun;
         _txes = txes;
+        _tokenBalances = tokenResults;
         _err = null;
       });
       final trx = sun / 1000000.0;
@@ -307,6 +326,20 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                     style: TextStyle(color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
+                if (w != null && _tokenBalances.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  const Text('Tokens (TRC-20)',
+                      style: TextStyle(
+                          color: PeekColors.text2, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  for (final token in w.defaultTokens)
+                    if (_tokenBalances[token.contract] != null)
+                      _Trc20Row(
+                        token: token,
+                        rawBalance: _tokenBalances[token.contract]!,
+                        wallet: w,
+                      ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -332,9 +365,11 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                     child: Text(
                       _wallet == null
                           ? 'Loading…'
-                          : 'No native-TRX transactions yet. TRC-20 token '
-                              'transfers (USDT etc.) aren\'t shown here '
-                              'yet — they need separate per-token decoding.',
+                          : 'No native-TRX transactions yet. TRC-20 '
+                              'transfers (USDT etc.) aren\'t included in this '
+                              'list yet — see the per-token rows above for '
+                              'current balances; full TRC-20 tx history '
+                              'lands in a follow-up.',
                       style: const TextStyle(
                           color: PeekColors.text3, fontSize: 12),
                     ),
@@ -347,6 +382,86 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Display row for one TRC-20 token. Read-only for now — tapping
+/// does nothing. Send-token is a follow-up: Tron transactions are
+/// protobuf-encoded with a recent-block reference, distinct from
+/// the ETH RLP+EIP-1559 path that ERC-20 send rides on.
+class _Trc20Row extends StatelessWidget {
+  const _Trc20Row({
+    required this.token,
+    required this.rawBalance,
+    required this.wallet,
+  });
+  final Trc20Token token;
+  final BigInt rawBalance;
+  final TronWallet wallet;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = wallet.tokenBalanceDisplay(rawBalance, token);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: AnimatedBuilder(
+        animation: PriceFeed.I,
+        builder: (_, _) {
+          // Stablecoin prices are pulled per-symbol; for USDT and
+          // USDC this stays near $1 unless the chain has depegged.
+          final fiat = PriceFeed.I.formatFiat(token.symbol, display);
+          return Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: PeekColors.surface2,
+                child: Text(
+                  token.symbol.substring(0, 1),
+                  style: const TextStyle(
+                      color: PeekColors.text, fontSize: 11),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(token.symbol,
+                        style: const TextStyle(
+                            color: PeekColors.text,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                    Text(token.name,
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _fmt(display, token.decimals == 6 ? 2 : 4),
+                    style: const TextStyle(
+                        color: PeekColors.text, fontSize: 13),
+                  ),
+                  if (fiat.isNotEmpty)
+                    Text('≈ $fiat',
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11)),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static String _fmt(double v, int digits) {
+    if (v == 0) return '0';
+    if (v < 0.0001) return v.toStringAsExponential(2);
+    return v.toStringAsFixed(digits);
   }
 }
 
