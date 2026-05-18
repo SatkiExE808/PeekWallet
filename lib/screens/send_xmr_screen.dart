@@ -260,6 +260,9 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   // --- Step 3: result ----------------------------------------------------
 
   Widget _resultView() {
+    // Capture the messenger so the post-await SnackBar isn't tied to
+    // a (possibly disposed) BuildContext.
+    final messenger = ScaffoldMessenger.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -295,8 +298,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
         OutlinedButton.icon(
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: _broadcastTxid!));
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
+            messenger.showSnackBar(
               const SnackBar(content: Text('TX ID copied')),
             );
           },

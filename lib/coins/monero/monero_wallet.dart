@@ -278,6 +278,52 @@ class MoneroWallet {
     return ((cur / tip) * 100).clamp(0.0, 100.0).floor();
   }
 
+  /// Number of subaddresses currently generated under account 0
+  /// (includes the primary at index 0). Call [addSubaddress] to
+  /// extend this; the count survives across launches because monero_c
+  /// persists subaddresses in the wallet file.
+  int get subaddressCount =>
+      monero.Wallet_numSubaddresses(_ptr, accountIndex: 0);
+
+  /// Address string at the given subaddress index of account 0.
+  /// Index 0 is the primary address (same as [address]); higher
+  /// indices are Cake-compatible subaddresses (network byte 0x2A,
+  /// '8' prefix). Same BIP39 seed in another wallet produces the
+  /// same string at the same index.
+  String subaddress(int index) =>
+      monero.Wallet_address(_ptr, accountIndex: 0, addressIndex: index);
+
+  /// User-set label for a subaddress, or empty string if none. The
+  /// monero_c default label is "Primary account" / "" — we treat
+  /// empty as unlabeled.
+  String subaddressLabel(int index) {
+    final s = monero.Wallet_getSubaddressLabel(
+      _ptr,
+      accountIndex: 0,
+      addressIndex: index,
+    );
+    return s;
+  }
+
+  /// Generate a fresh subaddress under account 0 with optional label.
+  /// Returns the new address string (same as `subaddress(subaddressCount - 1)`
+  /// after the call). Persists immediately to the wallet file.
+  String addSubaddress({String label = ''}) {
+    monero.Wallet_addSubaddress(_ptr, accountIndex: 0, label: label);
+    final idx = subaddressCount - 1;
+    return subaddress(idx);
+  }
+
+  /// Rename an existing subaddress. Use empty string to clear.
+  void setSubaddressLabel({required int index, required String label}) {
+    monero.Wallet_setSubaddressLabel(
+      _ptr,
+      accountIndex: 0,
+      addressIndex: index,
+      label: label,
+    );
+  }
+
   /// Build a transaction without broadcasting it. Returns a PendingTx
   /// the UI can show fees / totals on; call [commit] to actually
   /// relay it. Throws if the native side reports an error (insufficient

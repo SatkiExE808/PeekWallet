@@ -147,68 +147,9 @@ class _CoinScreenState extends State<CoinScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(
-                  color: PeekColors.border2,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Receive XMR',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                color: Colors.white,
-                child: QrImageView(
-                  data: _address!,
-                  version: QrVersions.auto,
-                  size: 240,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: PeekColors.border),
-              ),
-              child: SelectableText(
-                _address!,
-                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: _address!));
-                if (!ctx.mounted) return;
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Address copied')),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy address'),
-            ),
-          ],
-        ),
+      builder: (_) => _ReceiveSheet(
+        wallet: _moneroWallet,
+        primaryAddress: _address!,
       ),
     );
   }
@@ -594,6 +535,316 @@ class _TxRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Cake-style receive sheet: shows the currently-selected subaddress
+/// at the top (QR + copy), then a list of all generated subaddresses
+/// below with a "+ New" button to mint a fresh one.
+///
+/// Privacy note baked into the UI: a fresh subaddress per payer means
+/// observers can't link two payments to the same wallet. Index 0 is
+/// the always-present primary address.
+class _ReceiveSheet extends StatefulWidget {
+  const _ReceiveSheet({required this.wallet, required this.primaryAddress});
+  final MoneroWallet? wallet;
+  final String primaryAddress;
+
+  @override
+  State<_ReceiveSheet> createState() => _ReceiveSheetState();
+}
+
+class _ReceiveSheetState extends State<_ReceiveSheet> {
+  /// Index of the subaddress currently displayed (QR + address text).
+  /// Starts on the highest-index one — most recently generated is
+  /// usually what the user wants to share.
+  int _selectedIndex = 0;
+  List<_SubaddrRow> _rows = const [];
+  bool _generating = false;
+  String? _genError;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  void _reload() {
+    final w = widget.wallet;
+    if (w == null) {
+      // No live engine — only the primary address from pure-Dart
+      // derivation is available. Still useful for receive.
+      _rows = [
+        _SubaddrRow(
+          index: 0,
+          address: widget.primaryAddress,
+          label: 'Primary',
+        ),
+      ];
+      _selectedIndex = 0;
+      return;
+    }
+    final n = w.subaddressCount;
+    final rows = <_SubaddrRow>[];
+    for (var i = 0; i < n; i++) {
+      rows.add(_SubaddrRow(
+        index: i,
+        address: w.subaddress(i),
+        label: i == 0
+            ? 'Primary'
+            : (() {
+                final l = w.subaddressLabel(i);
+                return l.isEmpty ? '' : l;
+              })(),
+      ));
+    }
+    setState(() {
+      _rows = rows;
+      // Keep the user's current selection if still valid; otherwise
+      // jump to the newest row.
+      if (_selectedIndex >= rows.length) {
+        _selectedIndex = rows.length - 1;
+      }
+    });
+  }
+
+  Future<void> _generate() async {
+    final w = widget.wallet;
+    if (w == null) return;
+    setState(() {
+      _generating = true;
+      _genError = null;
+    });
+    try {
+      w.addSubaddress();
+      _reload();
+      // Jump the visible address + QR to the freshly-generated one.
+      setState(() => _selectedIndex = _rows.length - 1);
+    } catch (e) {
+      setState(() => _genError = e.toString());
+    } finally {
+      setState(() => _generating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
+    final selected = _rows.isEmpty
+        ? widget.primaryAddress
+        : _rows[_selectedIndex.clamp(0, _rows.length - 1)].address;
+    final live = widget.wallet != null;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: PeekColors.border2,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Receive XMR',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 14),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  color: Colors.white,
+                  child: QrImageView(
+                    data: selected,
+                    version: QrVersions.auto,
+                    size: 220,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: PeekColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: PeekColors.border),
+                ),
+                child: SelectableText(
+                  selected,
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: selected));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Address copied')),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('Copy address'),
+              ),
+              if (!live) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Subaddresses unavailable until the wallet finishes booting.',
+                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                ),
+              ] else ...[
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Subaddresses',
+                        style: TextStyle(color: PeekColors.text2, fontSize: 12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _generating ? null : _generate,
+                      icon: _generating
+                          ? const SizedBox(
+                              width: 12, height: 12,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: PeekColors.accent))
+                          : const Icon(Icons.add, size: 16),
+                      label: const Text('New'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Generate a fresh address per payer so observers can\'t link two payments to the same wallet. All point to the same balance.',
+                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                ),
+                const SizedBox(height: 8),
+                if (_genError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      _genError!,
+                      style: const TextStyle(color: PeekColors.red, fontSize: 11),
+                    ),
+                  ),
+                for (final row in _rows.reversed)
+                  _SubaddrTile(
+                    row: row,
+                    isSelected: row.index == _selectedIndex,
+                    onTap: () => setState(() => _selectedIndex = row.index),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubaddrRow {
+  const _SubaddrRow({
+    required this.index,
+    required this.address,
+    required this.label,
+  });
+  final int index;
+  final String address;
+  final String label;
+}
+
+class _SubaddrTile extends StatelessWidget {
+  const _SubaddrTile({
+    required this.row,
+    required this.isSelected,
+    required this.onTap,
+  });
+  final _SubaddrRow row;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // First 6 and last 4 chars so each tile renders one line on phones.
+    final addr = row.address;
+    final short = addr.length > 14
+        ? '${addr.substring(0, 6)}…${addr.substring(addr.length - 6)}'
+        : addr;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? PeekColors.surface2 : PeekColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? PeekColors.accent : PeekColors.border,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 28, height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? PeekColors.accent : PeekColors.bg2,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '#${row.index}',
+                style: TextStyle(
+                  color: isSelected ? Colors.white : PeekColors.text2,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (row.label.isNotEmpty)
+                    Text(
+                      row.label,
+                      style: const TextStyle(
+                        color: PeekColors.text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  Text(
+                    short,
+                    style: TextStyle(
+                      color: row.label.isEmpty ? PeekColors.text : PeekColors.text3,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected ? Icons.check_circle : Icons.chevron_right,
+              color: isSelected ? PeekColors.accent : PeekColors.text3,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
