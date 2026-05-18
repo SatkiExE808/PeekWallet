@@ -13,6 +13,7 @@ class ImportWalletScreen extends StatefulWidget {
 
 class _ImportWalletScreenState extends State<ImportWalletScreen> {
   final _phrase = TextEditingController();
+  final _passphrase = TextEditingController();
   final _p1 = TextEditingController();
   final _p2 = TextEditingController();
   String? _err;
@@ -21,6 +22,7 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
   @override
   void dispose() {
     _phrase.dispose();
+    _passphrase.dispose();
     _p1.dispose();
     _p2.dispose();
     super.dispose();
@@ -40,7 +42,7 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
       return;
     }
     if (_p1.text.length < 8) {
-      setState(() => _err = 'Password must be at least 8 characters.');
+      setState(() => _err = 'App password must be at least 8 characters.');
       return;
     }
     if (_p1.text != _p2.text) {
@@ -49,7 +51,11 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
     }
     setState(() => _busy = true);
     try {
-      await VaultState.I.create(normalized, _p1.text);
+      await VaultState.I.create(
+        normalized,
+        _p1.text,
+        passphrase: _passphrase.text,
+      );
       if (!mounted) return;
       Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (e) {
@@ -88,15 +94,31 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
               ),
               const SizedBox(height: 16),
               TextField(
+                controller: _passphrase,
+                obscureText: true,
+                autocorrect: false,
+                textCapitalization: TextCapitalization.none,
+                decoration: const InputDecoration(
+                  labelText: 'BIP39 passphrase (25th word) — optional',
+                  hintText: 'Leave blank if you did not set one',
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'If you used a BIP39 passphrase in vault-wallet (or another wallet) you MUST enter it here — without it the imported addresses won\'t match and balances appear as zero.',
+                style: TextStyle(color: PeekColors.text3, fontSize: 11),
+              ),
+              const SizedBox(height: 16),
+              TextField(
                 controller: _p1,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'New password (min 8 characters)'),
+                decoration: const InputDecoration(labelText: 'App password (min 8 characters)'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _p2,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Confirm password'),
+                decoration: const InputDecoration(labelText: 'Confirm app password'),
               ),
               if (_err != null) ...[
                 const SizedBox(height: 10),

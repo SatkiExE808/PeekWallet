@@ -24,7 +24,7 @@ class VaultStorage {
               ),
             );
 
-  static const _blobKey = 'vault.encrypted_seed.v1';
+  static const _blobKey = 'vault.encrypted_seed.v2';
   static const _iterations = 200000;
   static const _saltLen = 16;
   static const _nonceLen = 12;
@@ -37,16 +37,21 @@ class VaultStorage {
   /// current session has unlocked it).
   Future<bool> hasWallet() async => await _storage.containsKey(key: _blobKey);
 
-  /// Encrypts `mnemonic` with `password`, replaces any existing
-  /// stored seed. Returns the in-memory mnemonic so the caller can
-  /// hold it without re-decrypting.
-  Future<String> save(String mnemonic, String password) async {
+  /// Encrypts `mnemonic` (+ optional BIP39 passphrase / "25th word")
+  /// with `password`, replaces any existing stored seed. Both values
+  /// land in the same AES-GCM ciphertext so the passphrase never sits
+  /// on disk in cleartext.
+  Future<DecryptedSeed> save(String mnemonic, String password,
+      {String passphrase = ''}) async {
     final salt = _randomBytes(_saltLen);
     final nonce = _randomBytes(_nonceLen);
     final key = await _deriveKey(password, salt);
 
+    final plaintext = utf8.encode(
+      jsonEncode({'mnemonic': mnemonic, 'passphrase': passphrase}),
+    );
     final box = await _algo.encrypt(
-      utf8.encode(mnemonic),
+      plaintext,
       secretKey: key,
       nonce: nonce,
     );
@@ -58,12 +63,12 @@ class VaultStorage {
       ..setRange(_saltLen + _nonceLen + box.cipherText.length, _saltLen + _nonceLen + box.cipherText.length + box.mac.bytes.length, box.mac.bytes);
 
     await _storage.write(key: _blobKey, value: base64Encode(blob));
-    return mnemonic;
+    return DecryptedSeed(mnemonic: mnemonic, passphrase: passphrase);
   }
 
   /// Decrypts the stored seed with `password`. Throws on wrong
   /// password (AES-GCM auth-tag mismatch) or missing blob.
-  Future<String> unlock(String password) async {
+  Future<DecryptedSeed> unlock(String password) async {
     final encoded = await _storage.read(key: _blobKey);
     if (encoded == null) throw const VaultError('No wallet on this device');
 
@@ -84,7 +89,11 @@ class VaultStorage {
         SecretBox(cipherText, nonce: nonce, mac: mac),
         secretKey: key,
       );
-      return utf8.decode(plain);
+      final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+      return DecryptedSeed(
+        mnemonic: json['mnemonic'] as String,
+        passphrase: (json['passphrase'] as String?) ?? '',
+      );
     } on SecretBoxAuthenticationError {
       throw const VaultError('Wrong password');
     }
@@ -120,4 +129,13 @@ class VaultError implements Exception {
   final String message;
   @override
   String toString() => message;
+}
+
+/// Result of a successful unlock: the BIP39 phrase plus the optional
+/// 25th-word passphrase. The passphrase is needed alongside the
+/// mnemonic for every derivation (BIP39 mixes it into the PBKDF2 salt).
+class DecryptedSeed {
+  const DecryptedSeed({required this.mnemonic, required this.passphrase});
+  final String mnemonic;
+  final String passphrase;
 }

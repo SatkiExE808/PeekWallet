@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../vault/vault_state.dart';
 import '../coin.dart';
 import 'monero_keys.dart';
 
@@ -23,5 +24,6 @@ class MoneroCoin implements Coin {
 
   @override
   Future<String> deriveAddress(String mnemonic) async =>
-      deriveMoneroKeys(mnemonic).primaryAddress;
+      deriveMoneroKeys(mnemonic, passphrase: VaultState.I.passphrase)
+          .primaryAddress;
 }

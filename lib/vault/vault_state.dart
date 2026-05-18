@@ -2,12 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import 'vault_storage.dart';
 
-/// App-wide vault state. Holds the decrypted mnemonic in memory after
-/// unlock; the rest of the app reads `mnemonic` rather than touching
-/// secure storage directly.
-///
-/// Single-instance globally via [VaultState.I]. Coin-derivation modules
-/// read `VaultState.I.mnemonic` when they need to sign or derive.
+/// App-wide vault state. Holds the decrypted mnemonic (+ BIP39
+/// passphrase if any) in memory after unlock; the rest of the app
+/// reads `mnemonic` / `passphrase` rather than touching secure storage
+/// directly.
 class VaultState extends ChangeNotifier {
   VaultState._();
   static final I = VaultState._();
@@ -15,15 +13,17 @@ class VaultState extends ChangeNotifier {
   final VaultStorage _storage = VaultStorage();
 
   String? _mnemonic;
+  String _passphrase = '';
   bool _hasWalletKnown = false;
   bool _hasWallet = false;
 
-  /// Null until [unlock] succeeds. Cleared by [lock].
+  /// Null until [unlock] / [create] succeeds. Cleared by [lock].
   String? get mnemonic => _mnemonic;
 
-  /// True once an encrypted seed exists on disk (regardless of
-  /// whether this session has unlocked it). Cached; refresh with
-  /// [refreshHasWallet] if you've just saved.
+  /// BIP39 passphrase ("25th word"). Empty string when not used.
+  /// Coin derivations must include this in their PBKDF2 salt.
+  String get passphrase => _passphrase;
+
   bool get hasWallet => _hasWallet;
   bool get isUnlocked => _mnemonic != null;
   bool get hasWalletKnown => _hasWalletKnown;
@@ -35,10 +35,13 @@ class VaultState extends ChangeNotifier {
     return _hasWallet;
   }
 
-  /// Encrypts + stores `mnemonic`, then unlocks the session.
-  Future<void> create(String mnemonic, String password) async {
-    await _storage.save(mnemonic, password);
-    _mnemonic = mnemonic;
+  /// Encrypts + stores `mnemonic` (+ optional passphrase), then
+  /// unlocks the session.
+  Future<void> create(String mnemonic, String password,
+      {String passphrase = ''}) async {
+    final seed = await _storage.save(mnemonic, password, passphrase: passphrase);
+    _mnemonic = seed.mnemonic;
+    _passphrase = seed.passphrase;
     _hasWallet = true;
     _hasWalletKnown = true;
     notifyListeners();
@@ -46,7 +49,9 @@ class VaultState extends ChangeNotifier {
 
   /// Decrypts the stored seed and unlocks the session.
   Future<void> unlock(String password) async {
-    _mnemonic = await _storage.unlock(password);
+    final seed = await _storage.unlock(password);
+    _mnemonic = seed.mnemonic;
+    _passphrase = seed.passphrase;
     notifyListeners();
   }
 
@@ -54,6 +59,7 @@ class VaultState extends ChangeNotifier {
   /// next unlock.
   void lock() {
     _mnemonic = null;
+    _passphrase = '';
     notifyListeners();
   }
 
@@ -61,6 +67,7 @@ class VaultState extends ChangeNotifier {
   Future<void> wipe() async {
     await _storage.wipe();
     _mnemonic = null;
+    _passphrase = '';
     _hasWallet = false;
     _hasWalletKnown = true;
     notifyListeners();

@@ -50,25 +50,37 @@ class MoneroWallet {
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
+    String passphrase = '',
     String walletPassword = 'peek-monero-internal',
+    void Function(String stage)? onStage,
   }) async {
-    final keys = deriveMoneroKeys(mnemonic);
+    void stage(String s) {
+      // ignore: avoid_print
+      print('[xmr] $s');
+      onStage?.call(s);
+    }
+    stage('deriving keys');
+    final keys = deriveMoneroKeys(mnemonic, passphrase: passphrase);
 
+    stage('locating wallet dir');
     final docs = await getApplicationDocumentsDirectory();
     final walletDir = Directory('${docs.path}/peek_xmr');
     if (!walletDir.existsSync()) walletDir.createSync(recursive: true);
     final walletPath = '${walletDir.path}/wallet';
 
+    stage('getting wallet manager');
     final wm = monero.WalletManagerFactory_getWalletManager();
 
     final dynamic w;
     if (monero.WalletManager_walletExists(wm, walletPath)) {
+      stage('opening existing wallet file');
       w = monero.WalletManager_openWallet(
         wm,
         path: walletPath,
         password: walletPassword,
       );
     } else {
+      stage('creating new wallet from keys');
       w = monero.WalletManager_createWalletFromKeys(
         wm,
         path: walletPath,
@@ -82,14 +94,20 @@ class MoneroWallet {
       );
     }
 
-    monero.Wallet_init(
+    stage('attaching daemon');
+    final ok = monero.Wallet_init(
       w,
       daemonAddress: daemonUri,
       // The iamhch proxy serves HTTPS on 443 — Wallet_init parses the
       // URL itself, so useSsl is informational here.
       useSsl: daemonUri.startsWith('https://'),
     );
+    if (!ok) {
+      stage('Wallet_init returned false');
+    }
+    stage('starting refresh');
     monero.Wallet_startRefresh(w);
+    stage('ready');
 
     return MoneroWallet._(w, keys.primaryAddress);
   }
@@ -135,10 +153,14 @@ class MoneroSession {
   MoneroWallet? _wallet;
   String? _lastError;
   bool _starting = false;
+  String? _stage;
 
   MoneroWallet? get wallet => _wallet;
   String? get lastError => _lastError;
   bool get isStarting => _starting;
+  /// Last stage label emitted by MoneroWallet.open — surfaced in the
+  /// UI so the user can see what part of the boot is taking time.
+  String? get stage => _stage;
 
   /// Idempotent — calling twice with the same mnemonic returns the
   /// existing instance. Different mnemonic closes the prior wallet
@@ -147,6 +169,7 @@ class MoneroSession {
     required String mnemonic,
     required int restoreHeight,
     required String daemonUri,
+    String passphrase = '',
   }) async {
     if (_wallet != null) return _wallet;
     if (_starting) return null;
@@ -155,8 +178,10 @@ class MoneroSession {
     try {
       _wallet = await MoneroWallet.open(
         mnemonic: mnemonic,
+        passphrase: passphrase,
         restoreHeight: restoreHeight,
         daemonUri: daemonUri,
+        onStage: (s) => _stage = s,
       );
       return _wallet;
     } catch (e, st) {

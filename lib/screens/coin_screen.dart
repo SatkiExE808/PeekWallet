@@ -71,11 +71,19 @@ class _CoinScreenState extends State<CoinScreen> {
     // Recent tip - 5000 ≈ ~1 week of history. Fast first sync, won't
     // miss recent deposits. Settings UI for tweaking this lands later.
     const restoreHeight = 3676000;
+    // Repaint while open() is still streaming stage updates so the
+    // user sees progress instead of just a blank '…XMR'.
+    final stageTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
     final w = await MoneroSession.I.start(
       mnemonic: mnemonic,
+      passphrase: VaultState.I.passphrase,
       restoreHeight: restoreHeight,
       daemonUri: kDefaultMoneroDaemon,
     );
+    stageTicker.cancel();
     if (w == null) {
       setState(() => _engineError = MoneroSession.I.lastError ?? 'unknown');
       return;
@@ -92,7 +100,10 @@ class _CoinScreenState extends State<CoinScreen> {
   String _balanceText() {
     if (widget.coin.id != 'XMR') return '… ${widget.coin.symbol}';
     if (_engineError != null) return '… ${widget.coin.symbol}';
-    if (_balanceXmr == null) return '… ${widget.coin.symbol}';
+    if (_balanceXmr == null) {
+      final s = MoneroSession.I.stage;
+      return s == null ? '… ${widget.coin.symbol}' : 'Boot: $s';
+    }
     final synced = (_syncPct ?? 0) >= 100;
     if (!synced) return 'Syncing ${_syncPct ?? 0}%';
     return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
