@@ -400,34 +400,70 @@ class _SendTronScreenState extends State<SendTronScreen> {
       children: [
         const ExperimentalBanner(
             body:
-                'Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don\'t decode the protobuf body.'),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _kvRow('To',
-                    '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
-                _kvRow('Amount', amountStr),
-                _kvRow(
-                    'Bandwidth/energy',
-                    widget.token != null
-                        ? 'Up to ~30 TRX-equivalent (TRC-20 calls cost more)'
-                        : 'Free (daily quota) or ~0.27 TRX'),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tron transactions are built by the RPC node; we '
-                  're-verify the txid hash before signing. Once '
-                  'submitted this CANNOT be reversed.',
-                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                "Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don't decode the protobuf body."),
+        const SizedBox(height: PeekDesign.sp4),
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brHero,
+            gradient: PeekDesign.surfaceGradient,
+            border: Border.all(color: PeekColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                amountStr,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.6,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'will be sent to',
+                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              ),
+              const SizedBox(height: PeekDesign.sp4),
+              _kvRow('To',
+                  '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
+              const Divider(height: 18, color: PeekColors.hairline),
+              _kvRow(
+                  'Bandwidth/energy',
+                  widget.token != null
+                      ? 'Up to ~30 TRX-equiv (TRC-20)'
+                      : 'Free quota or ~0.27 TRX'),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: PeekDesign.sp3),
+        Container(
+          padding: const EdgeInsets.all(PeekDesign.sp3),
+          decoration: BoxDecoration(
+            color: PeekColors.surface2,
+            borderRadius: PeekDesign.brSmall,
+            border: Border.all(color: PeekColors.hairline),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Icon(Icons.info_outline_rounded,
+                  size: 14, color: PeekColors.text3),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Tron transactions are built by the RPC node; we re-'
+                  'verify the txid hash before signing. Once submitted '
+                  'this CANNOT be reversed.',
+                  style: TextStyle(
+                      color: PeekColors.text3, fontSize: 11, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: PeekDesign.sp5),
         const Text('Type SEND to confirm',
             style: TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),

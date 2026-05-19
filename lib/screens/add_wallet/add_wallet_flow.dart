@@ -817,11 +817,34 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
                 style: TextStyle(color: PeekColors.text3, fontSize: 11),
               ),
               if (_err != null) ...[
-                const SizedBox(height: 14),
-                Text(_err!,
-                    style: const TextStyle(color: PeekColors.red, fontSize: 13)),
+                const SizedBox(height: PeekDesign.sp3),
+                Container(
+                  padding: const EdgeInsets.all(PeekDesign.sp3),
+                  decoration: BoxDecoration(
+                    color: PeekColors.red.withAlpha(28),
+                    borderRadius: PeekDesign.brSmall,
+                    border: Border.all(color: PeekColors.red.withAlpha(96)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          size: 14, color: PeekColors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _err!,
+                          style: const TextStyle(
+                              color: PeekColors.red,
+                              fontSize: 12,
+                              height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: PeekDesign.sp5),
               ElevatedButton(
                 onPressed: _busy ? null : _restore,
                 child: _busy
@@ -997,11 +1020,34 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
                 ),
               ),
               if (_err != null) ...[
-                const SizedBox(height: 14),
-                Text(_err!,
-                    style: const TextStyle(color: PeekColors.red, fontSize: 13)),
+                const SizedBox(height: PeekDesign.sp3),
+                Container(
+                  padding: const EdgeInsets.all(PeekDesign.sp3),
+                  decoration: BoxDecoration(
+                    color: PeekColors.red.withAlpha(28),
+                    borderRadius: PeekDesign.brSmall,
+                    border: Border.all(color: PeekColors.red.withAlpha(96)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          size: 14, color: PeekColors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _err!,
+                          style: const TextStyle(
+                              color: PeekColors.red,
+                              fontSize: 12,
+                              height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: PeekDesign.sp5),
               ElevatedButton(
                 onPressed: _busy ? null : _restore,
                 child: _busy

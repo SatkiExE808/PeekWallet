@@ -422,29 +422,65 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
         const ExperimentalBanner(
             body:
                 'Solana transaction encoding is unit-tested but the end-to-end send path has not been audited.'),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _kvRow('To',
-                    '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
-                _kvRow('Amount', amountStr),
-                _kvRow('Network fee',
-                    '${(_feeLamports / 1000000000.0).toStringAsFixed(9)} SOL'),
-                const SizedBox(height: 8),
-                const Text(
-                  'Solana fees are fixed at 5000 lamports per signature. '
-                  'Once submitted this CANNOT be reversed.',
-                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+        const SizedBox(height: PeekDesign.sp4),
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brHero,
+            gradient: PeekDesign.surfaceGradient,
+            border: Border.all(color: PeekColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                amountStr,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.6,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'will be sent to',
+                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              ),
+              const SizedBox(height: PeekDesign.sp4),
+              _kvRow('To',
+                  '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
+              const Divider(height: 18, color: PeekColors.hairline),
+              _kvRow('Network fee',
+                  '${(_feeLamports / 1000000000.0).toStringAsFixed(9)} SOL'),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: PeekDesign.sp3),
+        Container(
+          padding: const EdgeInsets.all(PeekDesign.sp3),
+          decoration: BoxDecoration(
+            color: PeekColors.surface2,
+            borderRadius: PeekDesign.brSmall,
+            border: Border.all(color: PeekColors.hairline),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Icon(Icons.info_outline_rounded,
+                  size: 14, color: PeekColors.text3),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Solana fees are fixed at 5000 lamports per signature. '
+                  'Once submitted this CANNOT be reversed.',
+                  style: TextStyle(
+                      color: PeekColors.text3, fontSize: 11, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: PeekDesign.sp5),
         const Text('Type SEND to confirm',
             style: TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
