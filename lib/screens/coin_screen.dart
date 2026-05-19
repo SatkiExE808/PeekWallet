@@ -350,7 +350,7 @@ class _CoinScreenState extends State<CoinScreen> {
       backgroundColor: PeekColors.bg2,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _ReceiveSheet(
         wallet: _moneroWallet,
@@ -782,10 +782,10 @@ class _CoinScreenState extends State<CoinScreen> {
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(PeekDesign.sp3),
                     decoration: BoxDecoration(
                       color: PeekColors.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: PeekDesign.brSmall,
                       border: Border.all(color: PeekColors.border),
                     ),
                     child: SelectableText(
@@ -976,7 +976,7 @@ class _TxRow extends StatelessWidget {
       backgroundColor: PeekColors.bg2,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -1035,10 +1035,10 @@ class _TxRow extends StatelessWidget {
             ),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(PeekDesign.sp3),
               decoration: BoxDecoration(
                 color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: PeekDesign.brSmall,
                 border: Border.all(color: PeekColors.border),
               ),
               child: Text(
@@ -1050,19 +1050,27 @@ class _TxRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text('TX ID', style: TextStyle(color: PeekColors.text2, fontSize: 12)),
-            const SizedBox(height: 4),
+            const SizedBox(height: PeekDesign.sp3),
+            const Text(
+              'TX ID',
+              style: TextStyle(
+                  color: PeekColors.text3,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2),
+            ),
+            const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(PeekDesign.sp3),
               decoration: BoxDecoration(
                 color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: PeekDesign.brSmall,
                 border: Border.all(color: PeekColors.border),
               ),
               child: SelectableText(
                 tx.hash,
-                style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                style: const TextStyle(
+                    fontSize: 12, fontFamily: 'monospace', color: PeekColors.text),
               ),
             ),
             const SizedBox(height: 8),
@@ -1363,12 +1371,12 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: PeekDesign.sp3),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(PeekDesign.sp3),
                 decoration: BoxDecoration(
                   color: PeekColors.surface,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: PeekDesign.brSmall,
                   border: Border.all(color: PeekColors.border),
                 ),
                 child: SelectableText(
@@ -1482,13 +1490,13 @@ class _SubaddrTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       onLongPress: onLabelEdit,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: PeekDesign.brSmall,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
           color: isSelected ? PeekColors.surface2 : PeekColors.surface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: PeekDesign.brSmall,
           border: Border.all(
             color: isSelected ? PeekColors.accent : PeekColors.border,
           ),

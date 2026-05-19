@@ -459,14 +459,21 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
-        const SizedBox(height: 24),
-        const Text('TX ID', style: TextStyle(color: PeekColors.text2, fontSize: 12)),
-        const SizedBox(height: 4),
+        const SizedBox(height: PeekDesign.sp6),
+        const Text(
+          'TX ID',
+          style: TextStyle(
+              color: PeekColors.text3,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(PeekDesign.sp3),
           decoration: BoxDecoration(
             color: PeekColors.surface,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: PeekDesign.brSmall,
             border: Border.all(color: PeekColors.border),
           ),
           child: SelectableText(

@@ -72,7 +72,7 @@ class WelcomeScreen extends StatelessWidget {
       backgroundColor: PeekColors.bg2,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => const _DisclaimerSheet(),
     );

@@ -164,7 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: PeekColors.bg2,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -270,7 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: PeekColors.bg2,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
         child: ListView(

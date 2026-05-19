@@ -658,15 +658,19 @@ class _SeedRevealState extends State<_SeedReveal> {
               alignment: Alignment.centerLeft,
               decoration: BoxDecoration(
                 color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: PeekColors.border),
+                borderRadius: PeekDesign.brSmall,
+                border: Border.all(color: PeekColors.hairline),
               ),
               child: RichText(
                 text: TextSpan(
                   children: [
                     TextSpan(
-                      text: '${i + 1}  ',
-                      style: const TextStyle(color: PeekColors.text3, fontSize: 12),
+                      text: '${(i + 1).toString().padLeft(2, '0')}  ',
+                      style: const TextStyle(
+                          color: PeekColors.text3,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          fontFeatures: [FontFeature.tabularFigures()]),
                     ),
                     TextSpan(
                       text: words[i],
