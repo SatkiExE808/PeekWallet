@@ -286,6 +286,10 @@ class _CoinScreenState extends State<CoinScreen> {
     });
     final walletPwd = VaultState.I.walletFilePassword;
     if (walletPwd == null) {
+      // Same pattern as _bootMoneroFromMeta — cancel the ticker
+      // before bailing or it keeps repainting forever (battery +
+      // mutates state on a disposed screen).
+      stageTicker.cancel();
       setState(() => _engineError = 'Vault locked — wallet password unavailable');
       return;
     }

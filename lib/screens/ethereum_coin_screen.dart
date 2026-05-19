@@ -69,12 +69,26 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     // even if the RPC takes a moment.
     final cached = await BalanceCache.I.get(widget.walletMeta.id);
     if (cached != null && mounted) {
+      // Parse "x.yyy ETH" → wei via string math so we don't lose
+      // precision through double * 1e18 (ETH has 18 decimals, doubles
+      // give ~15 significant digits — the round-trip loses up to
+      // 1e3 wei and is wildly off for whole-ETH balances).
       final m =
-          RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
+          RegExp(r'([0-9]+)\.([0-9]+)').firstMatch(cached.displayAmount);
       if (m != null) {
-        final coins = double.tryParse(m.group(1)!) ?? 0;
+        final whole = m.group(1)!;
+        final frac = m.group(2)!;
+        // Pad/truncate frac to 18 digits, then concat whole+frac as
+        // a single integer string; that's the wei value exactly.
+        final padded = frac.length >= 18
+            ? frac.substring(0, 18)
+            : frac + '0' * (18 - frac.length);
+        final weiStr = (whole == '0' ? '' : whole) + padded;
+        final wei =
+            BigInt.tryParse(weiStr.replaceFirst(RegExp(r'^0+'), '')) ??
+                BigInt.zero;
         setState(() {
-          _balanceWei = BigInt.from(coins * 1e18);
+          _balanceWei = wei;
           _balanceFromCacheAt = cached.updatedAt;
         });
       }

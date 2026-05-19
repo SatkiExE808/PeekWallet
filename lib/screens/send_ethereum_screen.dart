@@ -118,7 +118,13 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     if (raw.contains('.')) {
       final v = double.tryParse(raw);
       if (v == null || v <= 0) return null;
-      return _decimalToRaw(raw, decimals);
+      try {
+        return _decimalToRaw(raw, decimals);
+      } on FormatException {
+        // Too-many-decimals or otherwise malformed — surface as null
+        // so the form's validator can flag it instead of crashing.
+        return null;
+      }
     }
     return BigInt.tryParse(raw);
   }

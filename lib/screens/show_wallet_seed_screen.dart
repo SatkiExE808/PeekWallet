@@ -36,6 +36,18 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
   @override
   void dispose() {
     _pwd.dispose();
+    // Overwrite the in-memory seed map before releasing the State.
+    // Dart can't zero a String, but clearing the map lets the
+    // garbage collector reclaim sooner instead of leaving the
+    // mnemonic in heap until the screen is GC'd.
+    final m = _material;
+    if (m != null) {
+      for (final key in m.keys.toList()) {
+        m[key] = '';
+      }
+      m.clear();
+      _material = null;
+    }
     super.dispose();
   }
 

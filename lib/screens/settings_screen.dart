@@ -635,15 +635,17 @@ class _SectionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: PeekColors.text2, fontSize: 12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: PeekColors.text3,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.4,
         ),
-        const SizedBox(width: 8),
-        const Expanded(child: Divider(color: PeekColors.border)),
-      ],
+      ),
     );
   }
 }

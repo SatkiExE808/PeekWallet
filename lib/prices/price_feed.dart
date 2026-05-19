@@ -121,16 +121,19 @@ class PriceFeed extends ChangeNotifier {
       final resp = await _http.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode != 200) return;
       final json = jsonDecode(resp.body) as Map<String, dynamic>;
-      // Reverse the coingecko-id map so we can write back per
-      // app-side coin id.
-      final inverse = _coinGeckoIds.map((k, v) => MapEntry(v, k));
-      for (final entry in json.entries) {
-        final coinId = inverse[entry.key];
-        if (coinId == null) continue;
-        final inner = entry.value as Map<String, dynamic>?;
+      // For each coingecko id in the response, write the price under
+      // EVERY app-side coin id that maps to it. Several coins share a
+      // CoinGecko id (POL + WMATIC both → polygon-ecosystem-token),
+      // so a one-to-one inverse map silently drops all but one. This
+      // iterates the forward map instead so every coin gets priced.
+      for (final cgEntry in json.entries) {
+        final inner = cgEntry.value as Map<String, dynamic>?;
         final price = inner?[_currency];
-        if (price is num) {
-          _prices[coinId] = price.toDouble();
+        if (price is! num) continue;
+        for (final mapEntry in _coinGeckoIds.entries) {
+          if (mapEntry.value == cgEntry.key) {
+            _prices[mapEntry.key] = price.toDouble();
+          }
         }
       }
       notifyListeners();
