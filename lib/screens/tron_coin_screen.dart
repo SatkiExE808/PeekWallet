@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../coins/tron/trc20.dart';
 import '../coins/tron/tron_module.dart';
 import '../coins/tron/tron_wallet.dart';
@@ -17,6 +16,7 @@ import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
+import '../widgets/tx_detail_sheet.dart';
 
 /// Tron coin page. Receive + balance + history. Send is a follow-up
 /// — TRX transactions are protobuf-encoded (TransferContract +
@@ -676,108 +676,25 @@ class _TrxTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, TronTx tx) {
-    final messenger = ScaffoldMessenger.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: PeekColors.bg2,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  decoration: BoxDecoration(
-                    color: PeekColors.border2,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                tx.isIncoming ? 'Incoming' : 'Outgoing',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              _kv('Net amount', '${tx.netTrx.toStringAsFixed(6)} TRX'),
-              _kv('Fee', '${tx.feeTrx.toStringAsFixed(6)} TRX'),
-              _kv('Status', tx.confirmed ? 'Confirmed' : 'Failed'),
-              _kv('Date', _fmtDate(tx.timestamp.toLocal())),
-              const Divider(color: PeekColors.border, height: 24),
-              const Text('Hash',
-                  style: TextStyle(color: PeekColors.text2, fontSize: 12)),
-              const SizedBox(height: 4),
-              SelectableText(tx.hash,
-                  style: const TextStyle(
-                      fontSize: 11, fontFamily: 'monospace')),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.copy, size: 16),
-                      label: const Text('Copy'),
-                      onPressed: () async {
-                        await Clipboard.setData(
-                            ClipboardData(text: tx.hash));
-                        if (ctx.mounted) Navigator.of(ctx).pop();
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text('Hash copied')),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.open_in_new, size: 16),
-                      label: const Text('Explorer'),
-                      onPressed: () async {
-                        final url = explorerTxUrl(
-                            coinId: 'TRX', txid: tx.hash);
-                        if (url == null) return;
-                        final ok = await openExplorerUrl(url);
-                        if (!ok && ctx.mounted) {
-                          messenger.showSnackBar(const SnackBar(
-                              content: Text('Could not open browser')));
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    final sign = tx.isIncoming ? '+' : '−';
+    showTxDetailSheet(
+      context,
+      coinId: 'TRX',
+      isIncoming: tx.isIncoming,
+      amountText: '$sign${tx.netTrx.abs().toStringAsFixed(6)} TRX',
+      amountColor: tx.isIncoming ? PeekColors.green : PeekColors.text,
+      rows: [
+        TxDetailRow('Fee', '${tx.feeTrx.toStringAsFixed(6)} TRX'),
+        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+      ],
+      hashLabel: 'Hash',
+      hashValue: tx.hash,
+      statusText: tx.confirmed ? 'Confirmed' : 'Failed',
+      statusColor:
+          tx.confirmed ? PeekColors.green : PeekColors.red,
+      statusIcon: tx.confirmed
+          ? Icons.check_circle_rounded
+          : Icons.error_outline_rounded,
     );
   }
-
-  Widget _kv(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 100,
-              child: Text(k,
-                  style:
-                      const TextStyle(color: PeekColors.text2, fontSize: 12)),
-            ),
-            Expanded(
-              child: Text(v,
-                  style:
-                      const TextStyle(color: PeekColors.text, fontSize: 13)),
-            ),
-          ],
-        ),
-      );
 }

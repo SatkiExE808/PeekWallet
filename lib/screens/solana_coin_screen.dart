@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../coins/solana/solana_module.dart';
 import '../coins/solana/solana_rpc_client.dart';
 import '../coins/solana/solana_wallet.dart';
@@ -16,6 +15,7 @@ import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
+import '../widgets/tx_detail_sheet.dart';
 import 'send_solana_screen.dart';
 
 /// Solana coin page. Receive + balance + history; send is a follow-up
@@ -687,109 +687,26 @@ class _SolTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, SolanaTxDetail tx) {
-    final messenger = ScaffoldMessenger.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: PeekColors.bg2,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  decoration: BoxDecoration(
-                    color: PeekColors.border2,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                tx.isIncoming ? 'Incoming' : 'Outgoing',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              _kv('Net amount', '${tx.netSol.toStringAsFixed(6)} SOL'),
-              _kv('Network fee', '${tx.feeSol.toStringAsFixed(9)} SOL'),
-              _kv('Status', tx.confirmed ? 'Confirmed' : 'Failed'),
-              _kv('Slot', tx.slot.toString()),
-              _kv('Date', _fmtDate(tx.timestamp.toLocal())),
-              const Divider(color: PeekColors.border, height: 24),
-              const Text('Signature',
-                  style: TextStyle(color: PeekColors.text2, fontSize: 12)),
-              const SizedBox(height: 4),
-              SelectableText(tx.signature,
-                  style: const TextStyle(
-                      fontSize: 11, fontFamily: 'monospace')),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.copy, size: 16),
-                      label: const Text('Copy'),
-                      onPressed: () async {
-                        await Clipboard.setData(
-                            ClipboardData(text: tx.signature));
-                        if (ctx.mounted) Navigator.of(ctx).pop();
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text('Signature copied')),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.open_in_new, size: 16),
-                      label: const Text('Explorer'),
-                      onPressed: () async {
-                        final url = explorerTxUrl(
-                            coinId: 'SOL', txid: tx.signature);
-                        if (url == null) return;
-                        final ok = await openExplorerUrl(url);
-                        if (!ok && ctx.mounted) {
-                          messenger.showSnackBar(const SnackBar(
-                              content: Text('Could not open browser')));
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    final sign = tx.isIncoming ? '+' : '−';
+    showTxDetailSheet(
+      context,
+      coinId: 'SOL',
+      isIncoming: tx.isIncoming,
+      amountText: '$sign${tx.netSol.abs().toStringAsFixed(6)} SOL',
+      amountColor: tx.isIncoming ? PeekColors.green : PeekColors.text,
+      rows: [
+        TxDetailRow('Network fee', '${tx.feeSol.toStringAsFixed(9)} SOL'),
+        TxDetailRow('Slot', tx.slot.toString()),
+        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+      ],
+      hashLabel: 'Signature',
+      hashValue: tx.signature,
+      statusText: tx.confirmed ? 'Confirmed' : 'Failed',
+      statusColor:
+          tx.confirmed ? PeekColors.green : PeekColors.red,
+      statusIcon: tx.confirmed
+          ? Icons.check_circle_rounded
+          : Icons.error_outline_rounded,
     );
   }
-
-  Widget _kv(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 100,
-              child: Text(k,
-                  style:
-                      const TextStyle(color: PeekColors.text2, fontSize: 12)),
-            ),
-            Expanded(
-              child: Text(v,
-                  style:
-                      const TextStyle(color: PeekColors.text, fontSize: 13)),
-            ),
-          ],
-        ),
-      );
 }

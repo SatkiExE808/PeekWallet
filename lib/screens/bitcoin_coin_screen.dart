@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../coins/bitcoin/bitcoin_module.dart';
 import '../coins/bitcoin/bitcoin_wallet.dart';
 import '../coins/bitcoin/mempool_client.dart';
@@ -11,10 +10,10 @@ import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../util/coin_avatar.dart';
-import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
+import '../widgets/tx_detail_sheet.dart';
 import 'send_bitcoin_screen.dart';
 
 /// Bitcoin coin page. Separate from CoinScreen (which is Monero-
@@ -550,122 +549,28 @@ class _BtcTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, BitcoinTx tx) {
-    final messenger = ScaffoldMessenger.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: PeekColors.bg2,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  decoration: BoxDecoration(
-                    color: PeekColors.border2,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                tx.isIncoming ? 'Incoming' : 'Outgoing',
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              _kv('Net amount',
-                  '${tx.netBtc.toStringAsFixed(8)} $symbol'),
-              _kv('Fee', '${tx.feeBtc.toStringAsFixed(8)} $symbol'),
-              _kv('Status', tx.confirmed ? 'Confirmed' : 'In mempool'),
-              _kv('Block height',
-                  tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
-              _kv('Date', _fmtDate(tx.timestamp.toLocal())),
-              const SizedBox(height: 6),
-              const Text('TX ID',
-                  style:
-                      TextStyle(color: PeekColors.text2, fontSize: 12)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: PeekColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: PeekColors.border),
-                ),
-                child: SelectableText(
-                  tx.txid,
-                  style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await Clipboard.setData(
-                            ClipboardData(text: tx.txid));
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text('TX ID copied')),
-                        );
-                      },
-                      icon: const Icon(Icons.copy, size: 16),
-                      label: const Text('Copy'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final url = explorerTxUrl(
-                            coinId: symbol, txid: tx.txid);
-                        if (url == null) return;
-                        final ok = await openExplorerUrl(url);
-                        if (!ok && ctx.mounted) {
-                          messenger.showSnackBar(const SnackBar(
-                              content: Text(
-                                  'Could not open browser')));
-                        }
-                      },
-                      icon: const Icon(Icons.open_in_new, size: 16),
-                      label: const Text('Explorer'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _kv(String k, String v) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(k,
-                style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
-          ),
-          Expanded(
-            child: SelectableText(v,
-                style: const TextStyle(color: PeekColors.text, fontSize: 12)),
-          ),
-        ],
-      ),
+    final amountColor = tx.isIncoming ? PeekColors.green : PeekColors.text;
+    final sign = tx.isIncoming ? '+' : '−';
+    showTxDetailSheet(
+      context,
+      coinId: symbol,
+      isIncoming: tx.isIncoming,
+      amountText: '$sign${tx.netBtc.abs().toStringAsFixed(8)} $symbol',
+      amountColor: amountColor,
+      rows: [
+        TxDetailRow('Fee', '${tx.feeBtc.toStringAsFixed(8)} $symbol'),
+        TxDetailRow('Block height',
+            tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
+        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+      ],
+      hashLabel: 'TX ID',
+      hashValue: tx.txid,
+      statusText: tx.confirmed ? 'Confirmed' : 'In mempool',
+      statusColor:
+          tx.confirmed ? PeekColors.green : PeekColors.accent,
+      statusIcon: tx.confirmed
+          ? Icons.check_circle_rounded
+          : Icons.hourglass_top_rounded,
     );
   }
 }
