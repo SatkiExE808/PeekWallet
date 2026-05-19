@@ -228,15 +228,27 @@ class BitcoinWallet {
       );
     }
 
-    // Change goes back to the LAST address in our gap-limit window —
-    // a temporary simplification until we implement proper "next
-    // unused" tracking. The explorer will report this as a new
-    // address-with-balance on the next refresh, so the change is
-    // visible in the UI immediately.
+    // Change goes to the BIP84 internal (change) chain — a different
+    // hierarchy from receive addresses, so the explorer + chain
+    // analysis can't trivially cluster every send under the same
+    // address. We pick an index derived from the input set: same
+    // input set → same change address (idempotent rebuilds), but
+    // any two real sends use different change addresses because
+    // they spend different UTXOs.
+    var seed = 0;
+    for (final u in selected) {
+      // Mix the txid + vout into a 64-bit accumulator. djb2-style.
+      for (final c in u.txid.codeUnits) {
+        seed = ((seed * 33) + c) & 0xffffffff;
+      }
+      seed = ((seed * 33) + u.vout) & 0xffffffff;
+    }
+    final changeIdx = seed % gapLimit;
     final changeKey = deriveBitcoinSpendingKey(
       mnemonic: mnemonic,
       passphrase: passphrase,
-      addressIndex: gapLimit - 1,
+      addressIndex: changeIdx,
+      change: true,
       params: params,
     );
 

@@ -11,6 +11,7 @@ import '../coins/tron/tron_wallet.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
+import '../util/peek_logger.dart';
 import '../vault/vault_state.dart';
 import '../wallets/balance_cache.dart';
 import '../wallets/wallet_meta.dart';
@@ -110,7 +111,12 @@ class _WalletsScreenState extends State<WalletsScreen> {
       // to limit concurrency because the user has at most a few
       // wallets per chain and the public endpoints handle it fine.
       await Future.wait(targets.map((m) =>
-          _probeBalance(m, password).catchError((_) {/* skip */})));
+          _probeBalance(m, password).catchError((Object e) {
+        // Log probe failures so a quietly-broken module is visible
+        // in `flutter logs` instead of silently never updating.
+        PeekLogger.I.log(m.coinId.toLowerCase(),
+            'balance probe (${m.id}) failed: $e');
+      })));
     } finally {
       if (mounted) setState(() => _autoLoading = false);
     }

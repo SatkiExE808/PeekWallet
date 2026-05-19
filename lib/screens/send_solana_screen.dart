@@ -111,7 +111,14 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
 
     if (raw.contains('.')) {
       final asBig = _decimalToRaw(raw, 9);
-      return (lamports: asBig?.toInt(), tokenRaw: null);
+      if (asBig == null) return (lamports: null, tokenRaw: null);
+      // Solana lamports fit in int64; reject anything bigger so we
+      // can't silently truncate the user's input on the way through
+      // BigInt.toInt() and broadcast a different amount.
+      if (asBig > BigInt.from(0x7fffffffffffffff)) {
+        return (lamports: null, tokenRaw: null);
+      }
+      return (lamports: asBig.toInt(), tokenRaw: null);
     }
     return (lamports: int.tryParse(raw), tokenRaw: null);
   }

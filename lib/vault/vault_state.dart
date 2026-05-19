@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../coins/monero/monero_keys.dart';
+import '../util/peek_logger.dart';
 import '../util/sensitive_clipboard.dart';
 import '../wallets/seed_format.dart';
 import '../wallets/wallet_store.dart';
@@ -158,8 +159,8 @@ class VaultState extends ChangeNotifier {
       // Migration is best-effort — if it fails the user still has
       // their legacy single-seed wallet working. They can manually
       // add a new wallet later via the "+ Add wallet" flow.
-      // ignore: avoid_print
-      print('VaultState: legacy → WalletStore migration failed: $e');
+      PeekLogger.I.log('vault',
+          'legacy → WalletStore migration failed: $e');
     }
   }
 

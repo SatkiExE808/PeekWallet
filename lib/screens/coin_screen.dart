@@ -13,6 +13,7 @@ import '../coins/monero/monero_wallet.dart';
 import '../prefs/prefs.dart';
 import '../prices/price_feed.dart';
 import '../util/explorer_links.dart';
+import '../util/peek_logger.dart';
 import '../wallets/balance_cache.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
@@ -225,7 +226,9 @@ class _CoinScreenState extends State<CoinScreen> {
         lastHistoryPoll = now;
         try {
           newTx = w.transactions();
-        } catch (_) {/* ignore */}
+        } catch (e) {
+          PeekLogger.I.log('xmr', 'tx list refresh failed: $e');
+        }
       }
       setState(() {
         _syncPct = w.syncProgressPct;
@@ -320,7 +323,9 @@ class _CoinScreenState extends State<CoinScreen> {
         lastHistoryPoll = now;
         try {
           newTx = w.transactions();
-        } catch (_) {/* leave old list in place */}
+        } catch (e) {
+          PeekLogger.I.log('xmr', 'tx list refresh failed: $e');
+        }
       }
       setState(() {
         _syncPct = w.syncProgressPct;

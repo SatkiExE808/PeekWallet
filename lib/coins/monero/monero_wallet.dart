@@ -822,8 +822,7 @@ class MoneroSession {
       return session.wallet;
     } catch (e, st) {
       session.lastError = e.toString();
-      // ignore: avoid_print
-      print('MoneroSession.start failed: $e\n$st');
+      PeekLogger.I.log('xmr', 'MoneroSession.start failed: $e\n$st');
       return null;
     }
   }
@@ -865,8 +864,7 @@ class MoneroSession {
       return session.wallet;
     } catch (e, st) {
       session.lastError = e.toString();
-      // ignore: avoid_print
-      print('MoneroSession.startFor failed: $e\n$st');
+      PeekLogger.I.log('xmr', 'MoneroSession.startFor failed: $e\n$st');
       return null;
     }
   }

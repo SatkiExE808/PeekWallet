@@ -77,10 +77,19 @@ class _SendBchScreenState extends State<SendBchScreen> {
   int? _parseAmountSat() {
     final raw = _amountCtrl.text.trim();
     if (raw.isEmpty) return null;
+    // Integer-string math so 0.1 BCH doesn't round to 9999999 sat.
     if (raw.contains('.')) {
-      final v = double.tryParse(raw);
-      if (v == null || v <= 0) return null;
-      return (v * 100000000).round();
+      final parts = raw.split('.');
+      if (parts.length != 2) return null;
+      final whole = parts[0].isEmpty ? '0' : parts[0];
+      final frac = parts[1];
+      if (frac.length > 8) return null;
+      final padded = frac.padRight(8, '0');
+      final sats = int.tryParse(whole) ?? -1;
+      final fracSats = int.tryParse(padded) ?? -1;
+      if (sats < 0 || fracSats < 0) return null;
+      final total = sats * 100000000 + fracSats;
+      return total > 0 ? total : null;
     }
     return int.tryParse(raw);
   }

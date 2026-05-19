@@ -111,11 +111,22 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     final raw = _amountCtrl.text.trim();
     if (raw.isEmpty) return null;
     // Accept both 0.00012 (BTC) and 12000 (sat). If it contains a
-    // decimal point, treat as BTC.
+    // decimal point, treat as BTC. Parse as integer-string math so
+    // we don't lose precision through double × 1e8 — `0.1` BTC
+    // could otherwise round to 9999999 or 10000001 sat depending on
+    // the platform's FP rounding mode.
     if (raw.contains('.')) {
-      final v = double.tryParse(raw);
-      if (v == null || v <= 0) return null;
-      return (v * 100000000).round();
+      final parts = raw.split('.');
+      if (parts.length != 2) return null;
+      final whole = parts[0].isEmpty ? '0' : parts[0];
+      final frac = parts[1];
+      if (frac.length > 8) return null; // more decimals than sat granularity
+      final padded = frac.padRight(8, '0');
+      final sats = int.tryParse(whole) ?? -1;
+      final fracSats = int.tryParse(padded) ?? -1;
+      if (sats < 0 || fracSats < 0) return null;
+      final total = sats * 100000000 + fracSats;
+      return total > 0 ? total : null;
     }
     return int.tryParse(raw);
   }
