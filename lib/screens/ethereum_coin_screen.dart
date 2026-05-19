@@ -89,7 +89,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         setState(() {
           _balanceWei = wei;
           _balanceFromCacheAt =
-              age > const Duration(seconds: 60) ? cached.updatedAt : null;
+              age > const Duration(minutes: 5) ? cached.updatedAt : null;
         });
       }
     }
@@ -486,7 +486,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                           );
                         },
                       ),
-                      if (_balanceFromCacheAt != null)
+                      if (_balanceFromCacheAt != null && !_refreshing)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(

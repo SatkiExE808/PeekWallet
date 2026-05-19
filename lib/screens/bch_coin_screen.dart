@@ -66,7 +66,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
         setState(() {
           _balanceSat = (coins * 100000000).round();
           _balanceFromCacheAt =
-              age > const Duration(seconds: 60) ? cached.updatedAt : null;
+              age > const Duration(minutes: 5) ? cached.updatedAt : null;
         });
       }
     }
@@ -284,7 +284,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                           );
                         },
                       ),
-                      if (_balanceFromCacheAt != null)
+                      if (_balanceFromCacheAt != null && !_refreshing)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(

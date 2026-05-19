@@ -79,7 +79,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
           // <60s cache — showing a "Cached 1 min ago" pill on those
           // is noise, not signal.
           _balanceFromCacheAt =
-              age > const Duration(seconds: 60) ? cached.updatedAt : null;
+              age > const Duration(minutes: 5) ? cached.updatedAt : null;
         });
       }
     }
@@ -333,7 +333,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                           );
                         },
                       ),
-                      if (_balanceFromCacheAt != null)
+                      if (_balanceFromCacheAt != null && !_refreshing)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(

@@ -74,7 +74,7 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
         setState(() {
           _balanceLamports = (sol * 1000000000).round();
           _balanceFromCacheAt =
-              age > const Duration(seconds: 60) ? cached.updatedAt : null;
+              age > const Duration(minutes: 5) ? cached.updatedAt : null;
         });
       }
     }
@@ -353,7 +353,7 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
                           );
                         },
                       ),
-                      if (_balanceFromCacheAt != null)
+                      if (_balanceFromCacheAt != null && !_refreshing)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(

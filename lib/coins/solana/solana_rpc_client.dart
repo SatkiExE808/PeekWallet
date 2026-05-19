@@ -23,10 +23,14 @@ class SolanaRpcClient {
         _http = httpClient ?? http.Client();
 
   static const _defaultEndpoints = <String>[
-    'https://api.mainnet-beta.solana.com',
+    // PublicNode + Blast first — typically 2-4x faster than Solana
+    // Foundation's mainnet-beta.solana.com, which rate-limits public
+    // traffic aggressively. mainnet-beta stays in the chain as a
+    // reliable canonical fallback.
     'https://solana-rpc.publicnode.com',
     'https://solana-mainnet.public.blastapi.io',
     'https://rpc.ankr.com/solana',
+    'https://api.mainnet-beta.solana.com',
   ];
 
   static List<String> _normalize(List<String> raw) {
