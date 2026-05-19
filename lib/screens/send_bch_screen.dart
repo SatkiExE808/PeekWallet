@@ -443,12 +443,22 @@ class _SendBchScreenState extends State<SendBchScreen> {
   Widget _balanceCard() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
         child: Row(
           children: [
-            const Icon(Icons.account_balance_wallet,
-                color: PeekColors.text3, size: 18),
-            const SizedBox(width: 10),
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: PeekColors.surface2,
+                borderRadius: PeekDesign.brSmall,
+              ),
+              child: const Icon(Icons.account_balance_wallet_rounded,
+                  color: PeekColors.text2, size: 18),
+            ),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _utxosLoading
                   ? const Text('Loading UTXOs…',
@@ -458,10 +468,24 @@ class _SendBchScreenState extends State<SendBchScreen> {
                       ? Text('UTXO error: $_utxosError',
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
-                      : Text(
-                          '${(_availableSat / 100000000.0).toStringAsFixed(8)} BCH available',
-                          style: const TextStyle(
-                              color: PeekColors.text, fontSize: 13),
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${(_availableSat / 100000000.0).toStringAsFixed(8)} BCH',
+                              style: const TextStyle(
+                                color: PeekColors.text,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                            const Text('available',
+                                style: TextStyle(
+                                    color: PeekColors.text3,
+                                    fontSize: 11)),
+                          ],
                         ),
             ),
           ],

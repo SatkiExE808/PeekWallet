@@ -476,12 +476,22 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   Widget _balanceRow() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
         child: Row(
           children: [
-            const Icon(Icons.account_balance_wallet,
-                color: PeekColors.text3, size: 18),
-            const SizedBox(width: 10),
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: PeekColors.surface2,
+                borderRadius: PeekDesign.brSmall,
+              ),
+              child: const Icon(Icons.account_balance_wallet_rounded,
+                  color: PeekColors.text2, size: 18),
+            ),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _utxosLoading
                   ? const Text('Loading UTXOs…',
@@ -491,12 +501,26 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
                       ? Text('UTXO error: $_utxosError',
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
-                      : Text(
-                          '${(_availableSat / 100000000).toStringAsFixed(8)} '
-                          '${widget.wallet.params.symbol} '
-                          'available (confirmed UTXOs only)',
-                          style: const TextStyle(
-                              color: PeekColors.text, fontSize: 13),
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${(_availableSat / 100000000).toStringAsFixed(8)} '
+                              '${widget.wallet.params.symbol}',
+                              style: const TextStyle(
+                                color: PeekColors.text,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                            const Text(
+                              'available · confirmed UTXOs only',
+                              style: TextStyle(
+                                  color: PeekColors.text3, fontSize: 11),
+                            ),
+                          ],
                         ),
             ),
           ],
@@ -517,38 +541,73 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     }
     Widget tile(_FeeTier t, String label, int rate, String hint) {
       final selected = _tier == t;
-      return InkWell(
-        onTap: () => setState(() => _tier = t),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected
-                ? PeekColors.green.withValues(alpha: 0.12)
-                : PeekColors.surface2,
-            border: Border.all(
-              color: selected ? PeekColors.green : PeekColors.border,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: const TextStyle(
-                            color: PeekColors.text, fontSize: 13)),
-                    Text(hint,
-                        style: const TextStyle(
-                            color: PeekColors.text3, fontSize: 11)),
-                  ],
-                ),
+      return Material(
+        color: selected ? PeekColors.accentMuted : PeekColors.surface,
+        borderRadius: PeekDesign.brSmall,
+        child: InkWell(
+          onTap: () => setState(() => _tier = t),
+          borderRadius: PeekDesign.brSmall,
+          splashColor: PeekColors.accentMuted,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: PeekDesign.sp3, vertical: PeekDesign.sp3),
+            decoration: BoxDecoration(
+              borderRadius: PeekDesign.brSmall,
+              border: Border.all(
+                color: selected
+                    ? PeekColors.accent
+                    : PeekColors.hairline,
+                width: selected ? 1.5 : 1,
               ),
-              Text('$rate sat/vB',
-                  style: const TextStyle(
-                      color: PeekColors.text2, fontSize: 12)),
-            ],
+            ),
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: PeekDesign.tFast,
+                  width: 18,
+                  height: 18,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected
+                        ? PeekColors.accent
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: selected
+                          ? PeekColors.accent
+                          : PeekColors.border2,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: selected
+                      ? const Icon(Icons.check_rounded,
+                          size: 12, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(width: PeekDesign.sp3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          style: const TextStyle(
+                              color: PeekColors.text,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1)),
+                      Text(hint,
+                          style: const TextStyle(
+                              color: PeekColors.text3, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                Text('$rate sat/vB',
+                    style: const TextStyle(
+                        color: PeekColors.text2,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
           ),
         ),
       );
@@ -557,16 +616,22 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Fee priority',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
-        const SizedBox(height: 6),
+        const Text(
+          'FEE PRIORITY',
+          style: TextStyle(
+              color: PeekColors.text3,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2),
+        ),
+        const SizedBox(height: PeekDesign.sp2),
         tile(_FeeTier.fastest, 'Fastest', fees.fastestSatPerVByte, '~10 min'),
-        const SizedBox(height: 6),
+        const SizedBox(height: PeekDesign.sp2),
         tile(_FeeTier.halfHour, 'Half hour', fees.halfHourSatPerVByte,
             '~30 min'),
-        const SizedBox(height: 6),
+        const SizedBox(height: PeekDesign.sp2),
         tile(_FeeTier.hour, 'Hour', fees.hourSatPerVByte, '~1 hour'),
-        const SizedBox(height: 6),
+        const SizedBox(height: PeekDesign.sp2),
         tile(_FeeTier.economy, 'Economy', fees.economySatPerVByte,
             'When the mempool allows'),
       ],

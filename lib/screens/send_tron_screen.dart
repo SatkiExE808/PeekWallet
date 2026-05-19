@@ -512,12 +512,22 @@ class _SendTronScreenState extends State<SendTronScreen> {
   Widget _balanceCard() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
         child: Row(
           children: [
-            const Icon(Icons.account_balance_wallet,
-                color: PeekColors.text3, size: 18),
-            const SizedBox(width: 10),
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: PeekColors.surface2,
+                borderRadius: PeekDesign.brSmall,
+              ),
+              child: const Icon(Icons.account_balance_wallet_rounded,
+                  color: PeekColors.text2, size: 18),
+            ),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _loading
                   ? const Text('Loading balance…',
@@ -527,13 +537,30 @@ class _SendTronScreenState extends State<SendTronScreen> {
                       ? Text('Balance error: $_balanceError',
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
-                      : Text(
-                          widget.token != null
-                              ? '${widget.wallet.tokenBalanceDisplay(_tokenBalanceRaw, widget.token!).toStringAsFixed(widget.token!.decimals == 6 ? 2 : 4)} ${widget.token!.symbol} available · '
-                                  '${(_balanceSun / 1000000.0).toStringAsFixed(6)} TRX for fees'
-                              : '${(_balanceSun / 1000000.0).toStringAsFixed(6)} TRX available',
-                          style: const TextStyle(
-                              color: PeekColors.text, fontSize: 13),
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              widget.token != null
+                                  ? '${widget.wallet.tokenBalanceDisplay(_tokenBalanceRaw, widget.token!).toStringAsFixed(widget.token!.decimals == 6 ? 2 : 4)} ${widget.token!.symbol}'
+                                  : '${(_balanceSun / 1000000.0).toStringAsFixed(6)} TRX',
+                              style: const TextStyle(
+                                color: PeekColors.text,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                            Text(
+                              widget.token != null
+                                  ? 'available · ${(_balanceSun / 1000000.0).toStringAsFixed(6)} TRX for fees'
+                                  : 'available',
+                              style: const TextStyle(
+                                  color: PeekColors.text3,
+                                  fontSize: 11),
+                            ),
+                          ],
                         ),
             ),
           ],
