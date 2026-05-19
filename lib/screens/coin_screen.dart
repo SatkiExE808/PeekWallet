@@ -615,12 +615,29 @@ class _CoinScreenState extends State<CoinScreen> {
                 const SizedBox(height: PeekDesign.sp4),
               if (_error != null)
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(PeekDesign.sp3),
                   decoration: BoxDecoration(
-                    color: const Color(0x33EF4444),
-                    borderRadius: BorderRadius.circular(8),
+                    color: PeekColors.red.withAlpha(28),
+                    borderRadius: PeekDesign.brSmall,
+                    border: Border.all(color: PeekColors.red.withAlpha(96)),
                   ),
-                  child: Text(_error!, style: const TextStyle(color: PeekColors.text)),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          size: 14, color: PeekColors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                              color: PeekColors.red,
+                              fontSize: 12,
+                              height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
                 )
               else if (_address == null)
                 const Center(
@@ -903,22 +920,25 @@ class _TxRow extends StatelessWidget {
     return InkWell(
       onTap: () => _showDetails(context, tx),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: PeekDesign.sp2),
         child: Row(
           children: [
             Container(
-              width: 32, height: 32,
+              width: 36, height: 36,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                color: PeekColors.surface2,
+                borderRadius: PeekDesign.brSmall,
               ),
               child: Icon(
-                tx.isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
+                tx.isIncoming
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
                 color: color,
-                size: 16,
+                size: 18,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -504,22 +504,25 @@ class _BtcTxRow extends StatelessWidget {
     return InkWell(
       onTap: () => _showDetails(context, tx),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: PeekDesign.sp2),
         child: Row(
           children: [
             Container(
-              width: 32, height: 32,
+              width: 36, height: 36,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                color: PeekColors.surface2,
+                borderRadius: PeekDesign.brSmall,
               ),
               child: Icon(
-                tx.isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
+                tx.isIncoming
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
                 color: color,
-                size: 16,
+                size: 18,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

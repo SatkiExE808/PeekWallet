@@ -73,18 +73,40 @@ class _SeedDisplay extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(PeekDesign.sp4),
           decoration: BoxDecoration(
-            color: const Color(0x33EF4444),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0x66EF4444)),
+            color: PeekColors.red.withAlpha(28),
+            borderRadius: PeekDesign.brCard,
+            border: Border.all(color: PeekColors.red.withAlpha(96)),
           ),
-          child: const Text(
-            'Write these 12 words down on paper and store them somewhere safe. Anyone with the phrase can take your funds. Never type it on a website.',
-            style: TextStyle(color: PeekColors.text, fontSize: 13, height: 1.4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: PeekColors.red.withAlpha(40),
+                  borderRadius: PeekDesign.brSmall,
+                ),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: PeekColors.red, size: 18),
+              ),
+              const SizedBox(width: PeekDesign.sp3),
+              const Expanded(
+                child: Text(
+                  'Write these 12 words down on paper and store them safely. '
+                  'Anyone with the phrase can take your funds. Never type it '
+                  'on a website.',
+                  style: TextStyle(
+                      color: PeekColors.text, fontSize: 12, height: 1.4),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: PeekDesign.sp4),
         Expanded(
           child: GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -99,8 +121,8 @@ class _SeedDisplay extends StatelessWidget {
               alignment: Alignment.centerLeft,
               decoration: BoxDecoration(
                 color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: PeekColors.border),
+                borderRadius: PeekDesign.brSmall,
+                border: Border.all(color: PeekColors.hairline),
               ),
               child: RichText(
                 text: TextSpan(

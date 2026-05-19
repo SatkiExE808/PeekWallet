@@ -398,19 +398,20 @@ class _BchTxRow extends StatelessWidget {
         await openExplorerUrl(url);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: PeekDesign.sp2),
         child: Row(
           children: [
             Container(
-              width: 32, height: 32,
+              width: 36, height: 36,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: PeekColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                color: PeekColors.surface2,
+                borderRadius: PeekDesign.brSmall,
               ),
-              child: const Icon(Icons.swap_horiz,
-                  color: PeekColors.text2, size: 16),
+              child: const Icon(Icons.swap_horiz_rounded,
+                  color: PeekColors.text2, size: 18),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: Text(shortHash,
                   style: const TextStyle(
@@ -418,7 +419,7 @@ class _BchTxRow extends StatelessWidget {
                       fontSize: 13,
                       fontFamily: 'monospace')),
             ),
-            const Icon(Icons.open_in_new,
+            const Icon(Icons.open_in_new_rounded,
                 color: PeekColors.text3, size: 16),
           ],
         ),

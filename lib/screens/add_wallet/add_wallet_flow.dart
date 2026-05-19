@@ -608,20 +608,41 @@ class _SeedRevealState extends State<_SeedReveal> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(PeekDesign.sp4),
             decoration: BoxDecoration(
-              color: const Color(0x33EF4444),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0x66EF4444)),
+              color: PeekColors.red.withAlpha(28),
+              borderRadius: PeekDesign.brCard,
+              border: Border.all(color: PeekColors.red.withAlpha(96)),
             ),
-            child: const Text(
-              'These words ARE the wallet. Anyone with them can spend it. '
-              'Write them on paper, store offline, and never paste them on '
-              'a website or share them with "support".',
-              style: TextStyle(color: PeekColors.text, fontSize: 13, height: 1.4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: PeekColors.red.withAlpha(40),
+                    borderRadius: PeekDesign.brSmall,
+                  ),
+                  child: const Icon(Icons.warning_amber_rounded,
+                      color: PeekColors.red, size: 18),
+                ),
+                const SizedBox(width: PeekDesign.sp3),
+                const Expanded(
+                  child: Text(
+                    'These words ARE the wallet. Anyone with them can '
+                    'spend it. Write them on paper, store offline, never '
+                    'paste them online, and never share them with '
+                    '"support".',
+                    style: TextStyle(
+                        color: PeekColors.text, fontSize: 12, height: 1.4),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: PeekDesign.sp4),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
