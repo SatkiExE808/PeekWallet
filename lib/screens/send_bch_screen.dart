@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import '../widgets/send_widgets.dart';
 import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
@@ -238,7 +239,9 @@ class _SendBchScreenState extends State<SendBchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _ExperimentalBanner(),
+        const ExperimentalBanner(
+            body:
+                'legacy P2PKH with SIGHASH_FORKID. The BIP143 sighash is spec-vector tested via BTC SegWit; the BCH-specific 0x41 sighash byte + legacy tx envelope are unit-tested but unaudited.'),
         const SizedBox(height: 16),
         _balanceCard(),
         const SizedBox(height: 20),
@@ -329,7 +332,9 @@ class _SendBchScreenState extends State<SendBchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _ExperimentalBanner(),
+        const ExperimentalBanner(
+            body:
+                'legacy P2PKH with SIGHASH_FORKID. The BIP143 sighash is spec-vector tested via BTC SegWit; the BCH-specific 0x41 sighash byte + legacy tx envelope are unit-tested but unaudited.'),
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -455,17 +460,7 @@ class _SendBchScreenState extends State<SendBchScreen> {
     );
   }
 
-  Widget _errorBox(String msg) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: PeekColors.red.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child:
-          Text(msg, style: const TextStyle(color: PeekColors.red, fontSize: 12)),
-    );
-  }
+  Widget _errorBox(String msg) => SendErrorTile(message: msg);
 
   Widget _kvRow(String k, String v) {
     return Padding(
@@ -492,34 +487,4 @@ class _SendBchScreenState extends State<SendBchScreen> {
   }
 }
 
-class _ExperimentalBanner extends StatelessWidget {
-  const _ExperimentalBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: PeekColors.red.withValues(alpha: 0.12),
-        border: Border.all(color: PeekColors.red),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.warning_amber, color: PeekColors.red, size: 18),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Experimental — legacy P2PKH with SIGHASH_FORKID. The '
-              'BIP143 sighash is shared with BTC SegWit (spec-vector '
-              'tested there); the BCH-specific 0x41 sighash byte + '
-              'legacy tx envelope are unit-tested but unaudited. '
-              'Test with small amounts first.',
-              style: TextStyle(color: PeekColors.text, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _ExperimentalBanner moved to widgets/send_widgets.dart.

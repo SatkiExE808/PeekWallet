@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import '../widgets/send_widgets.dart';
 import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
@@ -262,7 +263,9 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ExperimentalBanner(),
+        const ExperimentalBanner(
+            body:
+                'send is BIP-0143 spec-vector tested but has not been audited end-to-end.'),
         const SizedBox(height: 16),
         _balanceRow(),
         const SizedBox(height: 20),
@@ -341,15 +344,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
         _feeSelector(),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: PeekColors.red.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(_error!,
-                style: const TextStyle(color: PeekColors.red, fontSize: 12)),
-          ),
+          SendErrorTile(message: _error!),
         ],
         const SizedBox(height: 20),
         ElevatedButton(
@@ -368,7 +363,9 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ExperimentalBanner(),
+        const ExperimentalBanner(
+            body:
+                'send is BIP-0143 spec-vector tested but has not been audited end-to-end.'),
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -409,15 +406,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: PeekColors.red.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(_error!,
-                style: const TextStyle(color: PeekColors.red, fontSize: 12)),
-          ),
+          SendErrorTile(message: _error!),
         ],
         const SizedBox(height: 20),
         Row(
@@ -583,30 +572,4 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
 
 enum _FeeTier { fastest, halfHour, hour, economy }
 
-class _ExperimentalBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: PeekColors.red.withValues(alpha: 0.12),
-        border: Border.all(color: PeekColors.red),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber, color: PeekColors.red, size: 18),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Experimental — send is BIP-0143 spec-vector tested but '
-              'has not been audited end-to-end. Test with small amounts '
-              'first.',
-              style: TextStyle(color: PeekColors.text, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _ExperimentalBanner / error tile are now in widgets/send_widgets.dart.

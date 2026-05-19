@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import '../widgets/send_widgets.dart';
 import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
@@ -315,7 +316,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _ExperimentalBanner(),
+        const ExperimentalBanner(
+            body:
+                'RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.'),
         const SizedBox(height: 16),
         _balanceCard(),
         const SizedBox(height: 20),
@@ -420,7 +423,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _ExperimentalBanner(),
+        const ExperimentalBanner(
+            body:
+                'RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.'),
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -567,17 +572,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     );
   }
 
-  Widget _errorBox(String msg) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: PeekColors.red.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child:
-          Text(msg, style: const TextStyle(color: PeekColors.red, fontSize: 12)),
-    );
-  }
+  Widget _errorBox(String msg) => SendErrorTile(message: msg);
 
   Widget _kvRow(String k, String v) {
     return Padding(
@@ -613,32 +608,4 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 }
 
-class _ExperimentalBanner extends StatelessWidget {
-  const _ExperimentalBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: PeekColors.red.withValues(alpha: 0.12),
-        border: Border.all(color: PeekColors.red),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.warning_amber, color: PeekColors.red, size: 18),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Experimental — RLP + EIP-1559 sighash + ECDSA-recovery '
-              'are unit-tested but the end-to-end send path has not '
-              'been audited. Test with small amounts first.',
-              style: TextStyle(color: PeekColors.text, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _ExperimentalBanner / _errorBox moved to widgets/send_widgets.dart.
