@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../coins/bitcoin/bitcoin_wallet.dart';
@@ -47,6 +49,14 @@ class _WalletsScreenState extends State<WalletsScreen> {
   /// every time a wallet refresh landed.
   late Future<Map<String, CachedBalance>> _cacheSnapshot;
   bool _autoLoading = false;
+  /// Periodic refresh — keeps balances fresh while the user is in
+  /// the app even if they don't open any coin screen. Fires every
+  /// `_autoRefreshInterval` and force-probes every non-XMR wallet.
+  /// IndexedStack keeps this screen alive across tab switches, so
+  /// the timer effectively follows the lifetime of the unlocked
+  /// session; cancelled in dispose() when the vault re-locks.
+  Timer? _autoRefreshTimer;
+  static const _autoRefreshInterval = Duration(minutes: 2);
 
   @override
   void initState() {
@@ -63,10 +73,15 @@ class _WalletsScreenState extends State<WalletsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeAutoLoadBalances();
     });
+    _autoRefreshTimer =
+        Timer.periodic(_autoRefreshInterval, (_) {
+      _maybeAutoLoadBalances(force: true);
+    });
   }
 
   @override
   void dispose() {
+    _autoRefreshTimer?.cancel();
     WalletStore.I.removeListener(_refresh);
     BalanceCache.I.removeListener(_refreshCache);
     super.dispose();
@@ -265,10 +280,14 @@ class _WalletsScreenState extends State<WalletsScreen> {
               future: _cacheSnapshot,
               builder: (ctx, cacheSnap) {
                 final cache = cacheSnap.data ?? const {};
-                return ListView.separated(
+                return RefreshIndicator(
+                  color: PeekColors.accent,
+                  onRefresh: () => _maybeAutoLoadBalances(force: true),
+                  child: ListView.separated(
                   padding: const EdgeInsets.symmetric(
                       horizontal: PeekDesign.sp4,
                       vertical: PeekDesign.sp3),
+                  physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: entries.length + 1,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: PeekDesign.sp2),
@@ -320,6 +339,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                           },
                     );
                   },
+                ),
                 );
               },
             );
