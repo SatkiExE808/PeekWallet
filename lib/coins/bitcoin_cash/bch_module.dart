@@ -115,7 +115,7 @@ class BitcoinCashModule implements CoinModule {
   }) async {
     onStage?.call('deriving BIP44 address');
     final w = BitcoinCashWallet.open(
-      mnemonic: seedMaterial['mnemonic'] as String,
+      mnemonic: extractBip39Mnemonic(seedMaterial, coinSymbol: 'BCH'),
       passphrase: (seedMaterial['passphrase'] as String?) ?? '',
     );
     onStage?.call('ready');

@@ -40,16 +40,23 @@ class WalletsScreen extends StatefulWidget {
 
 class _WalletsScreenState extends State<WalletsScreen> {
   late Future<List<WalletMeta>> _entries;
+  /// Cached, stable BalanceCache snapshot. Re-fetched only when the
+  /// cache actually notifies us — naively calling `BalanceCache.I
+  /// .all()` inside FutureBuilder rebuilt the future on every parent
+  /// rebuild, which flickered the wallet list back to spinner state
+  /// every time a wallet refresh landed.
+  late Future<Map<String, CachedBalance>> _cacheSnapshot;
   bool _autoLoading = false;
 
   @override
   void initState() {
     super.initState();
     _entries = WalletStore.I.list();
+    _cacheSnapshot = BalanceCache.I.all();
     WalletStore.I.addListener(_refresh);
     // Rebuild when any wallet pushes a new balance snapshot so the
     // subtitles + portfolio total update live.
-    BalanceCache.I.addListener(_refresh);
+    BalanceCache.I.addListener(_refreshCache);
     // Eagerly fetch balances for any wallet that doesn't have a
     // cached value yet, so the home screen shows real numbers on
     // first launch instead of "—".
@@ -61,7 +68,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   @override
   void dispose() {
     WalletStore.I.removeListener(_refresh);
-    BalanceCache.I.removeListener(_refresh);
+    BalanceCache.I.removeListener(_refreshCache);
     super.dispose();
   }
 
@@ -69,6 +76,13 @@ class _WalletsScreenState extends State<WalletsScreen> {
     if (!mounted) return;
     setState(() {
       _entries = WalletStore.I.list();
+    });
+  }
+
+  void _refreshCache() {
+    if (!mounted) return;
+    setState(() {
+      _cacheSnapshot = BalanceCache.I.all();
     });
   }
 
@@ -248,7 +262,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
               return _EmptyState(onAdd: _add);
             }
             return FutureBuilder<Map<String, CachedBalance>>(
-              future: BalanceCache.I.all(),
+              future: _cacheSnapshot,
               builder: (ctx, cacheSnap) {
                 final cache = cacheSnap.data ?? const {};
                 return ListView.separated(

@@ -123,7 +123,7 @@ class SolanaModule implements CoinModule {
   }) async {
     onStage?.call('deriving SLIP-0010 ed25519 address');
     final w = await SolanaWallet.open(
-      mnemonic: seedMaterial['mnemonic'] as String,
+      mnemonic: extractBip39Mnemonic(seedMaterial, coinSymbol: 'SOL'),
       passphrase: (seedMaterial['passphrase'] as String?) ?? '',
     );
     onStage?.call('ready');

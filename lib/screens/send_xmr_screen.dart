@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -72,7 +74,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     );
     if (picked != null) {
       _recipients[i].addr.text = picked.address;
-      AddressBook.I.recordUse(picked.id);
+      unawaited(AddressBook.I.recordUse(picked.id));
       setState(() => _err = null);
     }
   }

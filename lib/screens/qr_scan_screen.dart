@@ -56,21 +56,39 @@ class _QrScanScreenState extends State<QrScanScreen> {
   }
 
   /// Strip the BIP-21-style URI scheme (`monero:`, `bitcoin:`,
-  /// `litecoin:`) so callers get a bare address. Drop any query
-  /// parameters (`?tx_amount=…`, `?amount=…`) — every send screen has
-  /// its own amount field and we don't want pre-filling to surprise
-  /// the user.
+  /// `litecoin:`, `ethereum:`, `solana:`, `tron:`, `bitcoincash:`) so
+  /// callers get a bare address. Also tolerates the `bitcoincash:`
+  /// scheme keeping its prefix as-is — the BCH wallet accepts the
+  /// full `bitcoincash:q…` form and will strip the prefix itself
+  /// before broadcast — so we leave it intact (the test below skips
+  /// it). Drops any query parameters (`?tx_amount=…`, `?amount=…`).
+  /// Every send screen has its own amount field; pre-filling would
+  /// surprise the user.
   String _normalise(String raw) {
     final s = raw.trim();
     final lower = s.toLowerCase();
-    for (final scheme in const ['monero:', 'bitcoin:', 'litecoin:']) {
+    const schemes = [
+      'monero:',
+      'bitcoin:',
+      'litecoin:',
+      'ethereum:',
+      'solana:',
+      'tron:',
+      // bitcoincash: deliberately omitted — the CashAddr form retains
+      // its 'bitcoincash:' prefix in many wallets' QRs and our send
+      // screen handles both with-and-without forms.
+    ];
+    for (final scheme in schemes) {
       if (lower.startsWith(scheme)) {
         final stripped = s.substring(scheme.length);
         final qIx = stripped.indexOf('?');
         return qIx >= 0 ? stripped.substring(0, qIx) : stripped;
       }
     }
-    return s;
+    // Strip a bare `?…` query suffix even on schemes we didn't peel,
+    // so a `bitcoincash:q…?amount=1` lands as `bitcoincash:q…`.
+    final qIx = s.indexOf('?');
+    return qIx >= 0 ? s.substring(0, qIx) : s;
   }
 
   @override

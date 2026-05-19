@@ -114,7 +114,7 @@ class TronModule implements CoinModule {
   }) async {
     onStage?.call('deriving BIP44 address');
     final w = TronWallet.open(
-      mnemonic: seedMaterial['mnemonic'] as String,
+      mnemonic: extractBip39Mnemonic(seedMaterial, coinSymbol: 'TRX'),
       passphrase: (seedMaterial['passphrase'] as String?) ?? '',
     );
     onStage?.call('ready');

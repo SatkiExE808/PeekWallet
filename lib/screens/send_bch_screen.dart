@@ -141,9 +141,25 @@ class _SendBchScreenState extends State<SendBchScreen> {
       return;
     }
     final addr = _addrCtrl.text.trim();
-    if (!addr.contains(':') && !addr.startsWith('q')) {
+    // CashAddr P2KH starts with `q`, P2SH starts with `p` (either
+    // bare or prefixed `bitcoincash:`). Accept both up front so the
+    // form doesn't reject valid P2SH addresses; the underlying signer
+    // still only supports P2KH for the moment and will surface a
+    // clearer error if the user pastes a P2SH recipient.
+    final cashAddrPart =
+        addr.contains(':') ? addr.split(':').last : addr;
+    final addrChar = cashAddrPart.isEmpty
+        ? ''
+        : cashAddrPart.substring(0, 1).toLowerCase();
+    if (addrChar != 'q' && addrChar != 'p') {
       setState(() => _error =
-          'Recipient must be a CashAddr (bitcoincash:q… or just q…)');
+          'Recipient must be a CashAddr (bitcoincash:q…/p… or just q…/p…)');
+      return;
+    }
+    if (addrChar == 'p') {
+      setState(() => _error =
+          'P2SH BCH addresses (p…) aren\'t supported yet — '
+          'only P2KH (q…) is in this build.');
       return;
     }
     if (amount > _availableSat) {

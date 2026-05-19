@@ -137,7 +137,8 @@ class EvmCoinModule implements CoinModule {
   }) async {
     onStage?.call('deriving BIP44 address');
     final w = EthereumWallet.open(
-      mnemonic: seedMaterial['mnemonic'] as String,
+      mnemonic:
+          extractBip39Mnemonic(seedMaterial, coinSymbol: network.symbol),
       passphrase: (seedMaterial['passphrase'] as String?) ?? '',
       network: network,
     );

@@ -121,13 +121,24 @@ class PeekLogger {
 
   static final _xmrAddrRe = RegExp(r'\b[1-9A-HJ-NP-Za-km-z]{95,106}\b');
   static final _hexRe = RegExp(r'\b[0-9a-f]{64}\b');
-  static final _bip39Re =
-      RegExp(r'\b([a-z]{3,8}\s+){11,23}[a-z]{3,8}\b');
+  // English BIP39 (lowercase). Word length is 3-8 chars; phrases are
+  // 12/15/18/21/24 words. The original regex assumed lowercase-only;
+  // tolerate mixed-case so a screenshot transcription doesn't slip
+  // through. Polyseed words can be longer (Czech / Esperanto reach
+  // 13 chars), so the cap is widened to 13.
+  static final _bip39Re = RegExp(
+      r'\b([A-Za-z]{3,13}\s+){11,23}[A-Za-z]{3,13}\b');
+  // Monero 25-word seed (English). Word length 4-9 chars typically;
+  // exactly 25 words. Captured separately so we redact even if the
+  // wordlist falls outside the BIP39 cap above.
+  static final _xmr25Re =
+      RegExp(r'\b([A-Za-z]{4,12}\s+){24}[A-Za-z]{4,12}\b');
 
   static String _redact(String s) {
     return s
         .replaceAll(_xmrAddrRe, '<redacted-XMR-address>')
         .replaceAll(_hexRe, '<redacted-key-hex>')
+        .replaceAll(_xmr25Re, '<redacted-mnemonic>')
         .replaceAll(_bip39Re, '<redacted-mnemonic>');
   }
 }

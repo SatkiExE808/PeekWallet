@@ -38,7 +38,10 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   FeeRates? _fees;
   String? _feesError;
   _FeeTier _tier = _FeeTier.halfHour;
-  final int _customRate = 5;
+  /// Fallback sat/vB used when mempool.space's fee oracle is
+  /// unreachable. Picked to clear within ~1h on a typical day; well
+  /// above the network's minimum-relay floor.
+  static const int _feeFallback = 5;
 
   int _availableSat = 0;
   bool _utxosLoading = true;
@@ -92,7 +95,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
 
   int get _selectedFeeRate {
     final fees = _fees;
-    if (fees == null) return _customRate;
+    if (fees == null) return _feeFallback;
     switch (_tier) {
       case _FeeTier.fastest:
         return fees.fastestSatPerVByte;
@@ -102,8 +105,6 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
         return fees.hourSatPerVByte;
       case _FeeTier.economy:
         return fees.economySatPerVByte;
-      case _FeeTier.custom:
-        return _customRate;
     }
   }
 
@@ -580,7 +581,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 }
 
-enum _FeeTier { fastest, halfHour, hour, economy, custom }
+enum _FeeTier { fastest, halfHour, hour, economy }
 
 class _ExperimentalBanner extends StatelessWidget {
   @override

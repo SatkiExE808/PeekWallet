@@ -55,3 +55,24 @@ enum SeedFormat {
   bool get isMoneroOnly =>
       this == monero25 || this == moneroPolyseed || this == keysOnly;
 }
+
+/// Pull a BIP39 mnemonic out of the seedMaterial map with a friendly
+/// error if the wallet record is mis-shaped. Used by every BIP39-
+/// based CoinModule.open — guards against a coinId/format mismatch
+/// where a Monero 25-word wallet somehow got routed to an EVM module.
+String extractBip39Mnemonic(
+  Map<String, dynamic> seedMaterial, {
+  required String coinSymbol,
+}) {
+  final raw = seedMaterial['mnemonic'];
+  if (raw is! String || raw.trim().isEmpty) {
+    throw FormatException(
+      'This $coinSymbol wallet has no BIP39 mnemonic on file '
+      '(found: ${raw == null ? "missing" : raw.runtimeType}). '
+      'It may have been imported in a different format — open the '
+      'XMR-side flow if this is a 25-word / Polyseed / keys-only '
+      'wallet.',
+    );
+  }
+  return raw;
+}

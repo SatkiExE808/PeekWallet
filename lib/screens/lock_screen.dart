@@ -56,12 +56,20 @@ class _LockScreenState extends State<LockScreen> {
       _ticker = null;
     } else {
       setState(() => _lockoutUntil = until);
+      // Read from the field rather than the captured local — a new
+      // lockout may extend the window after this Timer is wired, and
+      // we want the existing ticker to honor the latest deadline
+      // instead of expiring against the stale closure value.
       _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) async {
         if (!mounted) return;
-        if (DateTime.now().toUtc().isAfter(until)) {
+        final deadline = _lockoutUntil;
+        if (deadline == null) {
+          await _checkLockout();
+          return;
+        }
+        if (DateTime.now().toUtc().isAfter(deadline)) {
           await _checkLockout();
         } else {
-          // Cheap repaint so the countdown ticks.
           setState(() {});
         }
       });

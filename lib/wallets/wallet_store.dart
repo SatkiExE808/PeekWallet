@@ -5,6 +5,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../util/peek_logger.dart';
 import 'seed_format.dart';
 import 'wallet_meta.dart';
 
@@ -280,11 +281,15 @@ class WalletStore extends ChangeNotifier {
       _cache = list
           .map((m) => _StoredWallet.fromJson(m as Map<String, dynamic>))
           .toList();
-    } catch (_) {
+    } catch (e) {
       // Corrupt JSON shouldn't lock the user out of their existing
       // wallets — but we can't recover encrypted material without the
       // index, so the safest fallback is empty + force a fresh
-      // create/restore. Logged elsewhere for diagnostics.
+      // create/restore. Log loudly so the failure is visible to
+      // anyone debugging via `flutter logs` instead of becoming a
+      // silent "no wallets" UI surprise.
+      PeekLogger.I.log('wallet_store',
+          'CORRUPT INDEX — failed to parse (kept on disk for recovery): $e');
       _cache = [];
     }
     _loaded = true;
