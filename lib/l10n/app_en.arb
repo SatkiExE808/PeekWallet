@@ -1,0 +1,70 @@
+{
+  "@@locale": "en",
+
+  "appName": "PeekWallet",
+  "@appName": {
+    "description": "App display name shown in lock screen / app bar"
+  },
+
+  "lockScreenSubtitle": "Enter your password to unlock",
+  "@lockScreenSubtitle": {
+    "description": "Tagline below the PeekWallet wordmark on the lock screen"
+  },
+
+  "lockPasswordHint": "Password",
+  "lockUnlock": "Unlock",
+  "lockUseBiometric": "Use biometric",
+  "lockTooManyAttempts": "Too many failed attempts",
+  "lockTimerWarning": "Locking your phone or restarting the app won't reset the timer — this is intentional.",
+
+  "homeTotalBalance": "Total balance",
+  "homeSyncedCount": "{counted} / {total} synced",
+  "@homeSyncedCount": {
+    "description": "Shown in the portfolio hero chip — e.g. '3 / 5 synced'",
+    "placeholders": {
+      "counted": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "homeAcrossWallets": "{count, plural, =1{across 1 wallet} other{across {count} wallets}}",
+  "@homeAcrossWallets": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "homeEmptyTitle": "No wallets yet",
+  "homeEmptyBody": "Create a fresh wallet or restore from a recovery phrase to get started.",
+  "homeAddWallet": "Add wallet",
+
+  "actionReceive": "Receive",
+  "actionSend": "Send",
+  "actionBack": "Back",
+  "actionCopy": "Copy",
+  "actionShare": "Share",
+  "actionExplorer": "Explorer",
+  "actionSending": "Sending…",
+
+  "receiveTitle": "Receive {coinId}",
+  "@receiveTitle": {
+    "placeholders": {
+      "coinId": {"type": "String"}
+    }
+  },
+  "receiveAddressLabel": "YOUR ADDRESS",
+  "receiveAddressCopied": "Address copied",
+
+  "balanceCached": "Cached · {ago} ago",
+  "@balanceCached": {
+    "placeholders": {
+      "ago": {"type": "String"}
+    }
+  },
+
+  "txDirectionIncoming": "Incoming",
+  "txDirectionOutgoing": "Outgoing",
+  "txStatusConfirmed": "Confirmed",
+  "txStatusPending": "Pending",
+  "txStatusFailed": "Failed",
+  "txStatusInMempool": "In mempool",
+  "txCopiedToClipboard": "Copied to clipboard"
+}

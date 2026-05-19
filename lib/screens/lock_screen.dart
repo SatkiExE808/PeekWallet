@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 import '../vault/vault_storage.dart';
@@ -121,6 +122,7 @@ class _LockScreenState extends State<LockScreen> {
   @override
   Widget build(BuildContext context) {
     final lockedOut = _lockoutUntil != null;
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -161,19 +163,20 @@ class _LockScreenState extends State<LockScreen> {
                 ),
               ),
               const SizedBox(height: PeekDesign.sp5),
-              const Text(
-                'PeekWallet',
+              Text(
+                l.appName,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Enter your password to unlock',
+              Text(
+                l.lockScreenSubtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: PeekColors.text2, fontSize: 13),
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 13),
               ),
               const SizedBox(height: PeekDesign.sp8),
               TextField(
@@ -183,7 +186,7 @@ class _LockScreenState extends State<LockScreen> {
                 enabled: !lockedOut,
                 onSubmitted: (_) => _unlock(),
                 decoration: InputDecoration(
-                  hintText: 'Password',
+                  hintText: l.lockPasswordHint,
                   prefixIcon: Icon(
                     Icons.password_rounded,
                     size: 18,
@@ -204,13 +207,13 @@ class _LockScreenState extends State<LockScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.timer_off_rounded,
+                        children: [
+                          const Icon(Icons.timer_off_rounded,
                               size: 16, color: PeekColors.red),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'Too many failed attempts',
-                            style: TextStyle(
+                            l.lockTooManyAttempts,
+                            style: const TextStyle(
                                 color: PeekColors.text,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14),
@@ -224,10 +227,9 @@ class _LockScreenState extends State<LockScreen> {
                             color: PeekColors.text2, fontSize: 13),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        "Locking your phone or restarting the app won't "
-                        'reset the timer — this is intentional.',
-                        style: TextStyle(
+                      Text(
+                        l.lockTimerWarning,
+                        style: const TextStyle(
                             color: PeekColors.text3, fontSize: 11),
                       ),
                     ],
@@ -271,7 +273,7 @@ class _LockScreenState extends State<LockScreen> {
                                 strokeWidth: 2, color: Colors.white),
                           )
                         : Text(
-                            'Unlock',
+                            l.lockUnlock,
                             style: TextStyle(
                               color: (_busy || lockedOut)
                                   ? PeekColors.text3
@@ -290,7 +292,7 @@ class _LockScreenState extends State<LockScreen> {
                   onPressed:
                       _busy ? null : () => VaultState.I.unlockBiometric(),
                   icon: const Icon(Icons.fingerprint_rounded, size: 20),
-                  label: const Text('Use biometric'),
+                  label: Text(l.lockUseBiometric),
                 ),
               ],
               const Spacer(),

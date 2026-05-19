@@ -31,6 +31,14 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Localizations + gen-l10n. Source-of-truth strings live in
+  # `lib/l10n/app_en.arb`; `flutter pub get` triggers code generation
+  # of `AppLocalizations.of(context)` under `.dart_tool/`. Add a new
+  # locale by dropping `app_<code>.arb` next to the English file.
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.0
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -157,6 +165,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Generate AppLocalizations from lib/l10n/app_*.arb.
+  generate: true
 
   # Coin logo SVGs — one per supported chain. Loaded by
   # lib/util/coin_avatar.dart and rendered via flutter_svg.

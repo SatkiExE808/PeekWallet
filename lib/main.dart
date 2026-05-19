@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'l10n/gen/app_localizations.dart';
 import 'prefs/prefs.dart';
 import 'prefs/rpc_overrides.dart';
 import 'prices/price_feed.dart';
@@ -35,6 +36,10 @@ class PeekWalletApp extends StatelessWidget {
       title: 'PeekWallet',
       debugShowCheckedModeBanner: false,
       theme: PeekTheme.dark,
+      // Localizations land for HK/MY/SG/TW + VN/ID — the bulk of
+      // PeekWallet's user base. en is the source-of-truth fallback.
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const _Router(),
     );
   }
