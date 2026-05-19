@@ -86,43 +86,82 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(PeekDesign.sp4),
           decoration: BoxDecoration(
-            color: const Color(0x33EF4444),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0x66EF4444)),
+            color: PeekColors.red.withAlpha(28),
+            borderRadius: PeekDesign.brCard,
+            border: Border.all(color: PeekColors.red.withAlpha(96)),
           ),
-          child: const Text(
-            'You are about to reveal your seed phrase and Monero keys. '
-            'Anyone who sees them can take your funds — make sure no one '
-            'is looking at your screen and you are not screen-sharing.',
-            style: TextStyle(color: PeekColors.text, fontSize: 13, height: 1.4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: PeekColors.red.withAlpha(40),
+                  borderRadius: PeekDesign.brSmall,
+                ),
+                child: const Icon(Icons.visibility_off_rounded,
+                    color: PeekColors.red, size: 18),
+              ),
+              const SizedBox(width: PeekDesign.sp3),
+              const Expanded(
+                child: Text(
+                  'You are about to reveal your seed phrase and Monero '
+                  'keys. Anyone who sees them can take your funds — make '
+                  "sure no one is looking at your screen and you're not "
+                  'screen-sharing.',
+                  style: TextStyle(
+                      color: PeekColors.text, fontSize: 12, height: 1.4),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: PeekDesign.sp5),
         const Text(
           'Enter your app password to continue.',
           style: TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: PeekDesign.sp3),
         TextField(
           controller: _pwd,
           obscureText: true,
           autofocus: true,
           onSubmitted: (_) => _verify(),
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: const InputDecoration(
+            hintText: 'Password',
+            prefixIcon: Icon(Icons.password_rounded,
+                size: 18, color: PeekColors.text2),
+          ),
         ),
         if (_err != null) ...[
-          const SizedBox(height: 8),
-          Text(_err!, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
+          const SizedBox(height: PeekDesign.sp2),
+          Row(
+            children: [
+              const Icon(Icons.error_outline_rounded,
+                  size: 14, color: PeekColors.red),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _err!,
+                  style: const TextStyle(
+                      color: PeekColors.red, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: PeekDesign.sp4),
         ElevatedButton(
           onPressed: _busy ? null : _verify,
           child: _busy
               ? const SizedBox(
                   width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Reveal'),
         ),
@@ -154,15 +193,19 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
               color: PeekColors.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: PeekColors.border),
+              borderRadius: PeekDesign.brSmall,
+              border: Border.all(color: PeekColors.hairline),
             ),
             child: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: '${i + 1}  ',
-                    style: const TextStyle(color: PeekColors.text3, fontSize: 12),
+                    text: '${(i + 1).toString().padLeft(2, '0')}  ',
+                    style: const TextStyle(
+                        color: PeekColors.text3,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        fontFeatures: [FontFeature.tabularFigures()]),
                   ),
                   TextSpan(
                     text: words[i],
@@ -170,6 +213,7 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
                       color: PeekColors.text,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ],
@@ -223,8 +267,13 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      label,
-      style: const TextStyle(color: PeekColors.text2, fontSize: 12),
+      label.toUpperCase(),
+      style: const TextStyle(
+        color: PeekColors.text3,
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
+      ),
     );
   }
 }
@@ -235,15 +284,16 @@ class _MonoBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(PeekDesign.sp3),
       decoration: BoxDecoration(
         color: PeekColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: PeekDesign.brSmall,
         border: Border.all(color: PeekColors.border),
       ),
       child: SelectableText(
         text,
-        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+        style: const TextStyle(
+            fontSize: 12, fontFamily: 'monospace', color: PeekColors.text),
       ),
     );
   }

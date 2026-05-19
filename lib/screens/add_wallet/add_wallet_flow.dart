@@ -403,29 +403,69 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
         appBar: AppBar(title: Text(widget.format.displayName)),
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(PeekDesign.sp5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.privacy_tip, size: 64, color: PeekColors.accent),
-                const SizedBox(height: 12),
+                const Spacer(),
+                Container(
+                  width: 96,
+                  height: 96,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      PeekColors.accent.withAlpha(54),
+                      PeekColors.accent.withAlpha(0),
+                    ]),
+                  ),
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: PeekColors.surface2,
+                      border: Border.all(color: PeekColors.border),
+                    ),
+                    child: const Icon(Icons.privacy_tip_rounded,
+                        color: PeekColors.accent, size: 30),
+                  ),
+                ),
+                const SizedBox(height: PeekDesign.sp5),
                 Text(
                   'Generate a ${widget.format.displayName.toLowerCase()}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: PeekDesign.sp2),
                 const Text(
                   'When you tap Generate, the words will appear once. '
-                  'Write them down on paper before continuing. Anyone with '
-                  'the words can take your funds.',
+                  'Write them down on paper before continuing. Anyone '
+                  'with the words can take your funds.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: PeekColors.text2, fontSize: 13),
+                  style: TextStyle(
+                      color: PeekColors.text2, fontSize: 13, height: 1.4),
                 ),
                 if (_err != null) ...[
-                  const SizedBox(height: 12),
-                  Text(_err!,
-                      style: const TextStyle(color: PeekColors.red, fontSize: 13)),
+                  const SizedBox(height: PeekDesign.sp3),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          size: 14, color: PeekColors.red),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _err!,
+                          style: const TextStyle(
+                              color: PeekColors.red, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
                 const Spacer(),
                 ElevatedButton(
@@ -438,6 +478,7 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
                         )
                       : const Text('Generate seed'),
                 ),
+                const SizedBox(height: PeekDesign.sp3),
               ],
             ),
           ),
