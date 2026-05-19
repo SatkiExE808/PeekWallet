@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-
 import '../coins/solana/solana_module.dart';
 import '../coins/solana/solana_rpc_client.dart';
 import '../coins/solana/solana_wallet.dart';
@@ -17,6 +15,7 @@ import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
 import '../widgets/coin_screen_widgets.dart';
+import '../widgets/receive_sheet.dart';
 import 'send_solana_screen.dart';
 
 /// Solana coin page. Receive + balance + history; send is a follow-up
@@ -225,89 +224,17 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
   void _showReceiveSheet() {
     final w = _wallet;
     if (w == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: PeekColors.bg2,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  decoration: BoxDecoration(
-                    color: PeekColors.border2,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Receive SOL',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  color: Colors.white,
-                  child: QrImageView(
-                    data: w.primaryAddress,
-                    version: QrVersions.auto,
-                    size: 240,
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: PeekColors.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: PeekColors.border),
-                ),
-                child: SelectableText(
-                  w.primaryAddress,
-                  style: const TextStyle(
-                      fontSize: 12, fontFamily: 'monospace'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Clipboard.setData(
-                      ClipboardData(text: w.primaryAddress));
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Address copied')),
-                  );
-                },
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy address'),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'SLIP-0010 ed25519, path m/44\'/501\'/0\'/0\'. Same '
-                'address Phantom, Solflare, Backpack and other major '
-                'wallets derive from this seed.',
-                style: TextStyle(color: PeekColors.text3, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-      ),
+    showReceiveSheet(
+      context,
+      coinId: 'SOL',
+      coinName: 'Solana',
+      address: w.primaryAddress,
+      derivationHint:
+          "SLIP-0010 ed25519, path m/44'/501'/0'/0'. Same address Phantom, "
+          "Solflare, Backpack and other major wallets derive from this seed.",
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
