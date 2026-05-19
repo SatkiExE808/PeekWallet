@@ -4,17 +4,38 @@ A self-custodial, multi-coin mobile wallet. **Flutter rewrite** of [vault-wallet
 
 The original `vault-wallet` is built on Capacitor + JavaScript. That works well for BTC/ETH/SOL/etc. but the Monero engine (`monero-javascript` WASM) hangs in mobile WebViews — symptom: `…XMR` balance that never resolves. PeekWallet uses the native [`monero_c`](https://github.com/MrCyjaneK/monero_c) bindings via Dart FFI — the same library Cake Wallet uses — so Monero behaves like every other coin.
 
+## Coins
+
+| Symbol | Chain | Send | Receive | Native engine |
+|--------|-------|------|---------|---------------|
+| XMR    | Monero | ✓ | ✓ | monero_c FFI |
+| BTC    | Bitcoin mainnet (BIP84 SegWit) | ✓ | ✓ | mempool.space + Blockstream Esplora fallback |
+| LTC    | Litecoin (BIP84) | ✓ | ✓ | litecoinspace + Blockchair adapter fallback |
+| ETH    | Ethereum mainnet (EIP-1559) | ✓ | ✓ | LlamaRPC + Cloudflare + PublicNode + Ankr fallback chain |
+| POL    | Polygon (formerly MATIC) | ✓ | ✓ | polygon-rpc + PublicNode + Ankr + LlamaRPC chain |
+| SOL    | Solana mainnet-beta (SLIP-0010 ed25519) | ✓ | ✓ | mainnet-beta + PublicNode + Blast + Ankr fallback |
+| TRX    | Tron (TronGrid) | ✓ | ✓ | TronGrid REST |
+| BCH    | Bitcoin Cash (legacy P2PKH) | ✓ | ✓ | Blockchair |
+
+Each chain auto-fetches balances on the home screen, caches the last
+known value (so a 5xx from the explorer keeps the wallet usable), and
+keeps a per-tx detail sheet with explorer deeplinks. Token rows for
+USDT/USDC/DAI/etc. surface on ETH, POL, SOL, and TRX.
+
 ## Goals
 
-- Cake-parity coin list: XMR, BTC, LTC, ETH, BCH, SOL, TRX, MATIC, plus a few exotics (XNO, DCR, WOW)
 - Native Monero sync (no WebAssembly)
 - Hardware-backed key storage (Keychain on iOS, Keystore on Android)
 - Biometric unlock
 - BIP39 12-word seed shared with vault-wallet (import via seed phrase)
+- Multi-provider live-fetch resilience — no single explorer outage breaks the wallet
+- Cache-fallback UX — last-known balance stays visible during transient RPC failures
 
 ## Status
 
 Under active development. **Not ready for daily use.**
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for how the codebase is laid out.
 
 ## Bundle ID
 
