@@ -301,44 +301,117 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Per-recipient breakdown for the audit-trail confirm.
-        for (var i = 0; i < _recipients.length; i++) ...[
-          _ConfirmRow(
-            label: _recipients.length == 1
-                ? 'To'
-                : 'To #${i + 1}',
-            value: _recipients[i].addr.text.trim(),
-            mono: true,
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brHero,
+            gradient: PeekDesign.surfaceGradient,
+            border: Border.all(color: PeekColors.border),
           ),
-          if (!_sweepAll)
-            _ConfirmRow(
-              label: '',
-              value: '${_parseXmr(_recipients[i].amount.text).toStringAsFixed(9)} XMR',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${total.toStringAsFixed(9)} XMR',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.6,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _sweepAll
+                    ? 'sweep total (including fee)'
+                    : 'total including network fee',
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 12),
+              ),
+              const SizedBox(height: PeekDesign.sp4),
+              for (var i = 0; i < _recipients.length; i++) ...[
+                _ConfirmRow(
+                  label: _recipients.length == 1
+                      ? 'To'
+                      : 'To #${i + 1}',
+                  value: _recipients[i].addr.text.trim(),
+                  mono: true,
+                ),
+                if (!_sweepAll)
+                  _ConfirmRow(
+                    label: '',
+                    value:
+                        '${_parseXmr(_recipients[i].amount.text).toStringAsFixed(9)} XMR',
+                  ),
+                if (i < _recipients.length - 1)
+                  const Divider(height: 18, color: PeekColors.hairline),
+              ],
+              const Divider(height: 18, color: PeekColors.hairline),
+              _ConfirmRow(
+                label: _sweepAll ? 'Sending (sweep)' : 'Subtotal',
+                value: '${pt.amountXmr.toStringAsFixed(9)} XMR',
+              ),
+              const Divider(height: 18, color: PeekColors.hairline),
+              _ConfirmRow(
+                  label: 'Network fee',
+                  value: '${pt.feeXmr.toStringAsFixed(9)} XMR'),
+            ],
+          ),
+        ),
+        if (pt.txCount > 1) ...[
+          const SizedBox(height: PeekDesign.sp3),
+          Container(
+            padding: const EdgeInsets.all(PeekDesign.sp3),
+            decoration: BoxDecoration(
+              color: PeekColors.surface2,
+              borderRadius: PeekDesign.brSmall,
+              border: Border.all(color: PeekColors.hairline),
             ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    size: 14, color: PeekColors.text3),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This send will be relayed as ${pt.txCount} sub-transactions.',
+                    style: const TextStyle(
+                        color: PeekColors.text3,
+                        fontSize: 11,
+                        height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-        const Divider(color: PeekColors.border),
-        _ConfirmRow(
-          label: _sweepAll ? 'Sending (sweep)' : 'Total amount',
-          value: '${pt.amountXmr.toStringAsFixed(9)} XMR',
-        ),
-        _ConfirmRow(label: 'Network fee', value: '${pt.feeXmr.toStringAsFixed(9)} XMR'),
-        const Divider(color: PeekColors.border),
-        _ConfirmRow(
-          label: 'Total + fee',
-          value: '${total.toStringAsFixed(9)} XMR',
-          emphasize: true,
-        ),
-        if (pt.txCount > 1)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              'This send will be relayed as ${pt.txCount} sub-transactions.',
-              style: const TextStyle(color: PeekColors.text3, fontSize: 11),
+        if (_err != null) ...[
+          const SizedBox(height: PeekDesign.sp3),
+          Container(
+            padding: const EdgeInsets.all(PeekDesign.sp3),
+            decoration: BoxDecoration(
+              color: PeekColors.red.withAlpha(28),
+              borderRadius: PeekDesign.brSmall,
+              border: Border.all(color: PeekColors.red.withAlpha(96)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    size: 14, color: PeekColors.red),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _err!,
+                    style: const TextStyle(
+                        color: PeekColors.red,
+                        fontSize: 12,
+                        height: 1.4),
+                  ),
+                ),
+              ],
             ),
           ),
-        if (_err != null) ...[
-          const SizedBox(height: 10),
-          Text(_err!, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
         ],
         const SizedBox(height: PeekDesign.sp6),
         Row(
@@ -463,11 +536,11 @@ class _RecipientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final showHeader = total > 1;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(PeekDesign.sp4),
       decoration: BoxDecoration(
         color: PeekColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: PeekColors.border),
+        borderRadius: PeekDesign.brCard,
+        border: Border.all(color: PeekColors.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -475,26 +548,45 @@ class _RecipientCard extends StatelessWidget {
           if (showHeader)
             Row(
               children: [
-                Expanded(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: PeekColors.accentMuted,
+                    borderRadius: PeekDesign.brPill,
+                  ),
                   child: Text(
-                    'Recipient #${index + 1}',
+                    '#${index + 1}',
                     style: const TextStyle(
+                      color: PeekColors.accent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Recipient',
+                    style: TextStyle(
                       color: PeekColors.text2,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ),
                 if (onRemove != null)
                   IconButton(
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: const Icon(Icons.close_rounded, size: 18),
                     color: PeekColors.text3,
                     onPressed: onRemove,
                     tooltip: 'Remove',
                   ),
               ],
             ),
-          if (showHeader) const SizedBox(height: 4),
+          if (showHeader) const SizedBox(height: PeekDesign.sp2),
           TextField(
             controller: row.addr,
             autocorrect: false,
@@ -553,12 +645,10 @@ class _ConfirmRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.mono = false,
-    this.emphasize = false,
   });
   final String label;
   final String value;
   final bool mono;
-  final bool emphasize;
 
   @override
   Widget build(BuildContext context) {
@@ -579,8 +669,8 @@ class _ConfirmRow extends StatelessWidget {
               value,
               style: TextStyle(
                 color: PeekColors.text,
-                fontSize: emphasize ? 14 : 13,
-                fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
                 fontFamily: mono ? 'monospace' : null,
               ),
             ),

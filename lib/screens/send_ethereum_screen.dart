@@ -598,33 +598,120 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   Widget _feeCard() {
     final fee = _fee;
     if (_feeError != null) {
-      return Text('Fee data unavailable: $_feeError',
-          style: const TextStyle(color: PeekColors.red, fontSize: 12));
-    }
-    if (fee == null) {
-      return const Text('Loading fee rates…',
-          style: TextStyle(color: PeekColors.text3, fontSize: 12));
-    }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
+      return Container(
+        padding: const EdgeInsets.all(PeekDesign.sp3),
+        decoration: BoxDecoration(
+          color: PeekColors.red.withAlpha(28),
+          borderRadius: PeekDesign.brSmall,
+          border: Border.all(color: PeekColors.red.withAlpha(96)),
+        ),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Network fee (auto, MetaMask-style)',
-                style: TextStyle(
-                    color: PeekColors.text2, fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(
-              'Base ${_gwei(fee.baseFeeWei)} gwei · '
-              'Tip ${_gwei(fee.maxPriorityFeeWei)} gwei · '
-              'Max ${_gwei(fee.maxFeeWei)} gwei',
-              style: const TextStyle(
-                  color: PeekColors.text, fontSize: 12),
+            const Icon(Icons.error_outline_rounded,
+                size: 14, color: PeekColors.red),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Fee data unavailable: $_feeError',
+                style: const TextStyle(
+                    color: PeekColors.red, fontSize: 12, height: 1.4),
+              ),
             ),
           ],
         ),
+      );
+    }
+    if (fee == null) {
+      return Container(
+        padding: const EdgeInsets.all(PeekDesign.sp3),
+        decoration: BoxDecoration(
+          color: PeekColors.surface,
+          borderRadius: PeekDesign.brCard,
+          border: Border.all(color: PeekColors.hairline),
+        ),
+        child: Row(
+          children: const [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: PeekColors.text2),
+            ),
+            SizedBox(width: PeekDesign.sp3),
+            Text('Loading fee rates…',
+                style: TextStyle(
+                    color: PeekColors.text3, fontSize: 12)),
+          ],
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(PeekDesign.sp4),
+      decoration: BoxDecoration(
+        color: PeekColors.surface,
+        borderRadius: PeekDesign.brCard,
+        border: Border.all(color: PeekColors.hairline),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_gas_station_rounded,
+                  size: 14, color: PeekColors.text3),
+              const SizedBox(width: 6),
+              const Text(
+                'NETWORK FEE',
+                style: TextStyle(
+                    color: PeekColors.text3,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: PeekColors.accentMuted,
+                  borderRadius: PeekDesign.brPill,
+                ),
+                child: const Text('AUTO',
+                    style: TextStyle(
+                        color: PeekColors.accent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.6)),
+              ),
+            ],
+          ),
+          const SizedBox(height: PeekDesign.sp3),
+          _feeRow('Base', '${_gwei(fee.baseFeeWei)} gwei'),
+          const SizedBox(height: 4),
+          _feeRow('Tip', '${_gwei(fee.maxPriorityFeeWei)} gwei'),
+          const SizedBox(height: 4),
+          _feeRow('Max', '${_gwei(fee.maxFeeWei)} gwei'),
+        ],
+      ),
+    );
+  }
+
+  Widget _feeRow(String label, String value) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 60,
+          child: Text(label,
+              style: const TextStyle(
+                  color: PeekColors.text3, fontSize: 12)),
+        ),
+        Text(value,
+            style: const TextStyle(
+                color: PeekColors.text,
+                fontSize: 13,
+                fontWeight: FontWeight.w500)),
+      ],
     );
   }
 
