@@ -117,6 +117,11 @@ dependencies:
   # errorWidget on CachedNetworkImage.
   cached_network_image: ^3.4.1
 
+  # Native share intent so the Receive sheet can hand off the address
+  # to any installed app (Signal, Telegram, mail, etc.) instead of
+  # forcing copy → paste.
+  share_plus: ^11.0.0
+
   # Bitcoin support — BIP32 hierarchical key derivation + bech32
   # encoding for BIP84 native SegWit addresses. Pure-Dart, no native
   # libs needed (unlike monero_c). Balance + history fetched live

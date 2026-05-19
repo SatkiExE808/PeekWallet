@@ -7,6 +7,7 @@ import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
+import '../widgets/coin_screen_widgets.dart';
 import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
 
@@ -339,26 +340,24 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           const SizedBox(height: 10),
           Text(_err!, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: PeekDesign.sp6),
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
-                onPressed: _busy ? null : () => setState(() => _pending = null),
-                child: const Text('Back'),
+              child: ActionButton(
+                icon: Icons.arrow_back_rounded,
+                label: 'Back',
+                primary: false,
+                onTap: _busy ? null : () => setState(() => _pending = null),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
-              child: ElevatedButton(
-                onPressed: _busy ? null : _confirm,
-                child: _busy
-                    ? const SizedBox(
-                        width: 18, height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Send'),
+              child: ActionButton(
+                icon: Icons.send_rounded,
+                label: _busy ? 'Sending…' : 'Send',
+                primary: true,
+                onTap: _busy ? null : _confirm,
               ),
             ),
           ],

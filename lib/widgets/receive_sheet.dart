@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../theme.dart';
 import '../util/coin_avatar.dart';
@@ -174,6 +175,49 @@ class _ReceiveSheetBody extends StatelessWidget {
               children: [
                 Expanded(
                   child: Material(
+                    color: PeekColors.surface2,
+                    borderRadius: PeekDesign.brButton,
+                    child: InkWell(
+                      borderRadius: PeekDesign.brButton,
+                      onTap: () async {
+                        await SharePlus.instance.share(
+                          ShareParams(
+                            text: address,
+                            subject: '$coinId address',
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          borderRadius: PeekDesign.brButton,
+                          border:
+                              Border.all(color: PeekColors.border2),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.ios_share_rounded,
+                                size: 18, color: PeekColors.text),
+                            SizedBox(width: 8),
+                            Text(
+                              'Share',
+                              style: TextStyle(
+                                color: PeekColors.text,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: PeekDesign.sp3),
+                Expanded(
+                  child: Material(
                     color: PeekColors.accent,
                     borderRadius: PeekDesign.brButton,
                     child: InkWell(
@@ -193,7 +237,7 @@ class _ReceiveSheetBody extends StatelessWidget {
                                 size: 18, color: Colors.white),
                             SizedBox(width: 8),
                             Text(
-                              'Copy address',
+                              'Copy',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,

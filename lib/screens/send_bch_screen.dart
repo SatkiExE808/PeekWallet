@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
+import '../widgets/coin_screen_widgets.dart';
 import '../widgets/send_widgets.dart';
 import 'address_book_screen.dart';
 import 'qr_scan_screen.dart';
@@ -408,34 +409,29 @@ class _SendBchScreenState extends State<SendBchScreen> {
           const SizedBox(height: 12),
           _errorBox(_error!),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: PeekDesign.sp5),
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
-                onPressed: _broadcasting
+              child: ActionButton(
+                icon: Icons.arrow_back_rounded,
+                label: 'Back',
+                primary: false,
+                onTap: _broadcasting
                     ? null
                     : () => setState(() {
                           _previewing = false;
                           _confirmCtrl.clear();
                         }),
-                child: const Text('Back'),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: PeekDesign.sp3),
             Expanded(
-              child: ElevatedButton(
-                onPressed: _broadcasting ? null : _onConfirm,
-                child: _broadcasting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Send'),
+              child: ActionButton(
+                icon: Icons.send_rounded,
+                label: _broadcasting ? 'Sending…' : 'Send',
+                primary: true,
+                onTap: _broadcasting ? null : _onConfirm,
               ),
             ),
           ],

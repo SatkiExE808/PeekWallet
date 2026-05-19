@@ -139,28 +139,41 @@ class _QrScanScreenState extends State<QrScanScreen> {
                     );
                   },
                 ),
-                // Sighting overlay — square frame in the middle, semi-
-                // transparent mask around. Gives the user something to
-                // aim at.
+                // Sighting overlay — guide rectangle with corner
+                // brackets + helper text. Gives the user something to
+                // aim at without the dark vignette being too heavy.
                 const IgnorePointer(
-                  child: Center(
-                    child: _ScanFrame(),
-                  ),
+                  child: _ScanGuide(),
                 ),
                 if (_error != null)
                   Positioned(
-                    bottom: 32,
-                    left: 24,
-                    right: 24,
+                    bottom: 40,
+                    left: PeekDesign.sp5,
+                    right: PeekDesign.sp5,
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(PeekDesign.sp3),
                       decoration: BoxDecoration(
-                        color: PeekColors.bg2.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(8),
+                        color: PeekColors.bg2.withAlpha(220),
+                        borderRadius: PeekDesign.brSmall,
+                        border:
+                            Border.all(color: PeekColors.red.withAlpha(96)),
                       ),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: PeekColors.red),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.error_outline_rounded,
+                              size: 14, color: PeekColors.red),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(
+                                  color: PeekColors.red,
+                                  fontSize: 12,
+                                  height: 1.4),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -210,17 +223,100 @@ class _PermissionDenied extends StatelessWidget {
   }
 }
 
-class _ScanFrame extends StatelessWidget {
-  const _ScanFrame();
+class _ScanGuide extends StatelessWidget {
+  const _ScanGuide();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 240,
-      height: 240,
-      decoration: BoxDecoration(
-        border: Border.all(color: PeekColors.accent, width: 3),
-        borderRadius: BorderRadius.circular(12),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Soft full-screen dim so the guide region pops without the
+        // hard mask of the old centered Container.
+        Container(color: Colors.black.withAlpha(80)),
+        Center(
+          child: SizedBox(
+            width: 260,
+            height: 260,
+            child: Stack(
+              children: const [
+                Positioned(top: 0, left: 0, child: _Corner(turns: 0)),
+                Positioned(top: 0, right: 0, child: _Corner(turns: 1)),
+                Positioned(bottom: 0, right: 0, child: _Corner(turns: 2)),
+                Positioned(bottom: 0, left: 0, child: _Corner(turns: 3)),
+              ],
+            ),
+          ),
+        ),
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 96,
+          child: _ScanHelperText(),
+        ),
+      ],
+    );
+  }
+}
+
+class _Corner extends StatelessWidget {
+  const _Corner({required this.turns});
+  final int turns;
+
+  @override
+  Widget build(BuildContext context) {
+    return RotatedBox(
+      quarterTurns: turns,
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: CustomPaint(painter: _CornerPainter()),
+      ),
+    );
+  }
+}
+
+class _CornerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = PeekColors.accent
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    // Top horizontal stroke + left vertical stroke meeting at top-left.
+    final path = Path()
+      ..moveTo(0, 14)
+      ..lineTo(0, 4)
+      ..quadraticBezierTo(0, 0, 4, 0)
+      ..lineTo(14, 0);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+class _ScanHelperText extends StatelessWidget {
+  const _ScanHelperText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(140),
+          borderRadius: PeekDesign.brPill,
+        ),
+        child: const Text(
+          'Center the QR code in the frame',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }

@@ -259,22 +259,72 @@ class AddWalletFormatPicker extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView.separated(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(
+              horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
           itemCount: formats.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 6),
+          separatorBuilder: (_, _) =>
+              const SizedBox(height: PeekDesign.sp2),
           itemBuilder: (_, i) {
             final f = formats[i];
-            return Card(
-              child: ListTile(
-                title: Text(f.displayName),
-                subtitle: Text(_subtitleFor(f),
-                    style: const TextStyle(color: PeekColors.text2, fontSize: 11)),
-                trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
+            return Material(
+              color: PeekColors.surface,
+              borderRadius: PeekDesign.brCard,
+              child: InkWell(
+                borderRadius: PeekDesign.brCard,
+                splashColor: PeekColors.accentMuted,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => mode == WalletAddMode.create
                         ? AddWalletCreateScreen(coin: coin, format: f)
                         : AddWalletRestoreScreen(coin: coin, format: f),
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: PeekDesign.brCard,
+                    border: Border.all(color: PeekColors.hairline),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: PeekDesign.sp4,
+                      vertical: PeekDesign.sp4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: PeekColors.surface2,
+                          borderRadius: PeekDesign.brSmall,
+                        ),
+                        child: Icon(_iconFor(f),
+                            color: PeekColors.text2, size: 18),
+                      ),
+                      const SizedBox(width: PeekDesign.sp3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(f.displayName,
+                                style: const TextStyle(
+                                    color: PeekColors.text,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.1)),
+                            const SizedBox(height: 4),
+                            Text(_subtitleFor(f),
+                                style: const TextStyle(
+                                    color: PeekColors.text2,
+                                    fontSize: 12,
+                                    height: 1.4)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: PeekDesign.sp2),
+                      const Icon(Icons.chevron_right,
+                          color: PeekColors.text3, size: 18),
+                    ],
                   ),
                 ),
               ),
@@ -283,6 +333,20 @@ class AddWalletFormatPicker extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static IconData _iconFor(SeedFormat f) {
+    switch (f) {
+      case SeedFormat.bip39_12:
+      case SeedFormat.bip39_24:
+        return Icons.view_module_rounded;
+      case SeedFormat.monero25:
+        return Icons.shield_outlined;
+      case SeedFormat.moneroPolyseed:
+        return Icons.bolt_rounded;
+      case SeedFormat.keysOnly:
+        return Icons.key_rounded;
+    }
   }
 
   static String _subtitleFor(SeedFormat f) {
