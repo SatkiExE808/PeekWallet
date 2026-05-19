@@ -43,12 +43,36 @@ class RpcOverrides extends ChangeNotifier {
       try {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         _cache = json.map((k, v) => MapEntry(k, v as String));
+        _migrateLegacyKeys();
       } catch (_) {
         // Corrupted store — fall back to defaults. Worst case the
         // user re-enters their custom endpoints.
       }
     }
     _loaded = true;
+  }
+
+  /// Rewrite legacy coin-id prefixes on load. MATIC → POL because
+  /// Polygon migrated its native token in September 2024 and we
+  /// follow the canonical POL ticker now.
+  void _migrateLegacyKeys() {
+    final migrated = <String, String>{};
+    var changed = false;
+    for (final entry in _cache.entries) {
+      if (entry.key.startsWith('MATIC:')) {
+        final newKey = 'POL:${entry.key.substring(6)}';
+        migrated[newKey] = entry.value;
+        changed = true;
+      } else {
+        migrated[entry.key] = entry.value;
+      }
+    }
+    if (changed) {
+      _cache = migrated;
+      // Fire-and-forget persist — no point awaiting; the next read
+      // already sees the migrated cache.
+      unawaited(_persist());
+    }
   }
 
   /// Synchronous lookup. Returns the user's override for

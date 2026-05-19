@@ -113,15 +113,19 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
       // Fan out TRC-20 balance fetches in parallel; individual
       // failures stay quiet (the wallet's tokenBalanceRaw catches
       // them and returns zero rather than rethrow).
+      //
+      // Always record every default token in tokenResults, even when
+      // the live balance is zero. Otherwise a temporary TronGrid
+      // rate-limit (which makes tokenBalanceRaw return 0) would hide
+      // USDT/USDC entirely — users expect to always see "USDT 0.00"
+      // so they know the wallet is tracking it. Matches Cake's UX.
       final tokens = w.defaultTokens;
       final tokenResults = <String, BigInt>{};
       if (tokens.isNotEmpty) {
         final balances = await Future.wait(
             tokens.map((t) => w.tokenBalanceRaw(t)));
         for (var i = 0; i < tokens.length; i++) {
-          if (balances[i] > BigInt.zero) {
-            tokenResults[tokens[i].contract] = balances[i];
-          }
+          tokenResults[tokens[i].contract] = balances[i];
         }
       }
       // TRC-20 transfer history, filtered to tokens we recognize.

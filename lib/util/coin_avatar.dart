@@ -95,7 +95,7 @@ Color coinColor(String coinId) {
       return const Color(0xFF9945FF);
     case 'TRX':
       return const Color(0xFFEB0029);
-    case 'MATIC':
+    case 'POL':
       return const Color(0xFF8247E5);
     default:
       return PeekColors.text3;
@@ -122,8 +122,9 @@ String? _coingeckoUrlFor(String coinId) {
       return 'https://assets.coingecko.com/coins/images/4128/large/solana.png';
     case 'TRX':
       return 'https://assets.coingecko.com/coins/images/1094/large/tron-logo.png';
-    case 'MATIC':
-      return 'https://assets.coingecko.com/coins/images/4713/large/polygon-matic-logo.png';
+    case 'POL':
+      // Polygon's POL token logo on CoinGecko (post-MATIC migration).
+      return 'https://assets.coingecko.com/coins/images/32440/large/polygon_token.png';
     default:
       return null;
   }
@@ -145,8 +146,8 @@ String? _assetFor(String coinId) {
       return 'assets/coins/sol.svg';
     case 'TRX':
       return 'assets/coins/trx.svg';
-    case 'MATIC':
-      return 'assets/coins/matic.svg';
+    case 'POL':
+      return 'assets/coins/pol.svg';
     default:
       return null;
   }

@@ -6,7 +6,7 @@
 ///
 ///   - chainId (1 for ETH, 137 for Polygon, etc.) — baked into the
 ///     EIP-1559 signing hash for replay protection
-///   - bech32 / display ticker (ETH vs MATIC vs BNB)
+///   - bech32 / display ticker (ETH vs POL vs BNB)
 ///   - block explorer endpoint (etherscan, polygonscan, …) — we use
 ///     the Blockscout instance when available
 ///   - default RPC endpoint
@@ -75,8 +75,12 @@ const kEthMainnet = EthereumNetwork(
 );
 
 const kPolygonMainnet = EthereumNetwork(
-  id: 'MATIC',
-  symbol: 'MATIC',
+  // Polygon migrated the native token from MATIC to POL in September
+  // 2024 (1:1 swap). We follow Cake Wallet and others in using POL as
+  // the canonical id/symbol going forward; legacy 'MATIC' coinIds in
+  // existing WalletMeta records get rewritten to 'POL' on load.
+  id: 'POL',
+  symbol: 'POL',
   name: 'Polygon',
   chainId: 137,
   blockscoutBaseUrl: 'https://polygon.blockscout.com/api',

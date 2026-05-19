@@ -1,19 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <circle cx="32" cy="32" r="32" fill="#EB0029"/>
-  <!-- Tron logo: a stylized triangular "T" formed by three faceted
-       triangles meeting at the bottom apex. Simplified into a
-       single hollow triangle with an inner divider. -->
-  <g fill="#FFFFFF">
-    <path d="M50 18 L14 22 L32 50 Z"
-          stroke="#FFFFFF"
-          stroke-width="2"
-          fill="none"
-          stroke-linejoin="round"/>
-    <!-- Inner divider line, from upper-right corner toward the apex. -->
-    <line x1="50" y1="18" x2="32" y2="50"
-          stroke="#FFFFFF" stroke-width="1.5"/>
-    <!-- Top-bar accent — small connector at the top-left of the T. -->
-    <line x1="14" y1="22" x2="32" y2="50"
-          stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.6"/>
+  <!-- Tron logo. The official mark is a geometric "T" formed inside a
+       triangular frame — three facets that meet at a downward-pointing
+       apex. Approximated here as: outer triangle outline + an internal
+       horizontal cross-cut that meets a vertical stem at the centroid,
+       producing the canonical T-letter inside the triangle. -->
+  <g stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round"
+     stroke-linecap="round" fill="none">
+    <path d="M50 18 L14 22 L32 50 Z"/>
+    <path d="M50 18 L32 32"/>
+    <path d="M14 22 L32 32"/>
+    <path d="M32 32 L32 50"/>
   </g>
 </svg>

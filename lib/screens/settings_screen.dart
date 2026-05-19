@@ -595,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: PeekColors.text2),
                       title: const Text('Custom RPC endpoints'),
                       subtitle: const Text(
-                        'Point BTC/LTC/BCH/ETH/MATIC/SOL/TRX at your '
+                        'Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your '
                         'own nodes instead of public defaults.',
                         style: TextStyle(color: PeekColors.text3, fontSize: 11),
                       ),

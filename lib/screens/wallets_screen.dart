@@ -148,7 +148,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
           fiatTokens = amount;
           break;
         case 'ETH':
-        case 'MATIC':
+        case 'POL':
           final eth = w as EthereumWallet;
           final wei = await eth.balanceWei();
           symbol = eth.network.symbol;
@@ -287,7 +287,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
                                 page = BitcoinCoinScreen(walletMeta: meta);
                                 break;
                               case 'ETH':
-                              case 'MATIC':
+                              case 'POL':
                                 page = EthereumCoinScreen(walletMeta: meta);
                                 break;
                               case 'SOL':

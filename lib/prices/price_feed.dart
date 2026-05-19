@@ -38,7 +38,7 @@ class PriceFeed extends ChangeNotifier {
     'BCH': 'bitcoin-cash',
     'SOL': 'solana',
     'TRX': 'tron',
-    'MATIC': 'matic-network',
+    'POL': 'polygon-ecosystem-token',
     'DOGE': 'dogecoin',
     // Stablecoins — required for ERC-20 token rows to show fiat.
     // Always ~$1 but querying explicitly handles depegs (rare) and
@@ -46,10 +46,10 @@ class PriceFeed extends ChangeNotifier {
     'USDT': 'tether',
     'USDC': 'usd-coin',
     'DAI': 'dai',
-    // Polygon ecosystem majors. WMATIC tracks MATIC; WETH tracks
-    // ETH. We list them separately so the row labels match the
-    // wallet's display symbol.
-    'WMATIC': 'matic-network',
+    // Polygon ecosystem majors. WMATIC tracks POL (post-migration);
+    // WETH tracks ETH. We list them separately so the row labels
+    // match the wallet's display symbol.
+    'WMATIC': 'polygon-ecosystem-token',
     'WETH': 'weth',
     'LINK': 'chainlink',
     'AAVE': 'aave',

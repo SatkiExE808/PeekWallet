@@ -114,17 +114,16 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
       final balance = await w.balanceLamports();
       final txes = await w.transactions();
       // Fan out SPL token balance fetches in parallel. Same pattern
-      // as the ERC-20 / TRC-20 paths — failures are quiet, missing
-      // tokens just don't appear.
+      // as the ERC-20 / TRC-20 paths — record every default token
+      // even with zero balance so a transient mainnet-beta failure
+      // doesn't hide the user's USDC/USDT row.
       final tokens = w.defaultTokens;
       final tokenResults = <String, BigInt>{};
       if (tokens.isNotEmpty) {
         final balances = await Future.wait(
             tokens.map((t) => w.tokenBalanceRaw(t)));
         for (var i = 0; i < tokens.length; i++) {
-          if (balances[i] > BigInt.zero) {
-            tokenResults[tokens[i].mint] = balances[i];
-          }
+          tokenResults[tokens[i].mint] = balances[i];
         }
       }
       // SPL token transfer history — fetched in parallel with the

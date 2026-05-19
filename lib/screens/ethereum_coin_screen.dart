@@ -92,7 +92,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
       // for now) — pick the module from coinId.
       final EvmCoinModule mod;
       switch (widget.walletMeta.coinId) {
-        case 'MATIC':
+        case 'POL':
           mod = const PolygonModule();
           break;
         case 'ETH':
@@ -126,15 +126,18 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
       // Fetch token balances in parallel for the merged default +
       // custom token list. Individual failures stay quiet (the
       // wallet's tokenBalanceRaw catches them and returns zero).
+      //
+      // Record every token even with zero balance so a transient RPC
+      // failure doesn't hide USDT/USDC etc. — users expect to always
+      // see their stablecoin rows; the alternative ("hide on zero")
+      // looks broken when the public RPC throttles us.
       final tokens = await w.tokensFor(widget.walletMeta.id);
       final tokenResults = <String, BigInt>{};
       if (tokens.isNotEmpty) {
         final balances = await Future.wait(
             tokens.map((t) => w.tokenBalanceRaw(t)));
         for (var i = 0; i < tokens.length; i++) {
-          if (balances[i] > BigInt.zero) {
-            tokenResults[tokens[i].contract] = balances[i];
-          }
+          tokenResults[tokens[i].contract] = balances[i];
         }
       }
 

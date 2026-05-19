@@ -61,13 +61,13 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
       hint: 'https://eth.blockscout.com/api',
     ),
     _RpcEntry(
-      coinId: 'MATIC',
+      coinId: 'POL',
       kind: 'rpc',
       label: 'Polygon JSON-RPC',
       hint: 'https://polygon-rpc.com',
     ),
     _RpcEntry(
-      coinId: 'MATIC',
+      coinId: 'POL',
       kind: 'explorer',
       label: 'Polygon explorer (Blockscout-compat)',
       hint: 'https://polygon.blockscout.com/api',

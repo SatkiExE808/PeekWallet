@@ -26,7 +26,7 @@ String? explorerTxUrl({required String coinId, required String txid}) {
       return 'https://litecoinspace.org/tx/$txid';
     case 'ETH':
       return 'https://etherscan.io/tx/$txid';
-    case 'MATIC':
+    case 'POL':
       return 'https://polygonscan.com/tx/$txid';
     case 'SOL':
       return 'https://solscan.io/tx/$txid';

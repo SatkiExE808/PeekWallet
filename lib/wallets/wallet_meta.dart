@@ -86,7 +86,12 @@ class WalletMeta {
   factory WalletMeta.fromJson(Map<String, dynamic> json) => WalletMeta(
         id: json['id'] as String,
         name: json['name'] as String,
-        coinId: json['coinId'] as String,
+        // Rename legacy 'MATIC' → 'POL' on load. Polygon migrated its
+        // native ticker in September 2024; any wallets created in
+        // earlier builds carry the old id. Remapping here keeps the
+        // user's existing wallet openable without any visible
+        // migration step.
+        coinId: _renameLegacy(json['coinId'] as String),
         format: SeedFormat.values
             .firstWhere((f) => f.name == json['format'] as String),
         createdAt: DateTime.parse(json['createdAt'] as String),
@@ -94,6 +99,11 @@ class WalletMeta {
         restoreHeight: json['restoreHeight'] as int?,
         order: (json['order'] as int?) ?? 0,
       );
+
+  static String _renameLegacy(String coinId) {
+    if (coinId == 'MATIC') return 'POL';
+    return coinId;
+  }
 }
 
 /// The encrypted seed material for a single wallet. Salt + nonce
