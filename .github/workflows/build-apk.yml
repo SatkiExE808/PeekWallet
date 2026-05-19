@@ -119,7 +119,13 @@ jobs:
           fi
 
       - name: Build release APK
-        run: flutter build apk --release
+        # BUILD_TIME is consumed by lib/util/update_checker.dart so the
+        # in-app "Check for updates" row can compare against the
+        # latest GitHub release's published_at and tell the user
+        # whether their APK is current.
+        run: |
+          BUILD_TIME=$(git log -1 --format=%aI)
+          flutter build apk --release --dart-define=BUILD_TIME="$BUILD_TIME"
 
       - name: Locate built APK
         id: apk

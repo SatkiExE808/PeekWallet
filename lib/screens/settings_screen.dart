@@ -8,6 +8,9 @@ import '../theme.dart';
 import '../util/peek_logger.dart';
 import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../util/update_checker.dart';
 import '../widgets/settings_row.dart';
 import 'about_screen.dart';
 import 'restore_all_from_vault_screen.dart';
@@ -550,6 +553,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             builder: (_) => const RpcOverridesScreen()),
                       ),
                     ),
+                    _UpdateCheckerRow(),
                     SettingsRow(
                       icon: Icons.info_outline_rounded,
                       title: 'About PeekWallet',
@@ -562,6 +566,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// Settings row that probes GitHub releases for a newer APK and
+/// surfaces "Up to date" / "Update available" inline. On tap of an
+/// "Update available" row, opens the APK download URL in the system
+/// browser — Android can't silently install (that needs device-admin
+/// privileges) but a one-tap "download → install" beats the user
+/// not knowing an update exists.
+class _UpdateCheckerRow extends StatefulWidget {
+  @override
+  State<_UpdateCheckerRow> createState() => _UpdateCheckerRowState();
+}
+
+class _UpdateCheckerRowState extends State<_UpdateCheckerRow> {
+  bool _busy = false;
+  UpdateCheckResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _result = UpdateChecker.I.lastResult;
+    // Auto-check on first open of Settings so the row arrives with
+    // a meaningful subtitle. Backgrounded — UI renders "Checking…"
+    // until the future resolves.
+    if (_result == null) {
+      _check();
+    }
+  }
+
+  Future<void> _check() async {
+    if (!mounted) return;
+    setState(() => _busy = true);
+    final r = await UpdateChecker.I.check();
+    if (!mounted) return;
+    setState(() {
+      _result = r;
+      _busy = false;
+    });
+  }
+
+  Future<void> _openDownload(String url) async {
+    try {
+      await launchUrl(Uri.parse(url),
+          mode: LaunchMode.externalApplication);
+    } catch (_) {/* swallow — browser failure isn't actionable */}
+  }
+
+  String _subtitle() {
+    if (_busy) return 'Checking GitHub…';
+    final r = _result;
+    if (r == null) return 'Tap to check';
+    if (r.hasError) return r.error ?? 'Check failed';
+    if (r.isUpdateAvailable) {
+      final ago = _ago(r.latestReleaseAt!);
+      return 'Update available — released $ago. Tap to download.';
+    }
+    if (r.currentBuildTime == null) {
+      return 'Debug build — version check disabled. Tap to retry.';
+    }
+    return 'Up to date · checked just now';
+  }
+
+  String _ago(DateTime then) {
+    final d = DateTime.now().toUtc().difference(then.toUtc());
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+    if (d.inHours < 24) return '${d.inHours} h ago';
+    return '${d.inDays} d ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = _result;
+    final iconAccent = r != null && r.isUpdateAvailable;
+    return SettingsRow(
+      icon: iconAccent
+          ? Icons.system_update_rounded
+          : Icons.cloud_download_outlined,
+      title: 'Check for updates',
+      subtitle: _subtitle(),
+      iconAccent: iconAccent,
+      onTap: _busy
+          ? null
+          : () {
+              if (r != null && r.isUpdateAvailable) {
+                final url = r.assetUrl ?? r.releaseUrl;
+                if (url != null) {
+                  _openDownload(url);
+                  return;
+                }
+              }
+              _check();
+            },
     );
   }
 }
