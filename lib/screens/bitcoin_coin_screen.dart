@@ -15,6 +15,7 @@ import '../wallets/wallet_store.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
+import '../widgets/coin_screen_widgets.dart';
 import 'send_bitcoin_screen.dart';
 
 /// Bitcoin coin page. Separate from CoinScreen (which is Monero-
@@ -293,133 +294,263 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
           onRefresh: _refresh,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(PeekDesign.sp4, PeekDesign.sp3,
+                PeekDesign.sp4, PeekDesign.sp4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    coinAvatar(_symbol),
-                    const SizedBox(width: 12),
-                    Text(
-                      '$_symbol balance',
-                      style: const TextStyle(
-                          color: PeekColors.text2, fontSize: 13),
-                    ),
-                    const Spacer(),
-                    if (_refreshing)
-                      const SizedBox(
-                        width: 16, height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: PeekColors.accent),
+                // Hero balance card — gradient surface + soft accent
+                // glow + big balance with fiat. Replaces the
+                // previously-flat avatar + label + number stack.
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                  decoration: BoxDecoration(
+                    borderRadius: PeekDesign.brHero,
+                    gradient: PeekDesign.surfaceGradient,
+                    border: Border.all(color: PeekColors.border, width: 1),
+                    boxShadow: PeekDesign.cardShadow,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          coinAvatar(_symbol, radius: 22),
+                          const SizedBox(width: PeekDesign.sp3),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _coinName,
+                                  style: const TextStyle(
+                                    color: PeekColors.text,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.1,
+                                  ),
+                                ),
+                                Text(
+                                  '$_symbol balance',
+                                  style: const TextStyle(
+                                      color: PeekColors.text3,
+                                      fontSize: 11,
+                                      letterSpacing: 0.3),
+                                ),
+                              ],
+                            ),
+                          ),
+                          AnimatedSwitcher(
+                            duration: PeekDesign.tFast,
+                            child: _refreshing
+                                ? Container(
+                                    key: const ValueKey('spin'),
+                                    width: 28,
+                                    height: 28,
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: PeekColors.surface2,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: PeekColors.accent),
+                                  )
+                                : const SizedBox(
+                                    key: ValueKey('none'), width: 28),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _balanceText(),
-                  style: const TextStyle(
-                      fontSize: 32, fontWeight: FontWeight.w700),
-                ),
-                AnimatedBuilder(
-                  animation: PriceFeed.I,
-                  builder: (_, _) {
-                    if (_balanceSat == 0) return const SizedBox.shrink();
-                    final fiat = PriceFeed.I.formatFiat(
-                        _symbol, _balanceSat / 100000000.0);
-                    if (fiat.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text('≈ $fiat',
+                      const SizedBox(height: PeekDesign.sp5),
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.95, end: 1.0),
+                        duration: PeekDesign.tMed,
+                        curve: PeekDesign.easeOut,
+                        builder: (_, t, child) => Opacity(
+                          opacity: t,
+                          child: child,
+                        ),
+                        child: Text(
+                          _balanceText(),
                           style: const TextStyle(
-                              color: PeekColors.text2, fontSize: 13)),
-                    );
-                  },
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.7,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                      AnimatedBuilder(
+                        animation: PriceFeed.I,
+                        builder: (_, _) {
+                          if (_balanceSat == 0) {
+                            return const SizedBox(height: 4);
+                          }
+                          final fiat = PriceFeed.I.formatFiat(
+                              _symbol, _balanceSat / 100000000.0);
+                          if (fiat.isEmpty) return const SizedBox(height: 4);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              fiat,
+                              style: const TextStyle(
+                                  color: PeekColors.text2,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        },
+                      ),
+                      if (_balanceFromCacheAt != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: PeekDesign.sp3),
+                          child: StatusPill(
+                            text:
+                                'Cached · ${_relTime(_balanceFromCacheAt!)}',
+                            color: PeekColors.accent,
+                            icon: Icons.cloud_off_rounded,
+                          ),
+                        ),
+                      if (_err != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: PeekDesign.sp3),
+                          child: StatusPill(
+                            text: _err!,
+                            color: PeekColors.red,
+                            icon: Icons.error_outline_rounded,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                if (_balanceFromCacheAt != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '⚠ Showing cached value (${_relTime(_balanceFromCacheAt!)}). '
-                      'Live fetch failed — retry or check Custom RPC endpoints.',
-                      style: const TextStyle(
-                          color: PeekColors.accent, fontSize: 11),
-                    ),
-                  ),
-                if (_err != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('Error: $_err',
-                        style: const TextStyle(
-                            color: PeekColors.red, fontSize: 11)),
-                  ),
-                const SizedBox(height: 20),
+                const SizedBox(height: PeekDesign.sp4),
                 if (w != null)
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _showReceiveSheet,
-                          icon: const Icon(Icons.qr_code, size: 18),
-                          label: const Text('Receive'),
+                        child: ActionButton(
+                          icon: Icons.qr_code_rounded,
+                          label: 'Receive',
+                          primary: false,
+                          onTap: _showReceiveSheet,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: PeekDesign.sp3),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _balanceSat == 0
+                        child: ActionButton(
+                          icon: Icons.arrow_upward_rounded,
+                          label: 'Send',
+                          primary: true,
+                          onTap: _balanceSat == 0
                               ? null
                               : () => _openSendScreen(w),
-                          icon: const Icon(Icons.arrow_upward, size: 18),
-                          label: const Text('Send'),
                         ),
                       ),
                     ],
                   ),
-                if (w != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'Send is experimental — test with small amounts before '
-                    'sending large sums. Source-audit the BIP143 signer if '
-                    'you\'re moving meaningful $_symbol.',
-                    style: const TextStyle(
-                        color: PeekColors.text3, fontSize: 11),
-                  ),
-                ],
-                const SizedBox(height: 20),
+                const SizedBox(height: PeekDesign.sp6),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Transactions',
-                        style:
-                            TextStyle(color: PeekColors.text2, fontSize: 12),
-                      ),
+                    const Text(
+                      'Activity',
+                      style: TextStyle(
+                          color: PeekColors.text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1),
                     ),
+                    const SizedBox(width: PeekDesign.sp2),
                     if (_txes.isNotEmpty)
-                      Text(
-                        '${_txes.length} total',
-                        style: const TextStyle(
-                            color: PeekColors.text3, fontSize: 11),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: PeekColors.surface2,
+                          borderRadius: PeekDesign.brPill,
+                        ),
+                        child: Text(
+                          '${_txes.length}',
+                          style: const TextStyle(
+                              color: PeekColors.text2,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500),
+                        ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: PeekDesign.sp3),
                 if (_txes.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      _wallet == null
-                          ? 'Loading…'
-                          : 'No transactions yet — give your receive '
-                              'address to a sender, refresh, and incoming '
-                              '$_symbol appears here.',
-                      style: const TextStyle(
-                          color: PeekColors.text3, fontSize: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: PeekColors.surface.withAlpha(120),
+                      borderRadius: PeekDesign.brCard,
+                      border: Border.all(color: PeekColors.hairline),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _wallet == null
+                              ? Icons.hourglass_top_rounded
+                              : Icons.inbox_rounded,
+                          size: 28,
+                          color: PeekColors.text3,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _wallet == null
+                              ? 'Loading…'
+                              : 'No transactions yet',
+                          style: const TextStyle(
+                              color: PeekColors.text2,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500),
+                        ),
+                        if (_wallet != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Share your address to receive $_symbol',
+                            style: const TextStyle(
+                                color: PeekColors.text3, fontSize: 11),
+                          ),
+                        ],
+                      ],
                     ),
                   )
                 else
                   for (final tx in _txes) _BtcTxRow(tx: tx, symbol: _symbol),
+                if (w != null) ...[
+                  const SizedBox(height: PeekDesign.sp5),
+                  Container(
+                    padding: const EdgeInsets.all(PeekDesign.sp3),
+                    decoration: BoxDecoration(
+                      color: PeekColors.surface2,
+                      borderRadius: PeekDesign.brSmall,
+                      border: Border.all(color: PeekColors.hairline),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield_outlined,
+                            size: 14, color: PeekColors.text3),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Send is experimental — test with small amounts '
+                            'before moving meaningful $_symbol.',
+                            style: const TextStyle(
+                                color: PeekColors.text3,
+                                fontSize: 11,
+                                height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -428,6 +559,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
     );
   }
 }
+
 
 class _BtcTxRow extends StatelessWidget {
   const _BtcTxRow({required this.tx, required this.symbol});

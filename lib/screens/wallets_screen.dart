@@ -247,9 +247,11 @@ class _WalletsScreenState extends State<WalletsScreen> {
                 final cache = cacheSnap.data ?? const {};
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                      horizontal: PeekDesign.sp4,
+                      vertical: PeekDesign.sp3),
                   itemCount: entries.length + 1,
-                  separatorBuilder: (_, _) => const SizedBox(height: 6),
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: PeekDesign.sp2),
                   itemBuilder: (_, i) {
                     if (i == 0) {
                       return _PortfolioHeader(
@@ -258,26 +260,13 @@ class _WalletsScreenState extends State<WalletsScreen> {
                     final meta = entries[i - 1];
                     final coin = coinModuleFor(meta.coinId);
                     final cached = cache[meta.id];
-                    return Card(
-                  child: ListTile(
-                    leading: coinAvatar(meta.coinId),
-                    title: Text(meta.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: cached != null
-                        ? Text(
-                            '${cached.displayAmount}'
-                            '${cached.fiatValue > 0 ? ' · ${_fmtFiat(cached.fiatValue, cached.fiatCurrency)}' : ''}',
-                            style: const TextStyle(
-                                color: PeekColors.text2, fontSize: 12),
-                          )
-                        : Text(
-                            '${coin?.symbol ?? meta.coinId} · ${meta.format.displayName}',
-                            style: const TextStyle(
-                                color: PeekColors.text2, fontSize: 12),
-                          ),
-                    trailing: const Icon(Icons.chevron_right,
-                        color: PeekColors.text3),
-                    onTap: coin == null
+                    return _WalletRow(
+                      meta: meta,
+                      coinSymbol: coin?.symbol ?? meta.coinId,
+                      formatName: meta.format.displayName,
+                      cached: cached,
+                      onLongPress: () => _showWalletMenu(meta),
+                      onTap: coin == null
                         ? null
                         : () {
                             late final Widget page;
@@ -309,11 +298,9 @@ class _WalletsScreenState extends State<WalletsScreen> {
                               MaterialPageRoute(builder: (_) => page),
                             );
                           },
-                    onLongPress: () => _showWalletMenu(meta),
-                  ),
+                    );
+                  },
                 );
-              },
-            );
               },
             );
           },
@@ -477,62 +464,203 @@ class _PortfolioHeader extends StatelessWidget {
           final c = cache[meta.id];
           if (c == null) continue;
           counted++;
-          // If the cached entry is in a different fiat than the
-          // user's current preference, skip rather than show a wrong
-          // total. The number will populate after the next wallet
-          // refresh in the new currency.
           if (c.fiatCurrency == currency && c.fiatValue > 0) {
             total += c.fiatValue;
           }
         }
-        return Card(
-          color: PeekColors.surface,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Total portfolio',
-                        style: TextStyle(
-                            color: PeekColors.text2, fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        total > 0
-                            ? _WalletsScreenState._fmtFiat(total, currency)
-                                .replaceFirst('≈ ', '')
-                            : '—',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+        return Container(
+          margin: const EdgeInsets.fromLTRB(
+              0, PeekDesign.sp2, 0, PeekDesign.sp4),
+          padding: const EdgeInsets.fromLTRB(
+              20, 22, 20, 20),
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brHero,
+            gradient: PeekDesign.surfaceGradient,
+            border: Border.all(
+              color: PeekColors.border,
+              width: 1,
+            ),
+            boxShadow: PeekDesign.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Total balance',
+                    style: TextStyle(
+                        color: PeekColors.text2,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: PeekColors.surface2,
+                      borderRadius: PeekDesign.brPill,
+                      border: Border.all(color: PeekColors.border),
+                    ),
+                    child: Text(
+                      '$counted / ${entries.length} synced',
+                      style: const TextStyle(
+                          color: PeekColors.text2,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: PeekDesign.tMed,
+                curve: PeekDesign.easeOut,
+                builder: (_, t, _) => Opacity(
+                  opacity: t,
+                  child: Text(
+                    total > 0
+                        ? _WalletsScreenState._fmtFiat(total, currency)
+                            .replaceFirst('≈ ', '')
+                        : '—',
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.8,
+                      height: 1.1,
+                    ),
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '$counted of ${entries.length}',
-                      style: const TextStyle(
-                          color: PeekColors.text3, fontSize: 11),
-                    ),
-                    const Text('wallets cached',
-                        style: TextStyle(
-                            color: PeekColors.text3, fontSize: 11)),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'across ${entries.length} wallet${entries.length == 1 ? '' : 's'}',
+                style: const TextStyle(
+                    color: PeekColors.text3,
+                    fontSize: 12),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Single wallet row in the home list. Premium spacing, larger
+/// avatar, two-line subtitle separating the live balance from the
+/// network/format hint.
+class _WalletRow extends StatelessWidget {
+  const _WalletRow({
+    required this.meta,
+    required this.coinSymbol,
+    required this.formatName,
+    required this.cached,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final WalletMeta meta;
+  final String coinSymbol;
+  final String formatName;
+  final CachedBalance? cached;
+  final VoidCallback? onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBalance = cached != null;
+    return Material(
+      color: PeekColors.surface,
+      borderRadius: PeekDesign.brCard,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: PeekDesign.brCard,
+        splashColor: PeekColors.accentMuted,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brCard,
+            border: Border.all(color: PeekColors.hairline, width: 1),
+          ),
+          padding: const EdgeInsets.symmetric(
+              horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
+          child: Row(
+            children: [
+              coinAvatar(meta.coinId, radius: 22),
+              const SizedBox(width: PeekDesign.sp4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      meta.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: PeekColors.text,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasBalance
+                          ? cached!.displayAmount
+                          : '$coinSymbol · $formatName',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: PeekColors.text2,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: PeekDesign.sp3),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasBalance && cached!.fiatValue > 0)
+                    Text(
+                      _WalletsScreenState._fmtFiat(
+                              cached!.fiatValue, cached!.fiatCurrency)
+                          .replaceFirst('≈ ', ''),
+                      style: const TextStyle(
+                        color: PeekColors.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    const Text('—',
+                        style: TextStyle(
+                            color: PeekColors.text3, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text(
+                    coinSymbol,
+                    style: const TextStyle(
+                      color: PeekColors.text3,
+                      fontSize: 11,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: PeekDesign.sp2),
+              const Icon(Icons.chevron_right,
+                  color: PeekColors.text3, size: 18),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -549,25 +677,60 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.account_balance_wallet_outlined,
-                size: 56, color: PeekColors.text3),
-            const SizedBox(height: 16),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    PeekColors.accent.withAlpha(48),
+                    PeekColors.accent.withAlpha(0),
+                  ],
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: PeekColors.surface2,
+                  border: Border.all(color: PeekColors.border),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 32,
+                  color: PeekColors.accent,
+                ),
+              ),
+            ),
+            const SizedBox(height: PeekDesign.sp5),
             const Text(
               'No wallets yet',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: PeekDesign.sp2),
             const Text(
-              'Create a fresh wallet or restore an existing one from a '
-              'recovery phrase / keys.',
+              'Create a fresh wallet or restore from a recovery phrase '
+              'to get started.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: PeekColors.text2, fontSize: 13),
+              style: TextStyle(
+                  color: PeekColors.text2, fontSize: 13, height: 1.4),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add),
-              label: const Text('Add wallet'),
+            const SizedBox(height: PeekDesign.sp6),
+            SizedBox(
+              width: 220,
+              child: ElevatedButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add wallet'),
+              ),
             ),
           ],
         ),

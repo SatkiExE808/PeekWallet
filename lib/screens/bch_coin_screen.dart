@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
+import '../widgets/coin_screen_widgets.dart';
 import 'send_bch_screen.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
@@ -263,85 +264,142 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
           onRefresh: _refresh,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(PeekDesign.sp4, PeekDesign.sp3,
+                PeekDesign.sp4, PeekDesign.sp4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    coinAvatar('BCH'),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'BCH balance',
-                      style:
-                          TextStyle(color: PeekColors.text2, fontSize: 13),
-                    ),
-                    const Spacer(),
-                    if (_refreshing)
-                      const SizedBox(
-                        width: 16, height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: PeekColors.accent),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                  decoration: BoxDecoration(
+                    borderRadius: PeekDesign.brHero,
+                    gradient: PeekDesign.surfaceGradient,
+                    border: Border.all(color: PeekColors.border, width: 1),
+                    boxShadow: PeekDesign.cardShadow,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          coinAvatar('BCH', radius: 22),
+                          const SizedBox(width: PeekDesign.sp3),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bitcoin Cash',
+                                  style: TextStyle(
+                                    color: PeekColors.text,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.1,
+                                  ),
+                                ),
+                                Text(
+                                  'BCH balance',
+                                  style: TextStyle(
+                                      color: PeekColors.text3,
+                                      fontSize: 11,
+                                      letterSpacing: 0.3),
+                                ),
+                              ],
+                            ),
+                          ),
+                          AnimatedSwitcher(
+                            duration: PeekDesign.tFast,
+                            child: _refreshing
+                                ? Container(
+                                    key: const ValueKey('spin'),
+                                    width: 28,
+                                    height: 28,
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: PeekColors.surface2,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: PeekColors.accent),
+                                  )
+                                : const SizedBox(
+                                    key: ValueKey('none'), width: 28),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _balanceText(),
-                  style: const TextStyle(
-                      fontSize: 32, fontWeight: FontWeight.w700),
-                ),
-                AnimatedBuilder(
-                  animation: PriceFeed.I,
-                  builder: (_, _) {
-                    if (_balanceSat == 0) return const SizedBox.shrink();
-                    final fiat = PriceFeed.I.formatFiat(
-                        'BCH', _balanceSat / 100000000.0);
-                    if (fiat.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text('≈ $fiat',
-                          style: const TextStyle(
-                              color: PeekColors.text2, fontSize: 13)),
-                    );
-                  },
-                ),
-                if (_balanceFromCacheAt != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '⚠ Cached value (${_relTime(_balanceFromCacheAt!)}). '
-                      'Live fetch failed — retry or set a Custom RPC.',
-                      style: const TextStyle(
-                          color: PeekColors.accent, fontSize: 11),
-                    ),
-                  ),
-                if (_err != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(_err!,
+                      const SizedBox(height: PeekDesign.sp5),
+                      Text(
+                        _balanceText(),
                         style: const TextStyle(
-                            color: PeekColors.red, fontSize: 11)),
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.7,
+                          height: 1.1,
+                        ),
+                      ),
+                      AnimatedBuilder(
+                        animation: PriceFeed.I,
+                        builder: (_, _) {
+                          if (_balanceSat == 0) return const SizedBox(height: 4);
+                          final fiat = PriceFeed.I.formatFiat(
+                              'BCH', _balanceSat / 100000000.0);
+                          if (fiat.isEmpty) return const SizedBox(height: 4);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              fiat,
+                              style: const TextStyle(
+                                  color: PeekColors.text2,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        },
+                      ),
+                      if (_balanceFromCacheAt != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: PeekDesign.sp3),
+                          child: StatusPill(
+                            text:
+                                'Cached · ${_relTime(_balanceFromCacheAt!)}',
+                            color: PeekColors.accent,
+                            icon: Icons.cloud_off_rounded,
+                          ),
+                        ),
+                      if (_err != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: PeekDesign.sp3),
+                          child: StatusPill(
+                            text: _err!,
+                            color: PeekColors.red,
+                            icon: Icons.error_outline_rounded,
+                          ),
+                        ),
+                    ],
                   ),
-                const SizedBox(height: 20),
+                ),
+                const SizedBox(height: PeekDesign.sp4),
                 if (w != null)
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _showReceiveSheet,
-                          icon: const Icon(Icons.qr_code, size: 18),
-                          label: const Text('Receive'),
+                        child: ActionButton(
+                          icon: Icons.qr_code_rounded,
+                          label: 'Receive',
+                          primary: false,
+                          onTap: _showReceiveSheet,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: PeekDesign.sp3),
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _balanceSat == 0
+                        child: ActionButton(
+                          icon: Icons.arrow_upward_rounded,
+                          label: 'Send',
+                          primary: true,
+                          onTap: _balanceSat == 0
                               ? null
                               : () => _openSendScreen(w),
-                          icon: const Icon(Icons.arrow_upward, size: 18),
-                          label: const Text('Send'),
                         ),
                       ),
                     ],
