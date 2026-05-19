@@ -155,9 +155,17 @@ class EthereumWallet {
   /// Returns a double for display only; for arithmetic on amounts
   /// you'd want BigInt to avoid precision loss on tokens with 18+
   /// decimals + large balances.
+  ///
+  /// We split into whole + fractional parts before converting to
+  /// double, otherwise `raw.toDouble()` on a 10^24-class wei value
+  /// (1M of an 18-decimal token) loses ~10^8 bits of significance
+  /// long before the UI rounds to 4-6 decimals.
   double tokenBalanceDisplay(BigInt raw, Erc20Token token) {
-    return raw.toDouble() /
-        BigInt.from(10).pow(token.decimals).toDouble();
+    final scale = BigInt.from(10).pow(token.decimals);
+    final whole = raw ~/ scale;
+    final frac = raw % scale;
+    return whole.toDouble() +
+        frac.toDouble() / scale.toDouble();
   }
 
   /// Default token list for this wallet's chain (hardcoded

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../coins/coin_module.dart';
 import '../../coins/module_registry.dart';
 import '../../theme.dart';
+import '../../util/coin_avatar.dart';
 import '../../util/screenshot_guard.dart';
 import '../../util/sensitive_clipboard.dart';
 import '../../vault/vault_state.dart';
@@ -31,23 +32,63 @@ class AddWalletFlow extends StatelessWidget {
       appBar: AppBar(title: const Text('Choose coin')),
       body: SafeArea(
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
           itemCount: kCoinModules.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 6),
+          separatorBuilder: (_, _) =>
+              const SizedBox(height: PeekDesign.sp2),
           itemBuilder: (_, i) {
             final c = kCoinModules[i];
-            return Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: c.color,
-                  child: Icon(c.icon, color: Colors.white),
-                ),
-                title: Text(c.name),
-                subtitle: Text(c.symbol,
-                    style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
-                trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
+            return Material(
+              color: PeekColors.surface,
+              borderRadius: PeekDesign.brCard,
+              child: InkWell(
+                borderRadius: PeekDesign.brCard,
+                splashColor: PeekColors.accentMuted,
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AddWalletActionPicker(coin: c)),
+                  MaterialPageRoute(
+                      builder: (_) => AddWalletActionPicker(coin: c)),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: PeekDesign.brCard,
+                    border: Border.all(
+                        color: PeekColors.hairline, width: 1),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: PeekDesign.sp4,
+                      vertical: PeekDesign.sp3),
+                  child: Row(
+                    children: [
+                      coinAvatar(c.id, radius: 22),
+                      const SizedBox(width: PeekDesign.sp4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(c.name,
+                                style: const TextStyle(
+                                  color: PeekColors.text,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.1,
+                                )),
+                            const SizedBox(height: 2),
+                            Text(
+                              c.symbol,
+                              style: const TextStyle(
+                                color: PeekColors.text3,
+                                fontSize: 11,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right,
+                          color: PeekColors.text3, size: 18),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -139,17 +180,59 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: PeekColors.accent),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(subtitle,
-              style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
+    return Material(
+      color: PeekColors.surface,
+      borderRadius: PeekDesign.brCard,
+      child: InkWell(
+        borderRadius: PeekDesign.brCard,
+        splashColor: PeekColors.accentMuted,
         onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brCard,
+            border: Border.all(color: PeekColors.hairline, width: 1),
+          ),
+          padding: const EdgeInsets.fromLTRB(PeekDesign.sp4,
+              PeekDesign.sp4, PeekDesign.sp4, PeekDesign.sp4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: PeekColors.accentMuted,
+                  borderRadius: PeekDesign.brSmall,
+                ),
+                child: Icon(icon, color: PeekColors.accent, size: 20),
+              ),
+              const SizedBox(width: PeekDesign.sp3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            color: PeekColors.text,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.1)),
+                    const SizedBox(height: 4),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            color: PeekColors.text2,
+                            fontSize: 12,
+                            height: 1.4)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: PeekDesign.sp2),
+              const Icon(Icons.chevron_right,
+                  color: PeekColors.text3, size: 18),
+            ],
+          ),
+        ),
       ),
     );
   }

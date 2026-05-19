@@ -325,7 +325,10 @@ class MoneroModule implements CoinModule {
       final f = File('$walletPath$suffix');
       try {
         if (f.existsSync()) f.deleteSync();
-      } catch (_) {/* best effort, falls through to the parent-dir wipe */}
+      } catch (e) {
+        PeekLogger.I.log('xmr',
+            'wipe: failed to delete ${f.path}: $e (falling back to parent-dir wipe)');
+      }
     }
 
     // Verify monero_c agrees the wallet is gone. If walletExists()
@@ -342,12 +345,20 @@ class MoneroModule implements CoinModule {
         unawaited(Future(() {
           try {
             quarantine.deleteSync(recursive: true);
-          } catch (_) {/* leak the dir; next boot can clean it up */}
+          } catch (e) {
+            PeekLogger.I.log('xmr',
+                'wipe: leaked quarantine dir ${quarantine.path}: $e');
+          }
         }));
-      } catch (_) {
+      } catch (e) {
+        PeekLogger.I.log('xmr',
+            'wipe: quarantine rename failed for ${dir.path}: $e (trying recursive delete)');
         try {
           dir.deleteSync(recursive: true);
-        } catch (_) {/* best effort */}
+        } catch (e2) {
+          PeekLogger.I.log('xmr',
+              'wipe: recursive delete also failed for ${dir.path}: $e2 — wallet may launch with half-recreated dirs');
+        }
       }
       // Recreate the parent so _walletPathFor's existsSync() check
       // doesn't trigger a second createSync.

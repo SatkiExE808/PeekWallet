@@ -159,9 +159,13 @@ class SolanaWallet {
 
   /// Raw → display unit conversion. SPL token decimals come from the
   /// catalog (USDC/USDT = 6); returned as double for display only.
+  /// Splits whole and fractional parts before the BigInt→double
+  /// downcast to keep large balances precise (matches the ETH path).
   double tokenBalanceDisplay(BigInt raw, SplToken token) {
-    return raw.toDouble() /
-        BigInt.from(10).pow(token.decimals).toDouble();
+    final scale = BigInt.from(10).pow(token.decimals);
+    final whole = raw ~/ scale;
+    final frac = raw % scale;
+    return whole.toDouble() + frac.toDouble() / scale.toDouble();
   }
 
   /// Default SPL token list. Future Settings → Custom Tokens would

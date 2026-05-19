@@ -269,8 +269,17 @@ class BitcoinWallet {
     );
     final txid = await _client.broadcast(built.rawHex);
     if (txid != built.txid) {
+      // A divergent txid means either the wire bytes got modified in
+      // flight (malleation, suspect explorer, MITM) OR our local hash
+      // is buggy. Either way it's not safe to silently accept — the
+      // user should know they should look up the broadcast txid
+      // directly rather than trust the local one.
       PeekLogger.I.log(logTag,
-          'WARNING: explorer returned txid $txid but we computed ${built.txid}');
+          'TXID MISMATCH: local=${built.txid} explorer=$txid');
+      throw Exception(
+          'Broadcast succeeded but the explorer returned a different txid '
+          '($txid) than we computed (${built.txid}). Verify on a second '
+          'explorer before trusting either value.');
     }
     return built;
   }

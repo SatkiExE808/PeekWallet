@@ -128,10 +128,14 @@ class TronWallet {
 
   /// Display units = raw / 10^decimals. Returned as double for UI
   /// formatting only; arithmetic on amounts should stay on BigInt
-  /// to avoid the 53-bit precision cliff.
+  /// to avoid the 53-bit precision cliff. Split whole/fractional
+  /// parts before downcast so balances past 2^53 base units (e.g.
+  /// a million TRC-20 token with 6 decimals) stay precise.
   double tokenBalanceDisplay(BigInt raw, Trc20Token token) {
-    return raw.toDouble() /
-        BigInt.from(10).pow(token.decimals).toDouble();
+    final scale = BigInt.from(10).pow(token.decimals);
+    final whole = raw ~/ scale;
+    final frac = raw % scale;
+    return whole.toDouble() + frac.toDouble() / scale.toDouble();
   }
 
   /// Default TRC-20 token list. Future Settings → Custom Tokens
