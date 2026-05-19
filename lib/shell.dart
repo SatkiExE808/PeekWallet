@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'theme.dart';
-import 'screens/home_screen.dart';
 import 'screens/wallets_screen.dart';
 import 'screens/settings_screen.dart';
 
-/// The persistent app shell — three bottom tabs (Home / Wallets /
-/// Settings) that match the existing vault-wallet's information
-/// architecture. Each tab keeps its own navigation stack so deep
-/// pushes (e.g. coin detail) don't bleed across tabs.
+/// The persistent app shell — two bottom tabs (Wallets / Settings).
+/// The Wallets tab carries the portfolio hero + per-wallet list, so
+/// there's no separate "Home" landing — that was a vault-wallet
+/// holdover stub from early development. Each tab keeps its own
+/// navigation stack so deep pushes (e.g. coin detail) don't bleed
+/// across tabs.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -20,7 +21,6 @@ class _AppShellState extends State<AppShell> {
   int _index = 0;
 
   static const _tabs = [
-    _Tab('Home', Icons.home_outlined, Icons.home, HomeScreen()),
     _Tab('Wallets', Icons.account_balance_wallet_outlined,
         Icons.account_balance_wallet, WalletsScreen()),
     _Tab('Settings', Icons.settings_outlined, Icons.settings, SettingsScreen()),

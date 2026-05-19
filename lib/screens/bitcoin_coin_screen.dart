@@ -70,9 +70,16 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
           RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
       if (m != null) {
         final coins = double.tryParse(m.group(1)!) ?? 0;
+        final age = DateTime.now().difference(cached.updatedAt);
         setState(() {
           _balanceSat = (coins * 100000000).round();
-          _balanceFromCacheAt = cached.updatedAt;
+          // Only flag as "cached" when the value is actually stale.
+          // The wallets-list auto-refresh writes a fresh snapshot
+          // every minute or so, so almost every wallet open hits a
+          // <60s cache — showing a "Cached 1 min ago" pill on those
+          // is noise, not signal.
+          _balanceFromCacheAt =
+              age > const Duration(seconds: 60) ? cached.updatedAt : null;
         });
       }
     }

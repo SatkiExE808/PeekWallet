@@ -69,9 +69,11 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
           RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
       if (m != null) {
         final trx = double.tryParse(m.group(1)!) ?? 0;
+        final age = DateTime.now().difference(cached.updatedAt);
         setState(() {
           _balanceSun = (trx * 1000000).round();
-          _balanceFromCacheAt = cached.updatedAt;
+          _balanceFromCacheAt =
+              age > const Duration(seconds: 60) ? cached.updatedAt : null;
         });
       }
     }

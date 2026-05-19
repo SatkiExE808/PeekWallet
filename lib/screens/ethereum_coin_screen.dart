@@ -85,9 +85,11 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         final wei =
             BigInt.tryParse(weiStr.replaceFirst(RegExp(r'^0+'), '')) ??
                 BigInt.zero;
+        final age = DateTime.now().difference(cached.updatedAt);
         setState(() {
           _balanceWei = wei;
-          _balanceFromCacheAt = cached.updatedAt;
+          _balanceFromCacheAt =
+              age > const Duration(seconds: 60) ? cached.updatedAt : null;
         });
       }
     }

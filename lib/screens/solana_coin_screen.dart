@@ -70,9 +70,11 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
           RegExp(r'([0-9]+\.[0-9]+)').firstMatch(cached.displayAmount);
       if (m != null) {
         final sol = double.tryParse(m.group(1)!) ?? 0;
+        final age = DateTime.now().difference(cached.updatedAt);
         setState(() {
           _balanceLamports = (sol * 1000000000).round();
-          _balanceFromCacheAt = cached.updatedAt;
+          _balanceFromCacheAt =
+              age > const Duration(seconds: 60) ? cached.updatedAt : null;
         });
       }
     }
