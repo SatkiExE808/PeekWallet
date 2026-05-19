@@ -16,9 +16,11 @@ import '../util/explorer_links.dart';
 import '../util/peek_logger.dart';
 import '../wallets/balance_cache.dart';
 import '../theme.dart';
+import '../util/coin_avatar.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../widgets/coin_screen_widgets.dart';
 import 'send_xmr_screen.dart';
 
 /// Coin detail page. For Monero, shows the live native-engine balance
@@ -357,18 +359,6 @@ class _CoinScreenState extends State<CoinScreen> {
     );
   }
 
-  String _fmtHeight(int h) {
-    if (h == 0) return '—';
-    // Thousand-separators so 3,795,210 is readable at a glance.
-    final s = h.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
-      buf.write(s[i]);
-    }
-    return buf.toString();
-  }
-
   /// Snapshot the current balance into the wallets-list cache so
   /// the wallets-list subtitle + portfolio total can render without
   /// re-fetching. No-op if balance is null (wallet still loading)
@@ -496,103 +486,133 @@ class _CoinScreenState extends State<CoinScreen> {
           color: PeekColors.accent,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(PeekDesign.sp4, PeekDesign.sp3,
+                PeekDesign.sp4, PeekDesign.sp4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: widget.coin.color,
-                    radius: 18,
-                    child: Icon(widget.coin.icon, color: Colors.white, size: 18),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                  decoration: BoxDecoration(
+                    borderRadius: PeekDesign.brHero,
+                    gradient: PeekDesign.surfaceGradient,
+                    border: Border.all(color: PeekColors.border, width: 1),
+                    boxShadow: PeekDesign.cardShadow,
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${widget.coin.symbol} balance',
-                    style: const TextStyle(color: PeekColors.text2, fontSize: 13),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _balanceText(),
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
-              ),
-              // Fiat conversion under the balance. Empty when the
-              // price feed hasn't fetched yet (or the user has it
-              // disabled). Rebuilds via the AnimatedBuilder.
-              AnimatedBuilder(
-                animation: PriceFeed.I,
-                builder: (_, _) {
-                  if (_balanceXmr == null || _balanceXmr == 0) {
-                    return const SizedBox.shrink();
-                  }
-                  final fiat = PriceFeed.I.formatFiat(widget.coin.id, _balanceXmr!);
-                  if (fiat.isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      '≈ $fiat',
-                      style:
-                          const TextStyle(color: PeekColors.text2, fontSize: 13),
-                    ),
-                  );
-                },
-              ),
-              if (widget.coin.id == 'XMR') const _EngineStatusBanner(),
-              if (widget.coin.id == 'XMR' && _tipHeight > 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    'Height ${_fmtHeight(_currentHeight)} / ${_fmtHeight(_tipHeight)} '
-                    '(${_tipHeight - _currentHeight} behind)',
-                    style: const TextStyle(color: PeekColors.text3, fontSize: 11),
-                  ),
-                ),
-              if (_engineError != null) ...[
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'Engine: $_engineError',
-                    style: const TextStyle(color: PeekColors.red, fontSize: 11),
-                  ),
-                ),
-                // Manual self-heal fallback for the "invalid password"
-                // class of failures: if auto-detection didn't catch
-                // the user's specific failure mode, give them an
-                // explicit button to wipe the on-disk wallet file
-                // and re-create it from the stored seed.
-                if (widget.coin.id == 'XMR' &&
-                    widget.walletMeta != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: _resetWalletAndRetry,
-                          icon: const Icon(Icons.restart_alt, size: 16),
-                          label: const Text('Reset & rescan from seed'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: PeekColors.red,
-                            side: const BorderSide(color: PeekColors.red),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          coinAvatar(widget.coin.id, radius: 22),
+                          const SizedBox(width: PeekDesign.sp3),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.coin.name,
+                                  style: const TextStyle(
+                                    color: PeekColors.text,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.1,
+                                  ),
+                                ),
+                                Text(
+                                  '${widget.coin.symbol} balance',
+                                  style: const TextStyle(
+                                      color: PeekColors.text3,
+                                      fontSize: 11,
+                                      letterSpacing: 0.3),
+                                ),
+                              ],
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: PeekDesign.sp5),
+                      Text(
+                        _balanceText(),
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.6,
+                          height: 1.1,
+                        ),
+                      ),
+                      AnimatedBuilder(
+                        animation: PriceFeed.I,
+                        builder: (_, _) {
+                          if (_balanceXmr == null || _balanceXmr == 0) {
+                            return const SizedBox(height: 4);
+                          }
+                          final fiat = PriceFeed.I
+                              .formatFiat(widget.coin.id, _balanceXmr!);
+                          if (fiat.isEmpty) return const SizedBox(height: 4);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              fiat,
+                              style: const TextStyle(
+                                  color: PeekColors.text2,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        },
+                      ),
+                      // Sync state — pill shows progress %, height
+                      // delta, or fully-synced confirmation. The
+                      // engine-status banner stays inline below it.
+                      if (widget.coin.id == 'XMR') ...[
+                        const SizedBox(height: PeekDesign.sp3),
+                        _XmrSyncPill(
+                          syncPct: _syncPct,
+                          currentHeight: _currentHeight,
+                          tipHeight: _tipHeight,
+                          isSynced: _isSynced,
+                          daemonConnected: _daemonConnected,
+                          balanceLoaded: _balanceXmr != null,
                         ),
                       ],
-                    ),
-                  ),
-              ],
-              if (widget.coin.id == 'XMR' &&
-                  _engineError == null &&
-                  _daemonError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'Daemon: $_daemonError',
-                    style: const TextStyle(color: PeekColors.red, fontSize: 11),
+                      if (widget.coin.id == 'XMR' &&
+                          _engineError == null &&
+                          _daemonError != null) ...[
+                        const SizedBox(height: PeekDesign.sp2),
+                        StatusPill(
+                          text: 'Daemon: $_daemonError',
+                          color: PeekColors.red,
+                          icon: Icons.cloud_off_rounded,
+                        ),
+                      ],
+                      if (_engineError != null) ...[
+                        const SizedBox(height: PeekDesign.sp2),
+                        StatusPill(
+                          text: 'Engine: $_engineError',
+                          color: PeekColors.red,
+                          icon: Icons.error_outline_rounded,
+                        ),
+                        if (widget.coin.id == 'XMR' &&
+                            widget.walletMeta != null) ...[
+                          const SizedBox(height: PeekDesign.sp3),
+                          OutlinedButton.icon(
+                            onPressed: _resetWalletAndRetry,
+                            icon:
+                                const Icon(Icons.restart_alt_rounded, size: 16),
+                            label: const Text('Reset & rescan from seed'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: PeekColors.red,
+                              side: const BorderSide(color: PeekColors.red),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
                   ),
                 ),
-              const SizedBox(height: 20),
+                if (widget.coin.id == 'XMR') const _EngineStatusBanner(),
+                const SizedBox(height: PeekDesign.sp4),
               if (_error != null)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -610,60 +630,105 @@ class _CoinScreenState extends State<CoinScreen> {
                   ),
                 )
               else ...[
-                if (widget.coin.id == 'XMR') _ActionRow(
-                  // Allow sending while sync is in progress — older
-                  // confirmed outputs (10+ blocks deep) are spendable
-                  // even if newer activity hasn't been scanned yet.
-                  // Cake behaves the same way; refusing to send mid-
-                  // sync is over-cautious. The createTransaction call
-                  // itself will reject if there really aren't enough
-                  // unlocked outputs.
-                  canSend: _moneroWallet != null &&
-                      (_balanceXmr ?? 0) > 0,
-                  isStillSyncing:
-                      _moneroWallet != null && !_isSynced && (_balanceXmr ?? 0) > 0,
-                  onSend: () {
-                    if (_moneroWallet == null) return;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            SendXmrScreen(wallet: _moneroWallet!),
-                      ),
-                    );
-                  },
-                  onReceive: () => _showReceiveSheet(),
-                ),
                 if (widget.coin.id == 'XMR') ...[
-                  const SizedBox(height: 20),
                   Row(
                     children: [
-                      const Expanded(
-                        child: Text('Transactions',
-                            style: TextStyle(
-                                color: PeekColors.text2, fontSize: 12)),
+                      Expanded(
+                        child: ActionButton(
+                          icon: Icons.qr_code_rounded,
+                          label: 'Receive',
+                          primary: false,
+                          onTap: _showReceiveSheet,
+                        ),
                       ),
+                      const SizedBox(width: PeekDesign.sp3),
+                      Expanded(
+                        child: ActionButton(
+                          icon: Icons.arrow_upward_rounded,
+                          label: 'Send',
+                          primary: true,
+                          // Older confirmed outputs (10+ blocks deep)
+                          // are spendable mid-sync — Cake does the same.
+                          // createTransaction rejects if there really
+                          // aren't enough unlocked outputs.
+                          onTap: (_moneroWallet != null &&
+                                  (_balanceXmr ?? 0) > 0)
+                              ? () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => SendXmrScreen(
+                                          wallet: _moneroWallet!),
+                                    ),
+                                  )
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_moneroWallet != null &&
+                      !_isSynced &&
+                      (_balanceXmr ?? 0) > 0) ...[
+                    const SizedBox(height: PeekDesign.sp3),
+                    Container(
+                      padding: const EdgeInsets.all(PeekDesign.sp3),
+                      decoration: BoxDecoration(
+                        color: PeekColors.surface2,
+                        borderRadius: PeekDesign.brSmall,
+                        border: Border.all(color: PeekColors.hairline),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.info_outline_rounded,
+                              size: 14, color: PeekColors.text3),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Wallet is still syncing — newer activity '
+                              'may be missing. Older confirmed outputs '
+                              'are still spendable.',
+                              style: TextStyle(
+                                  color: PeekColors.text3,
+                                  fontSize: 11,
+                                  height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: PeekDesign.sp6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text('Activity',
+                          style: TextStyle(
+                              color: PeekColors.text,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1)),
+                      const SizedBox(width: PeekDesign.sp2),
                       if (_transactions.isNotEmpty)
-                        Text(
-                          '${_transactions.length} total',
-                          style: const TextStyle(
-                              color: PeekColors.text3, fontSize: 11),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: PeekColors.surface2,
+                            borderRadius: PeekDesign.brPill,
+                          ),
+                          child: Text(
+                            '${_transactions.length}',
+                            style: const TextStyle(
+                                color: PeekColors.text2,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500),
+                          ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: PeekDesign.sp3),
                   if (_transactions.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        _isSynced
-                            ? 'No transactions yet.'
-                            : 'Transactions will appear after sync completes.',
-                        style: const TextStyle(
-                          color: PeekColors.text3,
-                          fontSize: 12,
-                        ),
-                      ),
-                    )
+                    EmptyActivity(
+                        loading: !_isSynced,
+                        coinLabel: widget.coin.symbol)
                   else
                     // Full list — the parent SingleChildScrollView
                     // handles overflow. Removed the previous .take(20)
@@ -734,51 +799,74 @@ class _CoinScreenState extends State<CoinScreen> {
   }
 }
 
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.canSend,
-    required this.onSend,
-    required this.onReceive,
-    this.isStillSyncing = false,
+/// Pill shown directly below the XMR balance number with the live
+/// sync state. Renders one of:
+///   - "Connecting to daemon…" — no daemon yet
+///   - "Booting wallet…" — engine still spinning up
+///   - "Syncing X% · N blocks behind" — mid-scan
+///   - "Synced · height H" — caught up
+///   - silence — pre-load, no data yet
+class _XmrSyncPill extends StatelessWidget {
+  const _XmrSyncPill({
+    required this.syncPct,
+    required this.currentHeight,
+    required this.tipHeight,
+    required this.isSynced,
+    required this.daemonConnected,
+    required this.balanceLoaded,
   });
-  final bool canSend;
-  final bool isStillSyncing;
-  final VoidCallback onSend;
-  final VoidCallback onReceive;
+  final int? syncPct;
+  final int currentHeight;
+  final int tipHeight;
+  final bool isSynced;
+  final bool daemonConnected;
+  final bool balanceLoaded;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onReceive,
-                icon: const Icon(Icons.qr_code, size: 18),
-                label: const Text('Receive'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: canSend ? onSend : null,
-                icon: const Icon(Icons.arrow_upward, size: 18),
-                label: const Text('Send'),
-              ),
-            ),
-          ],
-        ),
-        if (isStillSyncing) ...[
-          const SizedBox(height: 6),
-          const Text(
-            'Wallet is still syncing — the balance above may not include very recent activity. Older confirmed outputs are still spendable.',
-            style: TextStyle(color: PeekColors.text3, fontSize: 11),
-          ),
-        ],
-      ],
+    if (!balanceLoaded) {
+      return StatusPill(
+        text: 'Booting wallet…',
+        color: PeekColors.accent,
+        icon: Icons.hourglass_top_rounded,
+      );
+    }
+    if (!daemonConnected) {
+      return StatusPill(
+        text: 'Connecting to daemon…',
+        color: PeekColors.accent,
+        icon: Icons.cloud_sync_rounded,
+      );
+    }
+    if (!isSynced) {
+      final behind = tipHeight - currentHeight;
+      final pct = syncPct ?? 0;
+      final tail = tipHeight > 0 && behind > 0
+          ? ' · $behind blocks behind'
+          : '';
+      return StatusPill(
+        text: 'Syncing $pct%$tail',
+        color: PeekColors.accent,
+        icon: Icons.sync_rounded,
+      );
+    }
+    return StatusPill(
+      text: tipHeight > 0
+          ? 'Synced · height ${_fmt(tipHeight)}'
+          : 'Synced',
+      color: PeekColors.green,
+      icon: Icons.check_circle_rounded,
     );
+  }
+
+  static String _fmt(int h) {
+    final s = h.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 }
 
