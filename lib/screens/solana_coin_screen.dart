@@ -500,15 +500,7 @@ class _SplRow extends StatelessWidget {
           final fiat = PriceFeed.I.formatFiat(token.symbol, display);
           return Row(
             children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: PeekColors.surface2,
-                child: Text(
-                  token.symbol.substring(0, 1),
-                  style: const TextStyle(
-                      color: PeekColors.text, fontSize: 11),
-                ),
-              ),
+              coinAvatar(token.symbol, radius: 14),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

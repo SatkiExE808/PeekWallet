@@ -102,12 +102,19 @@ Color coinColor(String coinId) {
   }
 }
 
-/// CoinGecko's canonical CDN image URLs for each supported coin.
-/// These are the same `large` (200×200) PNG variants that the
-/// CoinGecko website itself serves — the IDs are stable and have
-/// been used for years.
+/// CoinGecko's canonical CDN image URLs for each supported coin or
+/// token symbol. These are the same `large` (200×200) PNG variants
+/// that the CoinGecko website itself serves — image IDs are stable
+/// and have been used for years.
+///
+/// Covers native chains AND the stablecoins / wrapped tokens that
+/// appear as rows under ETH / POL / SOL / TRX. Without this every
+/// USDT/USDC row would fall back to the first-character placeholder
+/// circle — visually disconnected from how Phantom / Trust render
+/// the same tokens.
 String? _coingeckoUrlFor(String coinId) {
   switch (coinId) {
+    // Native chains
     case 'BTC':
       return 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png';
     case 'ETH':
@@ -123,8 +130,38 @@ String? _coingeckoUrlFor(String coinId) {
     case 'TRX':
       return 'https://assets.coingecko.com/coins/images/1094/large/tron-logo.png';
     case 'POL':
-      // Polygon's POL token logo on CoinGecko (post-MATIC migration).
-      return 'https://assets.coingecko.com/coins/images/32440/large/polygon_token.png';
+      return 'https://assets.coingecko.com/coins/images/32440/large/pol.png';
+    // Stablecoins
+    case 'USDT':
+      return 'https://assets.coingecko.com/coins/images/325/large/Tether.png';
+    case 'USDC':
+      return 'https://assets.coingecko.com/coins/images/6319/large/USDC.png';
+    case 'DAI':
+      return 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png';
+    case 'BUSD':
+      return 'https://assets.coingecko.com/coins/images/9576/large/BUSDLOGO.jpg';
+    // Wrapped majors
+    case 'WETH':
+      return 'https://assets.coingecko.com/coins/images/2518/large/weth.png';
+    case 'WBTC':
+      return 'https://assets.coingecko.com/coins/images/7598/large/WBTCLOGO.png';
+    case 'WMATIC':
+      return 'https://assets.coingecko.com/coins/images/14073/large/matic.png';
+    case 'WSOL':
+      return 'https://assets.coingecko.com/coins/images/4128/large/solana.png';
+    // DeFi blue chips that show up in default token lists
+    case 'LINK':
+      return 'https://assets.coingecko.com/coins/images/877/large/Chainlink_Logo_500.png';
+    case 'AAVE':
+      return 'https://assets.coingecko.com/coins/images/12645/large/aave-token-round.png';
+    case 'UNI':
+      return 'https://assets.coingecko.com/coins/images/12504/large/uniswap-logo.png';
+    case 'CRV':
+      return 'https://assets.coingecko.com/coins/images/12124/large/Curve.png';
+    case 'BONK':
+      return 'https://assets.coingecko.com/coins/images/28600/large/bonk.jpg';
+    case 'JUP':
+      return 'https://assets.coingecko.com/coins/images/34188/large/jup.png';
     default:
       return null;
   }
