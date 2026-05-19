@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../address_book/address_book.dart';
 import '../theme.dart';
+import '../util/coin_avatar.dart';
 import 'qr_scan_screen.dart';
 
 /// Address-book listing. Tap an entry → details / edit. Tap '+' → add.
@@ -116,49 +117,59 @@ class _EntryTile extends StatelessWidget {
     final short = addr.length > 22
         ? '${addr.substring(0, 10)}…${addr.substring(addr.length - 6)}'
         : addr;
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _coinColor(entry.coinId),
-          child: Text(
-            entry.coinId,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        title: Text(
-          entry.label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          short,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            color: PeekColors.text2,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
+    return Material(
+      color: PeekColors.surface,
+      borderRadius: PeekDesign.brCard,
+      child: InkWell(
         onTap: onTap,
+        borderRadius: PeekDesign.brCard,
+        splashColor: PeekColors.accentMuted,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: PeekDesign.brCard,
+            border: Border.all(color: PeekColors.hairline, width: 1),
+          ),
+          padding: const EdgeInsets.symmetric(
+              horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
+          child: Row(
+            children: [
+              coinAvatar(entry.coinId, radius: 18),
+              const SizedBox(width: PeekDesign.sp3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: PeekColors.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      short,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        color: PeekColors.text3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: PeekDesign.sp2),
+              const Icon(Icons.chevron_right,
+                  color: PeekColors.text3, size: 18),
+            ],
+          ),
+        ),
       ),
     );
-  }
-
-  Color _coinColor(String coinId) {
-    switch (coinId) {
-      case 'XMR':
-        return const Color(0xFFFF6600);
-      case 'BTC':
-        return const Color(0xFFF7931A);
-      case 'ETH':
-        return const Color(0xFF627EEA);
-      default:
-        return PeekColors.text3;
-    }
   }
 }
 
@@ -175,25 +186,55 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.bookmark_border, size: 56, color: PeekColors.text3),
-            const SizedBox(height: 16),
+            Container(
+              width: 96,
+              height: 96,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  PeekColors.accent.withAlpha(48),
+                  PeekColors.accent.withAlpha(0),
+                ]),
+              ),
+              child: Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: PeekColors.surface2,
+                  border: Border.all(color: PeekColors.border),
+                ),
+                child: const Icon(Icons.bookmark_rounded,
+                    size: 32, color: PeekColors.accent),
+              ),
+            ),
+            const SizedBox(height: PeekDesign.sp5),
             const Text(
               'No saved addresses yet',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: PeekDesign.sp2),
             Text(
               isPicker
-                  ? 'Tap "Add entry" to save the recipient you\'re about to send to.'
+                  ? 'Save the recipient you\'re about to send to.'
                   : 'Save the addresses of people you send to often so you don\'t have to paste each time.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: PeekColors.text2, fontSize: 13),
+              style: const TextStyle(
+                  color: PeekColors.text2, fontSize: 13, height: 1.4),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add),
-              label: const Text('Add entry'),
+            const SizedBox(height: PeekDesign.sp6),
+            SizedBox(
+              width: 220,
+              child: ElevatedButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add entry'),
+              ),
             ),
           ],
         ),

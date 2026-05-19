@@ -8,6 +8,7 @@ import '../theme.dart';
 import '../util/peek_logger.dart';
 import '../vault/biometric_auth.dart';
 import '../vault/vault_state.dart';
+import '../widgets/settings_row.dart';
 import 'about_screen.dart';
 import 'restore_all_from_vault_screen.dart';
 import 'rpc_overrides_screen.dart';
@@ -464,159 +465,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() {});
                         },
                       ),
-                    const SizedBox(height: 28),
                     const _SectionDivider(label: 'Security'),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      secondary: const Icon(Icons.fingerprint, color: PeekColors.text2),
-                      title: const Text('Biometric unlock'),
-                      subtitle: Text(
-                        _biometricAvailable
-                            ? 'Use fingerprint / face to unlock instead of typing the password'
-                            : 'Not available on this device (no enrolled biometric)',
-                        style: const TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
+                    SettingsSwitchRow(
+                      icon: Icons.fingerprint_rounded,
+                      title: 'Biometric unlock',
+                      subtitle: _biometricAvailable
+                          ? 'Use fingerprint / face to unlock'
+                          : 'Not available — no enrolled biometric',
                       value: _biometricEnabled,
-                      onChanged: _biometricAvailable ? _toggleBiometric : null,
+                      onChanged:
+                          _biometricAvailable ? _toggleBiometric : null,
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.visibility_outlined, color: PeekColors.text2),
-                      title: const Text('Reveal recovery phrase'),
-                      subtitle: const Text(
-                        'View your BIP39 seed + Monero spend/view keys',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right, color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.visibility_outlined,
+                      title: 'Reveal recovery phrase',
+                      subtitle:
+                          'View your BIP39 seed + Monero spend/view keys',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const RevealSeedScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const RevealSeedScreen()),
                       ),
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.contact_page_outlined,
-                          color: PeekColors.text2),
-                      title: const Text('Address book'),
-                      subtitle: const Text(
-                        'Saved labels for recipients you send to',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.contact_page_outlined,
+                      title: 'Address book',
+                      subtitle: 'Saved labels for recipients you send to',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const AddressBookScreen(),
                         ),
                       ),
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.timer_outlined,
-                          color: PeekColors.text2),
-                      title: const Text('Auto-lock'),
-                      subtitle: Text(
-                        _autoLockLabel(_autoLockSeconds),
-                        style: const TextStyle(
-                            color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.timer_outlined,
+                      title: 'Auto-lock',
+                      subtitle: _autoLockLabel(_autoLockSeconds),
                       onTap: _pickAutoLock,
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.lock_outline, color: PeekColors.text2),
-                      title: const Text('Lock app'),
-                      subtitle: const Text(
-                        'Clear the in-memory seed and require the password again',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
+                    SettingsRow(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Lock app',
+                      subtitle:
+                          'Clear the in-memory seed and require the password again',
                       onTap: _confirmLock,
                     ),
-                    const SizedBox(height: 28),
                     const _SectionDivider(label: 'Display'),
-                    const SizedBox(height: 8),
                     AnimatedBuilder(
                       animation: PriceFeed.I,
-                      builder: (_, _) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.currency_exchange,
-                            color: PeekColors.text2),
-                        title: const Text('Display currency'),
-                        subtitle: Text(
-                          PriceFeed.I.enabled
-                              ? PriceFeed.I.currency.toUpperCase()
-                              : 'Disabled',
-                          style: const TextStyle(
-                              color: PeekColors.text3, fontSize: 11),
-                        ),
-                        trailing: const Icon(Icons.chevron_right,
-                            color: PeekColors.text3),
+                      builder: (_, _) => SettingsRow(
+                        icon: Icons.currency_exchange_rounded,
+                        title: 'Display currency',
+                        subtitle: PriceFeed.I.enabled
+                            ? PriceFeed.I.currency.toUpperCase()
+                            : 'Disabled',
                         onTap: _pickCurrency,
                       ),
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.description_outlined,
-                          color: PeekColors.text2),
-                      title: const Text('Export logs'),
-                      subtitle: const Text(
-                        'Last 7 days. Addresses and keys are auto-redacted.',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.description_outlined,
+                      title: 'Export logs',
+                      subtitle:
+                          'Last 7 days. Addresses and keys are auto-redacted.',
                       onTap: _exportLogs,
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.auto_awesome,
-                          color: PeekColors.accent),
-                      title: const Text(
-                          'Restore all coins from vault seed'),
-                      subtitle: const Text(
-                        'One-tap derive a wallet for every coin from '
-                        'your existing 12/24-word vault seed. Same '
-                        'addresses every restore.',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.auto_awesome_rounded,
+                      title: 'Restore all coins from vault seed',
+                      subtitle:
+                          'One-tap derive a wallet for every coin from your existing 12/24-word seed.',
+                      iconAccent: true,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) =>
                                 const RestoreAllFromVaultScreen()),
                       ),
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.lan_outlined,
-                          color: PeekColors.text2),
-                      title: const Text('Custom RPC endpoints'),
-                      subtitle: const Text(
-                        'Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your '
-                        'own nodes instead of public defaults.',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.lan_outlined,
+                      title: 'Custom RPC endpoints',
+                      subtitle:
+                          'Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your own nodes.',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const RpcOverridesScreen()),
                       ),
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.info_outline,
-                          color: PeekColors.text2),
-                      title: const Text('About PeekWallet'),
-                      subtitle: const Text(
-                        'Version, license, source code',
-                        style: TextStyle(color: PeekColors.text3, fontSize: 11),
-                      ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: PeekColors.text3),
+                    SettingsRow(
+                      icon: Icons.info_outline_rounded,
+                      title: 'About PeekWallet',
+                      subtitle: 'Version, license, source code',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const AboutScreen()),
                       ),

@@ -220,22 +220,34 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
 
   Widget _warningBanner() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(PeekDesign.sp4),
       decoration: BoxDecoration(
-        color: PeekColors.red.withValues(alpha: 0.12),
-        border: Border.all(color: PeekColors.red),
-        borderRadius: BorderRadius.circular(8),
+        color: PeekColors.red.withAlpha(28),
+        border: Border.all(color: PeekColors.red.withAlpha(96)),
+        borderRadius: PeekDesign.brCard,
       ),
-      child: const Row(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber, color: PeekColors.red, size: 18),
-          SizedBox(width: 8),
-          Expanded(
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: PeekColors.red.withAlpha(40),
+              borderRadius: PeekDesign.brSmall,
+            ),
+            child: const Icon(Icons.warning_amber_rounded,
+                color: PeekColors.red, size: 18),
+          ),
+          const SizedBox(width: PeekDesign.sp3),
+          const Expanded(
             child: Text(
               'Write this down on paper and store it somewhere safe. '
               'Anyone with this phrase has full control of the wallet. '
-              'Don\'t take a screenshot — FLAG_SECURE blocks it anyway.',
-              style: TextStyle(color: PeekColors.text, fontSize: 12),
+              "Don't take a screenshot — FLAG_SECURE blocks it anyway.",
+              style: TextStyle(
+                  color: PeekColors.text, fontSize: 12, height: 1.4),
             ),
           ),
         ],
@@ -253,14 +265,17 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
       SeedFormat.keysOnly => 'Keys only',
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: PeekColors.surface2,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: PeekDesign.brPill,
+        border: Border.all(color: PeekColors.border),
       ),
       child: Text(label,
-          style:
-              const TextStyle(color: PeekColors.text2, fontSize: 11)),
+          style: const TextStyle(
+              color: PeekColors.text2,
+              fontSize: 11,
+              fontWeight: FontWeight.w500)),
     );
   }
 
@@ -269,16 +284,19 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
       onLongPress: () => SensitiveClipboard.copy(value,
           label: 'wallet seed'),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(PeekDesign.sp4),
         decoration: BoxDecoration(
           color: PeekColors.surface,
           border: Border.all(color: PeekColors.border),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: PeekDesign.brCard,
         ),
         child: SelectableText(
           value,
           style: const TextStyle(
-              fontFamily: 'monospace', fontSize: 14, height: 1.5),
+              fontFamily: 'monospace',
+              fontSize: 14,
+              height: 1.6,
+              color: PeekColors.text),
         ),
       ),
     );

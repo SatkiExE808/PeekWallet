@@ -161,26 +161,56 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(PeekDesign.sp4,
+              PeekDesign.sp4, PeekDesign.sp4, PeekDesign.sp6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Point each chain at your own node instead of the public '
-                'default. Stops the default explorer / RPC operator from '
-                'seeing your wallet activity. Take effect the next time '
-                'you open the affected wallet.',
-                style:
-                    TextStyle(color: PeekColors.text2, fontSize: 13),
+              Container(
+                padding: const EdgeInsets.all(PeekDesign.sp4),
+                decoration: BoxDecoration(
+                  color: PeekColors.surface,
+                  borderRadius: PeekDesign.brCard,
+                  border: Border.all(color: PeekColors.hairline),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: PeekColors.accentMuted,
+                        borderRadius: PeekDesign.brSmall,
+                      ),
+                      child: const Icon(Icons.shield_outlined,
+                          size: 18, color: PeekColors.accent),
+                    ),
+                    const SizedBox(width: PeekDesign.sp3),
+                    const Expanded(
+                      child: Text(
+                        'Point each chain at your own node instead of the '
+                        'public default. Takes effect the next time you '
+                        'open the affected wallet.',
+                        style: TextStyle(
+                            color: PeekColors.text2,
+                            fontSize: 12,
+                            height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: PeekDesign.sp5),
               for (final e in _entries) ...[
                 Text(e.label,
                     style: const TextStyle(
                         color: PeekColors.text,
                         fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1)),
+                const SizedBox(height: PeekDesign.sp2),
                 TextField(
                   controller: _ctrls['${e.coinId}:${e.kind}'],
                   autocorrect: false,
@@ -189,7 +219,7 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
                   decoration: InputDecoration(hintText: e.hint),
                   onSubmitted: (_) => _save(e),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: PeekDesign.sp2),
                 Row(
                   children: [
                     Expanded(
@@ -203,28 +233,38 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
                       onPressed: () => _save(e),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 0),
-                        minimumSize: const Size(0, 32),
+                            horizontal: 16, vertical: 0),
+                        minimumSize: const Size(0, 34),
                         tapTargetSize:
                             MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: const Text('Save',
-                          style: TextStyle(fontSize: 12)),
+                          style: TextStyle(fontSize: 13)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: PeekDesign.sp6),
               ],
-              const Text(
-                'Privacy notes:\n'
-                '• Monero is configured separately on the Settings → Monero node screen.\n'
-                '• Each request still goes over plain HTTPS — to also hide your IP, '
-                'set up Tor / a VPN on your device or run the endpoint on your '
-                'LAN over Tailscale.\n'
-                '• The wallet doesn\'t validate that the endpoint is honest. Pick '
-                'providers you trust.',
-                style:
-                    TextStyle(color: PeekColors.text3, fontSize: 12),
+              Container(
+                padding: const EdgeInsets.all(PeekDesign.sp3),
+                decoration: BoxDecoration(
+                  color: PeekColors.surface2,
+                  borderRadius: PeekDesign.brSmall,
+                  border: Border.all(color: PeekColors.hairline),
+                ),
+                child: const Text(
+                  'Privacy notes:\n'
+                  '• Monero is configured separately on the Settings → Monero node screen.\n'
+                  '• Each request still goes over plain HTTPS — to also hide your IP, '
+                  'set up Tor / a VPN on your device or run the endpoint on your '
+                  'LAN over Tailscale.\n'
+                  '• The wallet doesn\'t validate that the endpoint is honest. '
+                  'Pick providers you trust.',
+                  style: TextStyle(
+                      color: PeekColors.text3,
+                      fontSize: 11,
+                      height: 1.5),
+                ),
               ),
             ],
           ),

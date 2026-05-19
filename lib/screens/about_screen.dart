@@ -116,10 +116,11 @@ class AboutScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: PeekColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: PeekColors.border),
+        borderRadius: PeekDesign.brCard,
+        border: Border.all(color: PeekColors.hairline),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: PeekDesign.sp4, vertical: PeekDesign.sp2),
       child: Column(children: rows),
     );
   }
@@ -191,11 +192,12 @@ class _SectionLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
-        label,
+        label.toUpperCase(),
         style: const TextStyle(
-          color: PeekColors.text2,
+          color: PeekColors.text3,
           fontSize: 11,
-          letterSpacing: 0.5,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.4,
         ),
       ),
     );

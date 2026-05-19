@@ -137,34 +137,67 @@ class _RestoreAllFromVaultScreenState
       appBar: AppBar(title: const Text('Restore all coins from vault')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(PeekDesign.sp4,
+              PeekDesign.sp4, PeekDesign.sp4, PeekDesign.sp4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Adds a wallet for every supported coin, derived from '
-                'your vault\'s recovery phrase. Same seed → same '
-                'addresses every time, so your vault seed becomes the '
-                'single backup for all of them.',
-                style: TextStyle(color: PeekColors.text2, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(PeekDesign.sp4),
+                decoration: BoxDecoration(
+                  borderRadius: PeekDesign.brCard,
+                  gradient: PeekDesign.surfaceGradient,
+                  border: Border.all(color: PeekColors.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: PeekColors.accentMuted,
+                        borderRadius: PeekDesign.brSmall,
+                      ),
+                      child: const Icon(Icons.auto_awesome_rounded,
+                          size: 18, color: PeekColors.accent),
+                    ),
+                    const SizedBox(width: PeekDesign.sp3),
+                    const Expanded(
+                      child: Text(
+                        'Adds a wallet for every supported coin, derived '
+                        'from your vault\'s recovery phrase. Same seed → '
+                        'same addresses every time, so your vault seed '
+                        'becomes the single backup for all of them.',
+                        style: TextStyle(
+                            color: PeekColors.text2,
+                            fontSize: 12,
+                            height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: PeekDesign.sp3),
+              Container(
+                padding: const EdgeInsets.all(PeekDesign.sp3),
                 decoration: BoxDecoration(
                   color: PeekColors.surface2,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: PeekDesign.brSmall,
+                  border: Border.all(color: PeekColors.hairline),
                 ),
                 child: const Text(
-                  'Coins you already have a wallet for are skipped — '
-                  'this won\'t create duplicates. Monero is handled '
-                  'separately (the legacy single-wallet flow already '
-                  'manages it from the same seed).',
+                  'Existing wallets are skipped (no duplicates). Monero '
+                  'is handled separately via the legacy single-wallet '
+                  'flow from the same seed.',
                   style: TextStyle(
-                      color: PeekColors.text3, fontSize: 12),
+                      color: PeekColors.text3,
+                      fontSize: 11,
+                      height: 1.4),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: PeekDesign.sp5),
               Expanded(
                 child: ListView(
                   children: [
