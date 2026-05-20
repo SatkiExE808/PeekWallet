@@ -50,7 +50,16 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
 
   bool _previewing = false;
   bool _broadcasting = false;
+  bool _probingAta = false;
   String? _error;
+
+  /// True when the recipient doesn't yet have an ATA for the token
+  /// being sent — set by [_onContinue] after a getTokenAccountsByOwner
+  /// probe. Drives the "+ ATA rent reserve" line in the preview so
+  /// the user sees the actual SOL deduction (~0.00204 SOL) instead
+  /// of just the 5000-lamport base fee. Null = native send (no ATA
+  /// concept) or probe didn't run.
+  bool? _destinationNeedsAta;
 
   /// Fixed Solana base fee — see SolanaRpcClient.defaultTransferFeeLamports
   /// for the rationale. We use the constant directly so the user sees
@@ -217,16 +226,58 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
             'No SOL for fees — fund this wallet with a small amount of SOL first');
         return;
       }
-    } else {
-      final amt = parsed.lamports;
-      if (amt == null || amt <= 0) {
-        setState(() => _error = 'Enter a valid amount');
+
+      // Probe the recipient's ATA so the preview can surface the
+      // ~0.00204 SOL rent reserve sendSpl() would otherwise charge
+      // silently. Failure to probe → assume worst case (needs ATA)
+      // so the user sees the larger fee and isn't blindsided.
+      setState(() {
+        _probingAta = true;
+        _destinationNeedsAta = null;
+      });
+      bool hasAta;
+      try {
+        hasAta = await widget.wallet.recipientHasTokenAccount(
+          token: widget.token!,
+          destOwnerAddress: addr,
+        );
+      } catch (_) {
+        hasAta = false; // probe failed — assume worst case
+      }
+      if (!mounted) return;
+      // SOL balance check has to account for the ATA rent if needed:
+      // sendSpl will pay ~0.00204 SOL out of native balance on top of
+      // the 5000-lamport tx fee. Reject up front rather than letting
+      // the broadcast fail post-confirm.
+      final needsAta = !hasAta;
+      final solRequired = _feeLamports +
+          (needsAta ? SolanaWallet.ataRentLamports : 0);
+      if (_balanceLamports < solRequired) {
+        setState(() {
+          _probingAta = false;
+          _error = needsAta
+              ? "Recipient has no ${widget.token!.symbol} account — "
+                  "creating one costs ~0.00204 SOL on top of the network "
+                  "fee. Top up ${((solRequired - _balanceLamports) / 1e9).toStringAsFixed(6)} SOL and retry."
+              : 'Not enough SOL for the network fee.';
+        });
         return;
       }
-      if (amt + _feeLamports > _balanceLamports) {
-        setState(() => _error = 'Amount + fee exceeds balance');
-        return;
-      }
+      setState(() {
+        _destinationNeedsAta = needsAta;
+        _probingAta = false;
+        _previewing = true;
+      });
+      return;
+    }
+    final amt = parsed.lamports;
+    if (amt == null || amt <= 0) {
+      setState(() => _error = 'Enter a valid amount');
+      return;
+    }
+    if (amt + _feeLamports > _balanceLamports) {
+      setState(() => _error = 'Amount + fee exceeds balance');
+      return;
     }
     setState(() => _previewing = true);
   }
@@ -403,9 +454,17 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
         ],
         const SizedBox(height: 20),
         ElevatedButton(
-          onPressed:
-              (_loading || _balanceLamports == 0) ? null : _onContinue,
-          child: const Text('Continue'),
+          onPressed: (_loading || _balanceLamports == 0 || _probingAta)
+              ? null
+              : _onContinue,
+          child: _probingAta
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Continue'),
         ),
       ],
     );
@@ -453,6 +512,18 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
               const Divider(height: 18, color: PeekColors.hairline),
               _kvRow('Network fee',
                   '${(_feeLamports / 1000000000.0).toStringAsFixed(9)} SOL'),
+              if (_destinationNeedsAta == true) ...[
+                const Divider(height: 18, color: PeekColors.hairline),
+                _kvRow(
+                  'ATA rent',
+                  '${(SolanaWallet.ataRentLamports / 1000000000.0).toStringAsFixed(9)} SOL',
+                ),
+                const Divider(height: 18, color: PeekColors.hairline),
+                _kvRow(
+                  'Total SOL out',
+                  '${((_feeLamports + SolanaWallet.ataRentLamports) / 1000000000.0).toStringAsFixed(9)} SOL',
+                ),
+              ],
             ],
           ),
         ),
@@ -466,14 +537,20 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Icon(Icons.info_outline_rounded,
+            children: [
+              const Icon(Icons.info_outline_rounded,
                   size: 14, color: PeekColors.text3),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Solana fees are fixed at 5000 lamports per signature. '
-                  'Once submitted this CANNOT be reversed.',
+                  _destinationNeedsAta == true
+                      ? "Recipient has no ${widget.token!.symbol} account yet. "
+                          "Sending creates one for them (~0.00204 SOL rent, "
+                          "refundable to whoever closes the account). Plus "
+                          "the standard 5000-lamport tx fee. Once submitted "
+                          "this CANNOT be reversed."
+                      : 'Solana fees are fixed at 5000 lamports per signature. '
+                          'Once submitted this CANNOT be reversed.',
                   style: TextStyle(
                       color: PeekColors.text3, fontSize: 11, height: 1.4),
                 ),

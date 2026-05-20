@@ -207,6 +207,36 @@ class SolanaWallet {
     return out;
   }
 
+  /// One-shot probe: does [destOwnerAddress] already have a token
+  /// account (ATA) for [token]'s mint? Used by the send screen's
+  /// preview to surface the ~0.002 SOL rent reserve that sendSpl
+  /// will spend if no ATA exists — otherwise the user sees
+  /// "5000 lamports fee" and gets blindsided by a ~400× larger
+  /// deduction at broadcast time.
+  ///
+  /// Returns true if the recipient has at least one token account
+  /// for this mint; false if [sendSpl] would have to create one.
+  /// Network failures bubble up — caller can decide whether to
+  /// proceed (assume worst case = create) or surface the error.
+  Future<bool> recipientHasTokenAccount({
+    required SplToken token,
+    required String destOwnerAddress,
+  }) async {
+    if (_closed) return false;
+    final existing = await _rpc.firstTokenAccountAddress(
+      ownerBase58: destOwnerAddress,
+      mintBase58: token.mint,
+    );
+    return existing != null;
+  }
+
+  /// Approximate rent reserve charged by SystemProgram.CreateAccount
+  /// when creating a Token Program account. Hard-coded because the
+  /// rent-exempt minimum for 165-byte token accounts has been stable
+  /// at ~0.00203928 SOL since Solana's rent-collection epoch and is
+  /// what every public wallet displays.
+  static const ataRentLamports = 2039280;
+
   /// Build, sign and broadcast an SPL token transfer. Returns the
   /// transaction signature (the on-chain id) on success.
   ///
