@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import 'create_wallet_screen.dart';
 import 'import_wallet_screen.dart';
@@ -10,6 +11,7 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -20,43 +22,46 @@ class WelcomeScreen extends StatelessWidget {
               const Spacer(),
               const Icon(Icons.account_balance_wallet, size: 64, color: PeekColors.accent),
               const SizedBox(height: 20),
-              const Text(
-                'PeekWallet',
+              Text(
+                l.appName,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                    fontSize: 28, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Self-custodial wallet for BTC, ETH, XMR, and more.',
+              Text(
+                l.welcomeTagline,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: PeekColors.text2, fontSize: 14),
+                style:
+                    const TextStyle(color: PeekColors.text2, fontSize: 14),
               ),
               const Spacer(),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const CreateWalletScreen()),
                 ),
-                child: const Text('Create new wallet'),
+                child: Text(l.welcomeCreateAction),
               ),
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const ImportWalletScreen()),
                 ),
-                child: const Text('I already have a recovery phrase'),
+                child: Text(l.welcomeImportAction),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Your 12-word recovery phrase is the only backup. Anyone with it can take your funds.',
+              Text(
+                l.welcomeBackupWarning,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+                style:
+                    const TextStyle(color: PeekColors.text3, fontSize: 12),
               ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () => _showDisclaimer(context),
-                child: const Text(
-                  'Read the no-warranty disclaimer',
-                  style: TextStyle(fontSize: 11),
+                child: Text(
+                  l.welcomeDisclaimerAction,
+                  style: const TextStyle(fontSize: 11),
                 ),
               ),
             ],
@@ -109,6 +114,7 @@ Full text: DISCLAIMER.md in the source repo.
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -127,10 +133,11 @@ Full text: DISCLAIMER.md in the source repo.
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
-              'Disclaimer',
+            Text(
+              l.welcomeDisclaimerTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 14),
             SelectableText(
@@ -147,16 +154,16 @@ Full text: DISCLAIMER.md in the source repo.
                 await Clipboard.setData(const ClipboardData(text: _body));
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Copied')),
+                  SnackBar(content: Text(l.welcomeCopiedToast)),
                 );
               },
               icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy text'),
+              label: Text(l.welcomeCopyTextAction),
             ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('I understand'),
+              child: Text(l.welcomeIUnderstandAction),
             ),
           ],
         ),

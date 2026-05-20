@@ -1077,6 +1077,139 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addWalletAppPasswordLabel => 'App password';
 
   @override
+  String lockTryAgainIn(String duration) {
+    return 'Try again in $duration.';
+  }
+
+  @override
+  String get welcomeTagline =>
+      'Self-custodial wallet for BTC, ETH, XMR, and more.';
+
+  @override
+  String get welcomeCreateAction => 'Create new wallet';
+
+  @override
+  String get welcomeImportAction => 'I already have a recovery phrase';
+
+  @override
+  String get welcomeBackupWarning =>
+      'Your 12-word recovery phrase is the only backup. Anyone with it can take your funds.';
+
+  @override
+  String get welcomeDisclaimerAction => 'Read the no-warranty disclaimer';
+
+  @override
+  String get welcomeDisclaimerTitle => 'Disclaimer';
+
+  @override
+  String get welcomeCopiedToast => 'Copied';
+
+  @override
+  String get welcomeCopyTextAction => 'Copy text';
+
+  @override
+  String get welcomeIUnderstandAction => 'I understand';
+
+  @override
+  String get revealSeedTitle => 'Reveal recovery phrase';
+
+  @override
+  String get revealSeedWarning =>
+      'You are about to reveal your seed phrase and Monero keys. Anyone who sees them can take your funds — make sure no one is looking at your screen and you\'re not screen-sharing.';
+
+  @override
+  String get revealSeedPasswordPrompt => 'Enter your app password to continue.';
+
+  @override
+  String get revealSeedRevealAction => 'Reveal';
+
+  @override
+  String get revealSeedBip39Section => 'BIP39 recovery phrase';
+
+  @override
+  String get revealSeedPassphraseSection => 'BIP39 passphrase (25th word)';
+
+  @override
+  String get revealSeedXmrAddressSection => 'Monero primary address';
+
+  @override
+  String get revealSeedXmrSpendSection => 'Monero private spend key';
+
+  @override
+  String get revealSeedXmrViewSection => 'Monero private view key';
+
+  @override
+  String get revealSeedCopyPhrase => 'Copy phrase';
+
+  @override
+  String get revealSeedCopyPassphrase => 'Copy passphrase';
+
+  @override
+  String get revealSeedCopyAddress => 'Copy address';
+
+  @override
+  String get revealSeedCopySpendKey => 'Copy spend key';
+
+  @override
+  String get revealSeedCopyViewKey => 'Copy view key';
+
+  @override
+  String get revealSeedRestoreHint =>
+      'You can restore this wallet in Cake / Feather / Monero GUI using \"Restore from keys\" with the address + view key + spend key above (or \"Restore from seed\" with the BIP39 phrase in any BIP39-compatible wallet).';
+
+  @override
+  String get revealSeedCopiedSensitive =>
+      'Copied — clipboard auto-clears in 30 s';
+
+  @override
+  String get revealSeedCopiedPlain => 'Copied';
+
+  @override
+  String get aboutScreenTitle => 'About';
+
+  @override
+  String aboutVersionLine(String version, String build) {
+    return 'v$version (build $build)';
+  }
+
+  @override
+  String get aboutAppVersion => 'App version';
+
+  @override
+  String get aboutBuildNumber => 'Build number';
+
+  @override
+  String get aboutPackage => 'Package';
+
+  @override
+  String get aboutBuildSignature => 'Build signature';
+
+  @override
+  String get aboutSourceSection => 'Source code';
+
+  @override
+  String get aboutLegalSection => 'Legal';
+
+  @override
+  String get aboutGithubRepo => 'GitHub repository';
+
+  @override
+  String get aboutLicenseLink => 'License (GPL-3.0-or-later)';
+
+  @override
+  String get aboutDisclaimerLink => 'Disclaimer (no warranty)';
+
+  @override
+  String get aboutSecurityModelLink => 'Security model';
+
+  @override
+  String get aboutFreeSoftwareBody =>
+      'PeekWallet is free, open-source software. Anyone can read the source, build it themselves, and verify the binary on /releases matches the public code (reproducibility tracked in the roadmap).';
+
+  @override
+  String get aboutUrlCopiedToast => 'URL copied — open in your browser';
+
+  @override
   String get erc20EmptyHint =>
       'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
 

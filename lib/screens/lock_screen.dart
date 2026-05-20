@@ -222,7 +222,7 @@ class _LockScreenState extends State<LockScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Try again in ${_countdown(_lockoutUntil!)}.',
+                        l.lockTryAgainIn(_countdown(_lockoutUntil!)),
                         style: const TextStyle(
                             color: PeekColors.text2, fontSize: 13),
                       ),

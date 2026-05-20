@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 
 /// Shows app version, build number, package id, and links to the
@@ -14,8 +15,9 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('About')),
+      appBar: AppBar(title: Text(l.aboutScreenTitle)),
       body: SafeArea(
         child: FutureBuilder<PackageInfo>(
           future: PackageInfo.fromPlatform(),
@@ -47,9 +49,9 @@ class AboutScreen extends StatelessWidget {
                 ),
                 Center(
                   child: Text(
-                    'v${info.version} (build ${info.buildNumber})',
-                    style:
-                        const TextStyle(color: PeekColors.text2, fontSize: 13),
+                    l.aboutVersionLine(info.version, info.buildNumber),
+                    style: const TextStyle(
+                        color: PeekColors.text2, fontSize: 13),
                   ),
                 ),
                 Center(
@@ -63,45 +65,42 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
                 _kvCard([
-                  _kv('App version', info.version),
-                  _kv('Build number', info.buildNumber),
-                  _kv('Package', info.packageName),
-                  _kv('Build signature', info.buildSignature.isEmpty
-                      ? '—'
-                      : info.buildSignature),
+                  _kv(l.aboutAppVersion, info.version),
+                  _kv(l.aboutBuildNumber, info.buildNumber),
+                  _kv(l.aboutPackage, info.packageName),
+                  _kv(l.aboutBuildSignature,
+                      info.buildSignature.isEmpty ? '—' : info.buildSignature),
                 ]),
                 const SizedBox(height: 20),
-                const _SectionLabel('Source code'),
+                _SectionLabel(l.aboutSourceSection),
                 const SizedBox(height: 8),
-                _linkRow(context, 'GitHub repository',
+                _linkRow(context, l.aboutGithubRepo,
                     'https://github.com/SatkiExE808/PeekWallet'),
                 const SizedBox(height: 16),
-                const _SectionLabel('Legal'),
+                _SectionLabel(l.aboutLegalSection),
                 const SizedBox(height: 8),
                 _linkRow(
                   context,
-                  'License (GPL-3.0-or-later)',
+                  l.aboutLicenseLink,
                   'https://github.com/SatkiExE808/PeekWallet/blob/main/LICENSE',
                 ),
                 _linkRow(
                   context,
-                  'Disclaimer (no warranty)',
+                  l.aboutDisclaimerLink,
                   'https://github.com/SatkiExE808/PeekWallet/blob/main/DISCLAIMER.md',
                 ),
                 _linkRow(
                   context,
-                  'Security model',
+                  l.aboutSecurityModelLink,
                   'https://github.com/SatkiExE808/PeekWallet/blob/main/docs/security.md',
                 ),
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
-                    'PeekWallet is free, open-source software. Anyone can '
-                    'read the source, build it themselves, and verify the '
-                    'binary on /releases matches the public code '
-                    '(reproducibility tracked in the roadmap).',
-                    style: const TextStyle(color: PeekColors.text3, fontSize: 11),
+                    l.aboutFreeSoftwareBody,
+                    style: const TextStyle(
+                        color: PeekColors.text3, fontSize: 11),
                   ),
                 ),
               ],
@@ -148,14 +147,13 @@ class AboutScreen extends StatelessWidget {
   }
 
   Widget _linkRow(BuildContext context, String label, String url) {
+    final l = AppLocalizations.of(context);
     return InkWell(
       onTap: () async {
         await Clipboard.setData(ClipboardData(text: url));
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('URL copied — open in your browser'),
-          ),
+          SnackBar(content: Text(l.aboutUrlCopiedToast)),
         );
       },
       child: Padding(

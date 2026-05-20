@@ -1941,6 +1941,252 @@ abstract class AppLocalizations {
   /// **'App password'**
   String get addWalletAppPasswordLabel;
 
+  /// No description provided for @lockTryAgainIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in {duration}.'**
+  String lockTryAgainIn(String duration);
+
+  /// No description provided for @welcomeTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-custodial wallet for BTC, ETH, XMR, and more.'**
+  String get welcomeTagline;
+
+  /// No description provided for @welcomeCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new wallet'**
+  String get welcomeCreateAction;
+
+  /// No description provided for @welcomeImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'I already have a recovery phrase'**
+  String get welcomeImportAction;
+
+  /// No description provided for @welcomeBackupWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Your 12-word recovery phrase is the only backup. Anyone with it can take your funds.'**
+  String get welcomeBackupWarning;
+
+  /// No description provided for @welcomeDisclaimerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the no-warranty disclaimer'**
+  String get welcomeDisclaimerAction;
+
+  /// No description provided for @welcomeDisclaimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disclaimer'**
+  String get welcomeDisclaimerTitle;
+
+  /// No description provided for @welcomeCopiedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get welcomeCopiedToast;
+
+  /// No description provided for @welcomeCopyTextAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get welcomeCopyTextAction;
+
+  /// No description provided for @welcomeIUnderstandAction.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand'**
+  String get welcomeIUnderstandAction;
+
+  /// No description provided for @revealSeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal recovery phrase'**
+  String get revealSeedTitle;
+
+  /// No description provided for @revealSeedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You are about to reveal your seed phrase and Monero keys. Anyone who sees them can take your funds — make sure no one is looking at your screen and you\'re not screen-sharing.'**
+  String get revealSeedWarning;
+
+  /// No description provided for @revealSeedPasswordPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your app password to continue.'**
+  String get revealSeedPasswordPrompt;
+
+  /// No description provided for @revealSeedRevealAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal'**
+  String get revealSeedRevealAction;
+
+  /// No description provided for @revealSeedBip39Section.
+  ///
+  /// In en, this message translates to:
+  /// **'BIP39 recovery phrase'**
+  String get revealSeedBip39Section;
+
+  /// No description provided for @revealSeedPassphraseSection.
+  ///
+  /// In en, this message translates to:
+  /// **'BIP39 passphrase (25th word)'**
+  String get revealSeedPassphraseSection;
+
+  /// No description provided for @revealSeedXmrAddressSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Monero primary address'**
+  String get revealSeedXmrAddressSection;
+
+  /// No description provided for @revealSeedXmrSpendSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Monero private spend key'**
+  String get revealSeedXmrSpendSection;
+
+  /// No description provided for @revealSeedXmrViewSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Monero private view key'**
+  String get revealSeedXmrViewSection;
+
+  /// No description provided for @revealSeedCopyPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy phrase'**
+  String get revealSeedCopyPhrase;
+
+  /// No description provided for @revealSeedCopyPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy passphrase'**
+  String get revealSeedCopyPassphrase;
+
+  /// No description provided for @revealSeedCopyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy address'**
+  String get revealSeedCopyAddress;
+
+  /// No description provided for @revealSeedCopySpendKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy spend key'**
+  String get revealSeedCopySpendKey;
+
+  /// No description provided for @revealSeedCopyViewKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy view key'**
+  String get revealSeedCopyViewKey;
+
+  /// No description provided for @revealSeedRestoreHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can restore this wallet in Cake / Feather / Monero GUI using \"Restore from keys\" with the address + view key + spend key above (or \"Restore from seed\" with the BIP39 phrase in any BIP39-compatible wallet).'**
+  String get revealSeedRestoreHint;
+
+  /// No description provided for @revealSeedCopiedSensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied — clipboard auto-clears in 30 s'**
+  String get revealSeedCopiedSensitive;
+
+  /// No description provided for @revealSeedCopiedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get revealSeedCopiedPlain;
+
+  /// No description provided for @aboutScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutScreenTitle;
+
+  /// No description provided for @aboutVersionLine.
+  ///
+  /// In en, this message translates to:
+  /// **'v{version} (build {build})'**
+  String aboutVersionLine(String version, String build);
+
+  /// No description provided for @aboutAppVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get aboutAppVersion;
+
+  /// No description provided for @aboutBuildNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Build number'**
+  String get aboutBuildNumber;
+
+  /// No description provided for @aboutPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'Package'**
+  String get aboutPackage;
+
+  /// No description provided for @aboutBuildSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Build signature'**
+  String get aboutBuildSignature;
+
+  /// No description provided for @aboutSourceSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get aboutSourceSection;
+
+  /// No description provided for @aboutLegalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get aboutLegalSection;
+
+  /// No description provided for @aboutGithubRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub repository'**
+  String get aboutGithubRepo;
+
+  /// No description provided for @aboutLicenseLink.
+  ///
+  /// In en, this message translates to:
+  /// **'License (GPL-3.0-or-later)'**
+  String get aboutLicenseLink;
+
+  /// No description provided for @aboutDisclaimerLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Disclaimer (no warranty)'**
+  String get aboutDisclaimerLink;
+
+  /// No description provided for @aboutSecurityModelLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Security model'**
+  String get aboutSecurityModelLink;
+
+  /// No description provided for @aboutFreeSoftwareBody.
+  ///
+  /// In en, this message translates to:
+  /// **'PeekWallet is free, open-source software. Anyone can read the source, build it themselves, and verify the binary on /releases matches the public code (reproducibility tracked in the roadmap).'**
+  String get aboutFreeSoftwareBody;
+
+  /// No description provided for @aboutUrlCopiedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'URL copied — open in your browser'**
+  String get aboutUrlCopiedToast;
+
   /// No description provided for @erc20EmptyHint.
   ///
   /// In en, this message translates to:

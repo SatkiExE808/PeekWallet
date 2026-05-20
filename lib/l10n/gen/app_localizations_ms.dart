@@ -1074,6 +1074,141 @@ class AppLocalizationsMs extends AppLocalizations {
   String get addWalletAppPasswordLabel => 'Kata laluan aplikasi';
 
   @override
+  String lockTryAgainIn(String duration) {
+    return 'Cuba lagi dalam $duration.';
+  }
+
+  @override
+  String get welcomeTagline =>
+      'Dompet self-custody untuk BTC, ETH, XMR dan lain-lain.';
+
+  @override
+  String get welcomeCreateAction => 'Cipta dompet baharu';
+
+  @override
+  String get welcomeImportAction => 'Saya sudah ada frasa pemulihan';
+
+  @override
+  String get welcomeBackupWarning =>
+      'Frasa pemulihan 12-perkataan anda adalah satu-satunya sandaran. Sesiapa dengannya boleh ambil dana anda.';
+
+  @override
+  String get welcomeDisclaimerAction => 'Baca penafian tanpa-jaminan';
+
+  @override
+  String get welcomeDisclaimerTitle => 'Penafian';
+
+  @override
+  String get welcomeCopiedToast => 'Disalin';
+
+  @override
+  String get welcomeCopyTextAction => 'Salin teks';
+
+  @override
+  String get welcomeIUnderstandAction => 'Saya faham';
+
+  @override
+  String get revealSeedTitle => 'Dedahkan frasa pemulihan';
+
+  @override
+  String get revealSeedWarning =>
+      'Anda akan mendedahkan frasa benih dan kunci Monero. Sesiapa yang melihat boleh ambil dana anda — pastikan tiada siapa melihat skrin dan anda tidak berkongsi skrin.';
+
+  @override
+  String get revealSeedPasswordPrompt =>
+      'Masukkan kata laluan aplikasi untuk meneruskan.';
+
+  @override
+  String get revealSeedRevealAction => 'Dedahkan';
+
+  @override
+  String get revealSeedBip39Section => 'Frasa pemulihan BIP39';
+
+  @override
+  String get revealSeedPassphraseSection =>
+      'Frasa laluan BIP39 (perkataan ke-25)';
+
+  @override
+  String get revealSeedXmrAddressSection => 'Alamat utama Monero';
+
+  @override
+  String get revealSeedXmrSpendSection => 'Kunci belanja peribadi Monero';
+
+  @override
+  String get revealSeedXmrViewSection => 'Kunci lihat peribadi Monero';
+
+  @override
+  String get revealSeedCopyPhrase => 'Salin frasa';
+
+  @override
+  String get revealSeedCopyPassphrase => 'Salin frasa laluan';
+
+  @override
+  String get revealSeedCopyAddress => 'Salin alamat';
+
+  @override
+  String get revealSeedCopySpendKey => 'Salin kunci belanja';
+
+  @override
+  String get revealSeedCopyViewKey => 'Salin kunci lihat';
+
+  @override
+  String get revealSeedRestoreHint =>
+      'Anda boleh memulihkan dompet ini di Cake / Feather / Monero GUI dengan \"Pulihkan dari kunci\" menggunakan alamat + kunci lihat + kunci belanja di atas, atau \"Pulihkan dari benih\" dengan frasa BIP39 dalam mana-mana dompet yang serasi BIP39.';
+
+  @override
+  String get revealSeedCopiedSensitive =>
+      'Disalin — papan keratan dikosongkan auto dalam 30 s';
+
+  @override
+  String get revealSeedCopiedPlain => 'Disalin';
+
+  @override
+  String get aboutScreenTitle => 'Mengenai';
+
+  @override
+  String aboutVersionLine(String version, String build) {
+    return 'v$version (binaan $build)';
+  }
+
+  @override
+  String get aboutAppVersion => 'Versi aplikasi';
+
+  @override
+  String get aboutBuildNumber => 'Nombor binaan';
+
+  @override
+  String get aboutPackage => 'Pakej';
+
+  @override
+  String get aboutBuildSignature => 'Tandatangan binaan';
+
+  @override
+  String get aboutSourceSection => 'Kod sumber';
+
+  @override
+  String get aboutLegalSection => 'Undang-undang';
+
+  @override
+  String get aboutGithubRepo => 'Repositori GitHub';
+
+  @override
+  String get aboutLicenseLink => 'Lesen (GPL-3.0-or-later)';
+
+  @override
+  String get aboutDisclaimerLink => 'Penafian (tanpa jaminan)';
+
+  @override
+  String get aboutSecurityModelLink => 'Model keselamatan';
+
+  @override
+  String get aboutFreeSoftwareBody =>
+      'PeekWallet ialah perisian sumber terbuka percuma. Sesiapa boleh membaca sumber, membinanya sendiri, dan mengesahkan binari di /releases sepadan dengan kod awam (kebolehulangan dijejaki dalam peta jalan).';
+
+  @override
+  String get aboutUrlCopiedToast => 'URL disalin — buka di pelayar anda';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.';
 

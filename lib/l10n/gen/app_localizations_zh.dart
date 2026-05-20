@@ -1033,6 +1033,136 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addWalletAppPasswordLabel => '應用程式密碼';
 
   @override
+  String lockTryAgainIn(String duration) {
+    return '請於 $duration 後再試。';
+  }
+
+  @override
+  String get welcomeTagline => 'BTC、ETH、XMR 等多幣種的自我託管錢包。';
+
+  @override
+  String get welcomeCreateAction => '建立新錢包';
+
+  @override
+  String get welcomeImportAction => '我已有助記詞';
+
+  @override
+  String get welcomeBackupWarning => '你的 12 字助記詞是唯一的備份。任何持有的人都能轉走資金。';
+
+  @override
+  String get welcomeDisclaimerAction => '閱讀免責聲明';
+
+  @override
+  String get welcomeDisclaimerTitle => '免責聲明';
+
+  @override
+  String get welcomeCopiedToast => '已複製';
+
+  @override
+  String get welcomeCopyTextAction => '複製文字';
+
+  @override
+  String get welcomeIUnderstandAction => '我已了解';
+
+  @override
+  String get revealSeedTitle => '顯示助記詞';
+
+  @override
+  String get revealSeedWarning =>
+      '你即將顯示助記詞和 Monero 金鑰。任何人看到都能轉走資金 — 確保沒人在看你的螢幕,也沒在進行螢幕分享。';
+
+  @override
+  String get revealSeedPasswordPrompt => '請輸入應用程式密碼以繼續。';
+
+  @override
+  String get revealSeedRevealAction => '顯示';
+
+  @override
+  String get revealSeedBip39Section => 'BIP39 助記詞';
+
+  @override
+  String get revealSeedPassphraseSection => 'BIP39 通行短語(第 25 字)';
+
+  @override
+  String get revealSeedXmrAddressSection => 'Monero 主要地址';
+
+  @override
+  String get revealSeedXmrSpendSection => 'Monero 私人花費金鑰';
+
+  @override
+  String get revealSeedXmrViewSection => 'Monero 私人檢視金鑰';
+
+  @override
+  String get revealSeedCopyPhrase => '複製助記詞';
+
+  @override
+  String get revealSeedCopyPassphrase => '複製通行短語';
+
+  @override
+  String get revealSeedCopyAddress => '複製地址';
+
+  @override
+  String get revealSeedCopySpendKey => '複製花費金鑰';
+
+  @override
+  String get revealSeedCopyViewKey => '複製檢視金鑰';
+
+  @override
+  String get revealSeedRestoreHint =>
+      '你可以在 Cake / Feather / Monero GUI 中用「從金鑰還原」(地址 + 檢視金鑰 + 花費金鑰)還原此錢包,或用 BIP39 助記詞在任何 BIP39 相容錢包中還原。';
+
+  @override
+  String get revealSeedCopiedSensitive => '已複製 — 剪貼簿將於 30 秒後自動清除';
+
+  @override
+  String get revealSeedCopiedPlain => '已複製';
+
+  @override
+  String get aboutScreenTitle => '關於';
+
+  @override
+  String aboutVersionLine(String version, String build) {
+    return 'v$version(build $build)';
+  }
+
+  @override
+  String get aboutAppVersion => '應用版本';
+
+  @override
+  String get aboutBuildNumber => '建置編號';
+
+  @override
+  String get aboutPackage => '套件';
+
+  @override
+  String get aboutBuildSignature => '建置簽章';
+
+  @override
+  String get aboutSourceSection => '原始碼';
+
+  @override
+  String get aboutLegalSection => '法律';
+
+  @override
+  String get aboutGithubRepo => 'GitHub 程式碼庫';
+
+  @override
+  String get aboutLicenseLink => '授權(GPL-3.0-or-later)';
+
+  @override
+  String get aboutDisclaimerLink => '免責聲明';
+
+  @override
+  String get aboutSecurityModelLink => '安全模型';
+
+  @override
+  String get aboutFreeSoftwareBody =>
+      'PeekWallet 是免費的開放原始碼軟體。任何人都可以閱讀原始碼、自行建置,並驗證 /releases 上的二進位檔與公開原始碼相符(可重現性追蹤於路線圖)。';
+
+  @override
+  String get aboutUrlCopiedToast => 'URL 已複製 — 請在瀏覽器中開啟';
+
+  @override
   String get erc20EmptyHint =>
       '尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。';
 
@@ -2092,6 +2222,136 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get addWalletAppPasswordLabel => '應用程式密碼';
+
+  @override
+  String lockTryAgainIn(String duration) {
+    return '請於 $duration 後再試。';
+  }
+
+  @override
+  String get welcomeTagline => 'BTC、ETH、XMR 等多幣種的自我託管錢包。';
+
+  @override
+  String get welcomeCreateAction => '建立新錢包';
+
+  @override
+  String get welcomeImportAction => '我已有助記詞';
+
+  @override
+  String get welcomeBackupWarning => '你的 12 字助記詞是唯一的備份。任何持有的人都能轉走資金。';
+
+  @override
+  String get welcomeDisclaimerAction => '閱讀免責聲明';
+
+  @override
+  String get welcomeDisclaimerTitle => '免責聲明';
+
+  @override
+  String get welcomeCopiedToast => '已複製';
+
+  @override
+  String get welcomeCopyTextAction => '複製文字';
+
+  @override
+  String get welcomeIUnderstandAction => '我已了解';
+
+  @override
+  String get revealSeedTitle => '顯示助記詞';
+
+  @override
+  String get revealSeedWarning =>
+      '你即將顯示助記詞和 Monero 金鑰。任何人看到都能轉走資金 — 確保沒人在看你的螢幕,也沒在進行螢幕分享。';
+
+  @override
+  String get revealSeedPasswordPrompt => '請輸入應用程式密碼以繼續。';
+
+  @override
+  String get revealSeedRevealAction => '顯示';
+
+  @override
+  String get revealSeedBip39Section => 'BIP39 助記詞';
+
+  @override
+  String get revealSeedPassphraseSection => 'BIP39 通行短語(第 25 字)';
+
+  @override
+  String get revealSeedXmrAddressSection => 'Monero 主要地址';
+
+  @override
+  String get revealSeedXmrSpendSection => 'Monero 私人花費金鑰';
+
+  @override
+  String get revealSeedXmrViewSection => 'Monero 私人檢視金鑰';
+
+  @override
+  String get revealSeedCopyPhrase => '複製助記詞';
+
+  @override
+  String get revealSeedCopyPassphrase => '複製通行短語';
+
+  @override
+  String get revealSeedCopyAddress => '複製地址';
+
+  @override
+  String get revealSeedCopySpendKey => '複製花費金鑰';
+
+  @override
+  String get revealSeedCopyViewKey => '複製檢視金鑰';
+
+  @override
+  String get revealSeedRestoreHint =>
+      '你可以在 Cake / Feather / Monero GUI 中用「從金鑰還原」(地址 + 檢視金鑰 + 花費金鑰)還原此錢包,或用 BIP39 助記詞在任何 BIP39 相容錢包中還原。';
+
+  @override
+  String get revealSeedCopiedSensitive => '已複製 — 剪貼簿將於 30 秒後自動清除';
+
+  @override
+  String get revealSeedCopiedPlain => '已複製';
+
+  @override
+  String get aboutScreenTitle => '關於';
+
+  @override
+  String aboutVersionLine(String version, String build) {
+    return 'v$version(build $build)';
+  }
+
+  @override
+  String get aboutAppVersion => '應用版本';
+
+  @override
+  String get aboutBuildNumber => '建置編號';
+
+  @override
+  String get aboutPackage => '套件';
+
+  @override
+  String get aboutBuildSignature => '建置簽章';
+
+  @override
+  String get aboutSourceSection => '原始碼';
+
+  @override
+  String get aboutLegalSection => '法律';
+
+  @override
+  String get aboutGithubRepo => 'GitHub 程式碼庫';
+
+  @override
+  String get aboutLicenseLink => '授權(GPL-3.0-or-later)';
+
+  @override
+  String get aboutDisclaimerLink => '免責聲明';
+
+  @override
+  String get aboutSecurityModelLink => '安全模型';
+
+  @override
+  String get aboutFreeSoftwareBody =>
+      'PeekWallet 是免費的開放原始碼軟體。任何人都可以閱讀原始碼、自行建置,並驗證 /releases 上的二進位檔與公開原始碼相符(可重現性追蹤於路線圖)。';
+
+  @override
+  String get aboutUrlCopiedToast => 'URL 已複製 — 請在瀏覽器中開啟';
 
   @override
   String get erc20EmptyHint =>

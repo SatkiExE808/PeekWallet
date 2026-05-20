@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../coins/monero/monero_keys.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
@@ -63,14 +64,10 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the whole screen so FLAG_SECURE is applied as soon as the
-    // route lands — the password-verification step also benefits
-    // (a shoulder-surfer's recents thumbnail wouldn't capture the
-    // password, but the broader "this user is about to reveal a seed"
-    // context is already sensitive).
+    final l = AppLocalizations.of(context);
     return ScreenshotGuard(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Reveal recovery phrase')),
+        appBar: AppBar(title: Text(l.revealSeedTitle)),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -82,6 +79,7 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
   }
 
   Widget _verifyForm() {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -107,13 +105,10 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
                     color: PeekColors.red, size: 18),
               ),
               const SizedBox(width: PeekDesign.sp3),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'You are about to reveal your seed phrase and Monero '
-                  'keys. Anyone who sees them can take your funds — make '
-                  "sure no one is looking at your screen and you're not "
-                  'screen-sharing.',
-                  style: TextStyle(
+                  l.revealSeedWarning,
+                  style: const TextStyle(
                       color: PeekColors.text, fontSize: 12, height: 1.4),
                 ),
               ),
@@ -121,9 +116,9 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
           ),
         ),
         const SizedBox(height: PeekDesign.sp5),
-        const Text(
-          'Enter your app password to continue.',
-          style: TextStyle(color: PeekColors.text2, fontSize: 13),
+        Text(
+          l.revealSeedPasswordPrompt,
+          style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: PeekDesign.sp3),
         TextField(
@@ -131,9 +126,9 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
           obscureText: true,
           autofocus: true,
           onSubmitted: (_) => _verify(),
-          decoration: const InputDecoration(
-            hintText: 'Password',
-            prefixIcon: Icon(Icons.password_rounded,
+          decoration: InputDecoration(
+            hintText: l.lockPasswordHint,
+            prefixIcon: const Icon(Icons.password_rounded,
                 size: 18, color: PeekColors.text2),
           ),
         ),
@@ -163,20 +158,21 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Reveal'),
+              : Text(l.revealSeedRevealAction),
         ),
       ],
     );
   }
 
   Widget _revealView() {
+    final l = AppLocalizations.of(context);
     final seed = _seed!;
     final keys = _moneroKeys!;
     final words = seed.mnemonic.split(' ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionLabel('BIP39 recovery phrase'),
+        _SectionLabel(l.revealSeedBip39Section),
         const SizedBox(height: 6),
         GridView.builder(
           shrinkWrap: true,
@@ -222,39 +218,33 @@ class _RevealSeedScreenState extends State<RevealSeedScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        _CopyRow(label: 'Copy phrase', value: seed.mnemonic, sensitive: true),
+        _CopyRow(label: l.revealSeedCopyPhrase, value: seed.mnemonic, sensitive: true),
         if (seed.passphrase.isNotEmpty) ...[
           const SizedBox(height: 18),
-          const _SectionLabel('BIP39 passphrase (25th word)'),
+          _SectionLabel(l.revealSeedPassphraseSection),
           const SizedBox(height: 6),
           _MonoBlock(text: seed.passphrase),
-          _CopyRow(label: 'Copy passphrase', value: seed.passphrase, sensitive: true),
+          _CopyRow(label: l.revealSeedCopyPassphrase, value: seed.passphrase, sensitive: true),
         ],
         const SizedBox(height: 18),
-        const _SectionLabel('Monero primary address'),
+        _SectionLabel(l.revealSeedXmrAddressSection),
         const SizedBox(height: 6),
         _MonoBlock(text: keys.primaryAddress),
-        // Address is public — no auto-clear. User may want to paste
-        // it into a watch-only wallet hours later.
-        _CopyRow(label: 'Copy address', value: keys.primaryAddress),
+        _CopyRow(label: l.revealSeedCopyAddress, value: keys.primaryAddress),
         const SizedBox(height: 18),
-        const _SectionLabel('Monero private spend key'),
+        _SectionLabel(l.revealSeedXmrSpendSection),
         const SizedBox(height: 6),
         _MonoBlock(text: keys.privateSpendHex),
-        _CopyRow(label: 'Copy spend key', value: keys.privateSpendHex, sensitive: true),
+        _CopyRow(label: l.revealSeedCopySpendKey, value: keys.privateSpendHex, sensitive: true),
         const SizedBox(height: 18),
-        const _SectionLabel('Monero private view key'),
+        _SectionLabel(l.revealSeedXmrViewSection),
         const SizedBox(height: 6),
         _MonoBlock(text: keys.privateViewHex),
-        // View key gives read-only access — sensitive enough to clear.
-        _CopyRow(label: 'Copy view key', value: keys.privateViewHex, sensitive: true),
+        _CopyRow(label: l.revealSeedCopyViewKey, value: keys.privateViewHex, sensitive: true),
         const SizedBox(height: 24),
-        const Text(
-          'You can restore this wallet in Cake / Feather / Monero GUI '
-          'using "Restore from keys" with the address + view key + spend '
-          'key above (or "Restore from seed" with the BIP39 phrase in any '
-          'BIP39-compatible wallet).',
-          style: TextStyle(color: PeekColors.text3, fontSize: 11),
+        Text(
+          l.revealSeedRestoreHint,
+          style: const TextStyle(color: PeekColors.text3, fontSize: 11),
         ),
       ],
     );
@@ -316,6 +306,7 @@ class _CopyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton.icon(
@@ -327,9 +318,10 @@ class _CopyRow extends StatelessWidget {
           }
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(sensitive
-                ? 'Copied — clipboard auto-clears in 30 s'
-                : 'Copied')),
+            SnackBar(
+                content: Text(sensitive
+                    ? l.revealSeedCopiedSensitive
+                    : l.revealSeedCopiedPlain)),
           );
         },
         icon: const Icon(Icons.copy, size: 14),

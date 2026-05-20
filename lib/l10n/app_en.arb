@@ -542,6 +542,60 @@
   "addWalletScanAddressTitle": "Scan address",
   "addWalletConfirmPasswordTitle": "Confirm password",
   "addWalletAppPasswordLabel": "App password",
+  "lockTryAgainIn": "Try again in {duration}.",
+  "@lockTryAgainIn": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+
+  "welcomeTagline": "Self-custodial wallet for BTC, ETH, XMR, and more.",
+  "welcomeCreateAction": "Create new wallet",
+  "welcomeImportAction": "I already have a recovery phrase",
+  "welcomeBackupWarning": "Your 12-word recovery phrase is the only backup. Anyone with it can take your funds.",
+  "welcomeDisclaimerAction": "Read the no-warranty disclaimer",
+  "welcomeDisclaimerTitle": "Disclaimer",
+  "welcomeCopiedToast": "Copied",
+  "welcomeCopyTextAction": "Copy text",
+  "welcomeIUnderstandAction": "I understand",
+
+  "revealSeedTitle": "Reveal recovery phrase",
+  "revealSeedWarning": "You are about to reveal your seed phrase and Monero keys. Anyone who sees them can take your funds — make sure no one is looking at your screen and you're not screen-sharing.",
+  "revealSeedPasswordPrompt": "Enter your app password to continue.",
+  "revealSeedRevealAction": "Reveal",
+  "revealSeedBip39Section": "BIP39 recovery phrase",
+  "revealSeedPassphraseSection": "BIP39 passphrase (25th word)",
+  "revealSeedXmrAddressSection": "Monero primary address",
+  "revealSeedXmrSpendSection": "Monero private spend key",
+  "revealSeedXmrViewSection": "Monero private view key",
+  "revealSeedCopyPhrase": "Copy phrase",
+  "revealSeedCopyPassphrase": "Copy passphrase",
+  "revealSeedCopyAddress": "Copy address",
+  "revealSeedCopySpendKey": "Copy spend key",
+  "revealSeedCopyViewKey": "Copy view key",
+  "revealSeedRestoreHint": "You can restore this wallet in Cake / Feather / Monero GUI using \"Restore from keys\" with the address + view key + spend key above (or \"Restore from seed\" with the BIP39 phrase in any BIP39-compatible wallet).",
+  "revealSeedCopiedSensitive": "Copied — clipboard auto-clears in 30 s",
+  "revealSeedCopiedPlain": "Copied",
+  "aboutScreenTitle": "About",
+  "aboutVersionLine": "v{version} (build {build})",
+  "@aboutVersionLine": {
+    "placeholders": {
+      "version": {"type": "String"},
+      "build": {"type": "String"}
+    }
+  },
+  "aboutAppVersion": "App version",
+  "aboutBuildNumber": "Build number",
+  "aboutPackage": "Package",
+  "aboutBuildSignature": "Build signature",
+  "aboutSourceSection": "Source code",
+  "aboutLegalSection": "Legal",
+  "aboutGithubRepo": "GitHub repository",
+  "aboutLicenseLink": "License (GPL-3.0-or-later)",
+  "aboutDisclaimerLink": "Disclaimer (no warranty)",
+  "aboutSecurityModelLink": "Security model",
+  "aboutFreeSoftwareBody": "PeekWallet is free, open-source software. Anyone can read the source, build it themselves, and verify the binary on /releases matches the public code (reproducibility tracked in the roadmap).",
+  "aboutUrlCopiedToast": "URL copied — open in your browser",
   "@sendSolFinalFeeHintNewAta": {
     "placeholders": {
       "symbol": {"type": "String"}

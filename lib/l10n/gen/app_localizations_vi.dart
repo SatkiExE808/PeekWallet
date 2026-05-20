@@ -1065,6 +1065,140 @@ class AppLocalizationsVi extends AppLocalizations {
   String get addWalletAppPasswordLabel => 'Mật khẩu ứng dụng';
 
   @override
+  String lockTryAgainIn(String duration) {
+    return 'Thử lại sau $duration.';
+  }
+
+  @override
+  String get welcomeTagline =>
+      'Ví tự lưu trữ cho BTC, ETH, XMR và nhiều hơn nữa.';
+
+  @override
+  String get welcomeCreateAction => 'Tạo ví mới';
+
+  @override
+  String get welcomeImportAction => 'Tôi đã có cụm từ khôi phục';
+
+  @override
+  String get welcomeBackupWarning =>
+      'Cụm từ khôi phục 12 từ là bản sao duy nhất. Bất kỳ ai có nó đều có thể lấy tiền của bạn.';
+
+  @override
+  String get welcomeDisclaimerAction => 'Đọc tuyên bố miễn trừ trách nhiệm';
+
+  @override
+  String get welcomeDisclaimerTitle => 'Tuyên bố';
+
+  @override
+  String get welcomeCopiedToast => 'Đã sao chép';
+
+  @override
+  String get welcomeCopyTextAction => 'Sao chép văn bản';
+
+  @override
+  String get welcomeIUnderstandAction => 'Tôi hiểu';
+
+  @override
+  String get revealSeedTitle => 'Hiện cụm từ khôi phục';
+
+  @override
+  String get revealSeedWarning =>
+      'Bạn sắp hiển thị cụm từ seed và khoá Monero. Bất kỳ ai nhìn thấy đều có thể lấy tiền của bạn — đảm bảo không ai nhìn vào màn hình và bạn không đang chia sẻ màn hình.';
+
+  @override
+  String get revealSeedPasswordPrompt => 'Nhập mật khẩu ứng dụng để tiếp tục.';
+
+  @override
+  String get revealSeedRevealAction => 'Hiển thị';
+
+  @override
+  String get revealSeedBip39Section => 'Cụm từ khôi phục BIP39';
+
+  @override
+  String get revealSeedPassphraseSection => 'Passphrase BIP39 (từ 25)';
+
+  @override
+  String get revealSeedXmrAddressSection => 'Địa chỉ chính Monero';
+
+  @override
+  String get revealSeedXmrSpendSection => 'Khoá chi tiêu riêng Monero';
+
+  @override
+  String get revealSeedXmrViewSection => 'Khoá xem riêng Monero';
+
+  @override
+  String get revealSeedCopyPhrase => 'Sao chép cụm từ';
+
+  @override
+  String get revealSeedCopyPassphrase => 'Sao chép passphrase';
+
+  @override
+  String get revealSeedCopyAddress => 'Sao chép địa chỉ';
+
+  @override
+  String get revealSeedCopySpendKey => 'Sao chép khoá chi tiêu';
+
+  @override
+  String get revealSeedCopyViewKey => 'Sao chép khoá xem';
+
+  @override
+  String get revealSeedRestoreHint =>
+      'Bạn có thể khôi phục ví này trong Cake / Feather / Monero GUI bằng \"Khôi phục từ khoá\" với địa chỉ + khoá xem + khoá chi tiêu ở trên (hoặc \"Khôi phục từ seed\" với cụm từ BIP39 trong bất kỳ ví nào tương thích BIP39).';
+
+  @override
+  String get revealSeedCopiedSensitive =>
+      'Đã sao chép — bộ nhớ tạm tự xoá sau 30 s';
+
+  @override
+  String get revealSeedCopiedPlain => 'Đã sao chép';
+
+  @override
+  String get aboutScreenTitle => 'Giới thiệu';
+
+  @override
+  String aboutVersionLine(String version, String build) {
+    return 'v$version (build $build)';
+  }
+
+  @override
+  String get aboutAppVersion => 'Phiên bản ứng dụng';
+
+  @override
+  String get aboutBuildNumber => 'Số build';
+
+  @override
+  String get aboutPackage => 'Package';
+
+  @override
+  String get aboutBuildSignature => 'Chữ ký build';
+
+  @override
+  String get aboutSourceSection => 'Mã nguồn';
+
+  @override
+  String get aboutLegalSection => 'Pháp lý';
+
+  @override
+  String get aboutGithubRepo => 'Kho GitHub';
+
+  @override
+  String get aboutLicenseLink => 'Giấy phép (GPL-3.0-or-later)';
+
+  @override
+  String get aboutDisclaimerLink => 'Tuyên bố (không bảo hành)';
+
+  @override
+  String get aboutSecurityModelLink => 'Mô hình bảo mật';
+
+  @override
+  String get aboutFreeSoftwareBody =>
+      'PeekWallet là phần mềm tự do, mã nguồn mở. Mọi người có thể đọc mã, tự build và xác minh binary trên /releases khớp với mã công khai (khả năng tái hiện được theo dõi trong lộ trình).';
+
+  @override
+  String get aboutUrlCopiedToast =>
+      'URL đã sao chép — mở trên trình duyệt của bạn';
+
+  @override
   String get erc20EmptyHint =>
       'Chưa có token — nhận USDT/USDC/DAI vào địa chỉ này hoặc nhấn \"Thêm token\" để theo dõi ERC-20 khác qua địa chỉ hợp đồng.';
 
