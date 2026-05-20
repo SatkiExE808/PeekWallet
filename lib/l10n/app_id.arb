@@ -491,7 +491,7 @@
   "xmrScreenResetAction": "Reset & pindai ulang",
   "xmrScreenResetAndRescanFromSeed": "Reset & pindai ulang dari seed",
   "xmrScreenActivity": "Aktivitas",
-  "xmrScreenWalletStillSyncing": "Dompet masih menyinkron — aktivitas terbaru akan muncul setelah kami menyusul puncak rantai.",
+  "xmrScreenWalletStillSyncing": "Dompet masih menyinkron — aktivitas terbaru mungkin belum muncul. Output yang sudah dikonfirmasi sebelumnya tetap bisa dibelanjakan.",
   "xmrScreenAddressCopied": "Alamat disalin",
   "xmrScreenCopyAddress": "Salin alamat",
   "xmrScreenTxStatusFailed": "Gagal",

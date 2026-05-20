@@ -491,7 +491,7 @@
   "xmrScreenResetAction": "重置並重新掃描",
   "xmrScreenResetAndRescanFromSeed": "由種子重置並重新掃描",
   "xmrScreenActivity": "交易紀錄",
-  "xmrScreenWalletStillSyncing": "錢包仍在同步 — 新的交易會在追上鏈頂後出現。",
+  "xmrScreenWalletStillSyncing": "錢包仍在同步 — 新交易可能尚未出現。較舊的已確認輸出仍可使用。",
   "xmrScreenAddressCopied": "地址已複製",
   "xmrScreenCopyAddress": "複製地址",
   "xmrScreenTxStatusFailed": "失敗",

@@ -1615,7 +1615,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get xmrScreenWalletStillSyncing =>
-      'Ví vẫn đang đồng bộ — hoạt động mới sẽ xuất hiện khi đã theo kịp đỉnh chuỗi.';
+      'Ví vẫn đang đồng bộ — hoạt động mới hơn có thể bị thiếu. Các đầu ra đã xác nhận trước đó vẫn có thể chi tiêu.';
 
   @override
   String get xmrScreenAddressCopied => 'Đã sao chép địa chỉ';

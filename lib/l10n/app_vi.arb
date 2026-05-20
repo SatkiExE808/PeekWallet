@@ -491,7 +491,7 @@
   "xmrScreenResetAction": "Đặt lại & quét lại",
   "xmrScreenResetAndRescanFromSeed": "Đặt lại & quét lại từ seed",
   "xmrScreenActivity": "Hoạt động",
-  "xmrScreenWalletStillSyncing": "Ví vẫn đang đồng bộ — hoạt động mới sẽ xuất hiện khi đã theo kịp đỉnh chuỗi.",
+  "xmrScreenWalletStillSyncing": "Ví vẫn đang đồng bộ — hoạt động mới hơn có thể bị thiếu. Các đầu ra đã xác nhận trước đó vẫn có thể chi tiêu.",
   "xmrScreenAddressCopied": "Đã sao chép địa chỉ",
   "xmrScreenCopyAddress": "Sao chép địa chỉ",
   "xmrScreenTxStatusFailed": "Thất bại",

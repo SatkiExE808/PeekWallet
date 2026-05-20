@@ -1626,7 +1626,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get xmrScreenWalletStillSyncing =>
-      'Dompet masih menyinkron — aktivitas terbaru akan muncul setelah kami menyusul puncak rantai.';
+      'Dompet masih menyinkron — aktivitas terbaru mungkin belum muncul. Output yang sudah dikonfirmasi sebelumnya tetap bisa dibelanjakan.';
 
   @override
   String get xmrScreenAddressCopied => 'Alamat disalin';

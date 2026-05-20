@@ -167,7 +167,10 @@ class _CoinScreenState extends State<CoinScreen> {
     // Legacy single-wallet mode (vault-wallet-style unified seed).
     final mn = VaultState.I.mnemonic;
     if (mn == null) {
-      setState(() => _loadErr = _XmrLoadError.locked);
+      setState(() {
+        _loadErr = _XmrLoadError.locked;
+        _loadErrDetail = null;
+      });
       return;
     }
     try {
@@ -202,7 +205,10 @@ class _CoinScreenState extends State<CoinScreen> {
     final walletFilePassword = VaultState.I.walletFilePassword;
     if (walletFilePassword == null) {
       stageTicker.cancel();
-      setState(() => _engineErr = _XmrEngineError.vaultLocked);
+      setState(() {
+        _engineErr = _XmrEngineError.vaultLocked;
+        _engineErrDetail = null;
+      });
       return;
     }
 
@@ -216,7 +222,10 @@ class _CoinScreenState extends State<CoinScreen> {
       password = await _promptPasswordOnce(context);
       if (password == null) {
         stageTicker.cancel();
-        setState(() => _engineErr = _XmrEngineError.passwordRequired);
+        setState(() {
+          _engineErr = _XmrEngineError.passwordRequired;
+          _engineErrDetail = null;
+        });
         return;
       }
     }
@@ -349,7 +358,10 @@ class _CoinScreenState extends State<CoinScreen> {
       // before bailing or it keeps repainting forever (battery +
       // mutates state on a disposed screen).
       stageTicker.cancel();
-      setState(() => _engineErr = _XmrEngineError.vaultLocked);
+      setState(() {
+        _engineErr = _XmrEngineError.vaultLocked;
+        _engineErrDetail = null;
+      });
       return;
     }
     final daemonUri =
@@ -1294,8 +1306,10 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
 
   void _reload() {
     final w = widget.wallet;
-    final primaryLabel =
-        AppLocalizations.of(context).xmrScreenLabelPrimary;
+    // Don't resolve the "Primary" label here — _reload() is called
+    // from initState() and inherited-widget lookups aren't valid that
+    // early. _SubaddrTile renders the localized label in build()
+    // based on row.index == 0.
     if (w == null) {
       // No live engine — only the primary address from pure-Dart
       // derivation is available. Still useful for receive.
@@ -1303,7 +1317,7 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
         _SubaddrRow(
           index: 0,
           address: widget.primaryAddress,
-          label: primaryLabel,
+          label: '',
         ),
       ];
       _selectedIndex = 0;
@@ -1315,12 +1329,7 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
       rows.add(_SubaddrRow(
         index: i,
         address: w.subaddress(i),
-        label: i == 0
-            ? primaryLabel
-            : (() {
-                final lbl = w.subaddressLabel(i);
-                return lbl.isEmpty ? '' : lbl;
-              })(),
+        label: i == 0 ? '' : w.subaddressLabel(i),
       ));
     }
     setState(() {
@@ -1552,11 +1561,15 @@ class _SubaddrTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     // First 6 and last 4 chars so each tile renders one line on phones.
     final addr = row.address;
     final short = addr.length > 14
         ? '${addr.substring(0, 6)}…${addr.substring(addr.length - 6)}'
         : addr;
+    // Primary's label is resolved here rather than at _reload() time
+    // so it stays locale-reactive.
+    final displayLabel = row.index == 0 ? l.xmrScreenLabelPrimary : row.label;
     return InkWell(
       onTap: onTap,
       onLongPress: onLabelEdit,
@@ -1594,9 +1607,9 @@ class _SubaddrTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (row.label.isNotEmpty)
+                  if (displayLabel.isNotEmpty)
                     Text(
-                      row.label,
+                      displayLabel,
                       style: const TextStyle(
                         color: PeekColors.text,
                         fontSize: 13,
@@ -1606,7 +1619,7 @@ class _SubaddrTile extends StatelessWidget {
                   Text(
                     short,
                     style: TextStyle(
-                      color: row.label.isEmpty ? PeekColors.text : PeekColors.text3,
+                      color: displayLabel.isEmpty ? PeekColors.text : PeekColors.text3,
                       fontSize: 11,
                       fontFamily: 'monospace',
                     ),
@@ -1619,7 +1632,7 @@ class _SubaddrTile extends StatelessWidget {
                 icon: const Icon(Icons.edit, size: 16),
                 color: PeekColors.text3,
                 visualDensity: VisualDensity.compact,
-                tooltip: AppLocalizations.of(context).xmrScreenEditLabelTooltip,
+                tooltip: l.xmrScreenEditLabelTooltip,
                 onPressed: onLabelEdit,
               ),
             Icon(

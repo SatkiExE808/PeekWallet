@@ -1628,7 +1628,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get xmrScreenWalletStillSyncing =>
-      'Wallet is still syncing — newer activity will appear once we catch up to the chain tip.';
+      'Wallet is still syncing — newer activity may be missing. Older confirmed outputs are still spendable.';
 
   @override
   String get xmrScreenAddressCopied => 'Address copied';

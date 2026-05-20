@@ -2910,7 +2910,7 @@ abstract class AppLocalizations {
   /// No description provided for @xmrScreenWalletStillSyncing.
   ///
   /// In en, this message translates to:
-  /// **'Wallet is still syncing — newer activity will appear once we catch up to the chain tip.'**
+  /// **'Wallet is still syncing — newer activity may be missing. Older confirmed outputs are still spendable.'**
   String get xmrScreenWalletStillSyncing;
 
   /// No description provided for @xmrScreenAddressCopied.

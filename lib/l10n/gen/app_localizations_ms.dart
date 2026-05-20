@@ -1634,7 +1634,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get xmrScreenWalletStillSyncing =>
-      'Dompet masih menyegerak — aktiviti lebih baharu akan muncul setelah kami menyusul puncak rantai.';
+      'Dompet masih menyegerak — aktiviti lebih baharu mungkin tiada. Output yang telah disahkan sebelum ini masih boleh dibelanjakan.';
 
   @override
   String get xmrScreenAddressCopied => 'Alamat disalin';

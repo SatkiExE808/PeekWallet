@@ -1560,7 +1560,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get xmrScreenActivity => '交易紀錄';
 
   @override
-  String get xmrScreenWalletStillSyncing => '錢包仍在同步 — 新的交易會在追上鏈頂後出現。';
+  String get xmrScreenWalletStillSyncing => '錢包仍在同步 — 新交易可能尚未出現。較舊的已確認輸出仍可使用。';
 
   @override
   String get xmrScreenAddressCopied => '地址已複製';
@@ -3296,7 +3296,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get xmrScreenActivity => '交易紀錄';
 
   @override
-  String get xmrScreenWalletStillSyncing => '錢包仍在同步 — 新的交易會在追上鏈頂後出現。';
+  String get xmrScreenWalletStillSyncing => '錢包仍在同步 — 新交易可能尚未出現。較舊的已確認輸出仍可使用。';
 
   @override
   String get xmrScreenAddressCopied => '地址已複製';
