@@ -19,6 +19,7 @@ import '../vault/vault_state.dart';
 import '../wallets/balance_cache.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
+import '../widgets/skeleton.dart';
 import 'add_wallet/add_wallet_flow.dart';
 import 'bch_coin_screen.dart';
 import 'bitcoin_coin_screen.dart';
@@ -284,8 +285,18 @@ class _WalletsScreenState extends State<WalletsScreen> {
           future: _entries,
           builder: (ctx, snap) {
             if (!snap.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(color: PeekColors.accent),
+              // Shimmer 3 placeholder rows instead of a centered
+              // spinner — same layout the live list will use, so the
+              // page doesn't jump when wallets land.
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: PeekDesign.sp4,
+                    vertical: PeekDesign.sp3),
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 3,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: PeekDesign.sp2),
+                itemBuilder: (_, _) => const WalletRowSkeleton(),
               );
             }
             final entries = snap.data!;
@@ -539,7 +550,28 @@ class _PortfolioHeader extends StatelessWidget {
             ),
             boxShadow: PeekDesign.cardShadow,
           ),
-          child: Column(
+          // Stack the soft accent glow behind the content so the
+          // hero feels like a "living" surface rather than a flat
+          // card. Same depth-via-color trick Tangem + Exodus use on
+          // their portfolio cards.
+          child: Stack(
+            children: [
+              Positioned(
+                right: -40,
+                top: -40,
+                child: Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      PeekColors.accent.withAlpha(36),
+                      PeekColors.accent.withAlpha(0),
+                    ]),
+                  ),
+                ),
+              ),
+              Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -601,6 +633,8 @@ class _PortfolioHeader extends StatelessWidget {
               ),
             ],
           ),
+            ],
+          ),
         );
       },
     );
@@ -630,24 +664,52 @@ class _WalletRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasBalance = cached != null;
+    final accent = PeekColors.coinAccent(meta.coinId);
     return Material(
       color: PeekColors.surface,
       borderRadius: PeekDesign.brCard,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
         borderRadius: PeekDesign.brCard,
-        splashColor: PeekColors.accentMuted,
+        splashColor: accent.withAlpha(36),
+        highlightColor: accent.withAlpha(20),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: PeekDesign.brCard,
             border: Border.all(color: PeekColors.hairline, width: 1),
+            // Coin-aware accent stripe on the left edge — same idea as
+            // Mac apps' colored sidebar dots and Exodus's gradient cards.
+            // 3px wide so it reads from across the room without dominating
+            // the card. Falls back to the generic accent for unknown coins.
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              stops: const [0.0, 0.012, 0.012, 1.0],
+              colors: [
+                accent,
+                accent,
+                PeekColors.surface,
+                PeekColors.surface,
+              ],
+            ),
           ),
           padding: const EdgeInsets.symmetric(
               horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
           child: Row(
             children: [
-              coinAvatar(meta.coinId, radius: 22),
+              // Coin avatar with a soft ring of the brand accent so
+              // the symbol reads as "this is BTC" / "this is ETH"
+              // even when the user has scrolled fast.
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent.withAlpha(96), width: 1.5),
+                ),
+                child: coinAvatar(meta.coinId, radius: 20),
+              ),
               const SizedBox(width: PeekDesign.sp4),
               Expanded(
                 child: Column(

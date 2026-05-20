@@ -132,36 +132,11 @@ class _LockScreenState extends State<LockScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              // Soft accent glow behind the lock icon — same pattern
-              // as the wallets-list empty state. Makes the splash
-              // feel deliberate rather than blank-and-iconic.
-              Container(
-                width: 96,
-                height: 96,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [
-                    PeekColors.accent.withAlpha(54),
-                    PeekColors.accent.withAlpha(0),
-                  ]),
-                ),
-                child: Container(
-                  width: 68,
-                  height: 68,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: PeekColors.surface2,
-                    border: Border.all(color: PeekColors.border),
-                  ),
-                  child: const Icon(
-                    Icons.lock_rounded,
-                    size: 32,
-                    color: PeekColors.accent,
-                  ),
-                ),
-              ),
+              // Breathing glow behind the lock icon — radial gradient
+              // pulses every 3s so the splash feels alive instead of
+              // static. Matches the Tangem / Phantom "vault breathing"
+              // motion that signals the secure boundary.
+              _BreathingLockGlow(lockedOut: lockedOut),
               const SizedBox(height: PeekDesign.sp5),
               Text(
                 l.appName,
@@ -300,6 +275,116 @@ class _LockScreenState extends State<LockScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Subtle pulsing glow behind the lock icon on [LockScreen]. The
+/// scale + opacity breathe every 3 seconds — slow enough that it
+/// reads as "alive" without being distracting. Stops when the
+/// user is locked out (the muted red-tinted lockout copy is its
+/// own signal of state).
+class _BreathingLockGlow extends StatefulWidget {
+  const _BreathingLockGlow({required this.lockedOut});
+  final bool lockedOut;
+
+  @override
+  State<_BreathingLockGlow> createState() => _BreathingLockGlowState();
+}
+
+class _BreathingLockGlowState extends State<_BreathingLockGlow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    );
+    if (!widget.lockedOut) _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _BreathingLockGlow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.lockedOut && _ctrl.isAnimating) {
+      _ctrl.stop();
+    } else if (!widget.lockedOut && !_ctrl.isAnimating) {
+      _ctrl.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, _) {
+        // Eased lerp on the controller value so the breathing is
+        // soft at the edges (like exhaling slowly), not linear.
+        final t = Curves.easeInOut.transform(_ctrl.value);
+        final scale = 0.94 + (t * 0.12);
+        final glowAlpha = widget.lockedOut
+            ? 28
+            : (40 + (t * 36)).round();
+        final accent = widget.lockedOut
+            ? PeekColors.text3
+            : PeekColors.accent;
+        return SizedBox(
+          width: 112,
+          height: 112,
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [
+                        accent.withAlpha(glowAlpha),
+                        accent.withAlpha(0),
+                      ]),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 68,
+                  height: 68,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: PeekColors.surface2,
+                    border: Border.all(color: PeekColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withAlpha(36),
+                        blurRadius: 20,
+                        spreadRadius: -2,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    size: 32,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

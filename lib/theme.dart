@@ -30,6 +30,46 @@ class PeekColors {
   static const greenSoft = Color(0x3322C55E);
   static const red = Color(0xFFEF4444);
   static const redSoft = Color(0x33EF4444);
+
+  /// Per-coin brand-accent colors. Used for the left-edge stripe on
+  /// wallet cards + the soft ring around coin avatars so the user
+  /// can tell coins apart at a glance — Exodus / Tangem / Phantom
+  /// all lean on this for visual hierarchy.
+  ///
+  /// Falls back to [accent] when the coin id isn't recognised. The
+  /// values match each chain's canonical brand color where possible
+  /// (BTC orange, ETH iris, SOL purple, etc.); for stablecoins we
+  /// blend with the host chain so USDT-on-TRC20 reads as a USDT row,
+  /// not a TRX row.
+  static Color coinAccent(String coinId) {
+    switch (coinId.toUpperCase()) {
+      case 'BTC':
+        return const Color(0xFFF7931A); // Bitcoin orange
+      case 'LTC':
+        return const Color(0xFF345D9D); // Litecoin steel blue
+      case 'BCH':
+        return const Color(0xFF0AC18E); // Bitcoin Cash green
+      case 'ETH':
+        return const Color(0xFF627EEA); // Ethereum iris
+      case 'POL':
+      case 'MATIC':
+        return const Color(0xFF8247E5); // Polygon purple
+      case 'SOL':
+        return const Color(0xFF9945FF); // Solana neon purple
+      case 'TRX':
+        return const Color(0xFFFF060A); // Tron red
+      case 'XMR':
+        return const Color(0xFFFF6600); // Monero orange
+      case 'USDT':
+        return const Color(0xFF26A17B); // Tether green
+      case 'USDC':
+        return const Color(0xFF2775CA); // USDC blue
+      case 'DAI':
+        return const Color(0xFFF5AC37); // DAI yellow
+      default:
+        return accent;
+    }
+  }
 }
 
 /// Design tokens — radii, spacing, motion, shadows. Use these instead
