@@ -31,6 +31,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Locking your phone or restarting the app won\'t reset the timer — this is intentional.';
 
   @override
+  String get walletsTitle => 'My Wallets';
+
+  @override
+  String get walletsRefreshTooltip => 'Refresh balances';
+
+  @override
+  String get walletsAddTooltip => 'Add wallet';
+
+  @override
   String get homeTotalBalance => 'Total balance';
 
   @override
@@ -81,6 +90,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSending => 'Sending…';
 
   @override
+  String get actionContinue => 'Continue';
+
+  @override
+  String get actionCancel => 'Cancel';
+
+  @override
+  String get actionSave => 'Save';
+
+  @override
+  String get actionDelete => 'Delete';
+
+  @override
+  String get actionRefresh => 'Refresh';
+
+  @override
   String receiveTitle(String coinId) {
     return 'Receive $coinId';
   }
@@ -92,8 +116,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receiveAddressCopied => 'Address copied';
 
   @override
+  String get receiveCopiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get receiveCouldNotOpenBrowser => 'Could not open browser';
+
+  @override
+  String coinScreenBalanceLabel(String symbol) {
+    return '$symbol balance';
+  }
+
+  @override
+  String get coinScreenActivityTitle => 'Activity';
+
+  @override
+  String get coinScreenTokensTitle => 'Tokens';
+
+  @override
+  String get coinScreenNoTxYet => 'No transactions yet';
+
+  @override
+  String coinScreenShareAddressHint(String symbol) {
+    return 'Share your address to receive $symbol';
+  }
+
+  @override
+  String get coinScreenLoading => 'Loading…';
+
+  @override
+  String get coinScreenRefreshTooltip => 'Refresh';
+
+  @override
+  String get coinScreenAddTokenLabel => 'Add token';
+
+  @override
   String balanceCached(String ago) {
     return 'Cached · $ago ago';
+  }
+
+  @override
+  String balanceCachedShort(String ago) {
+    return 'Cached · $ago';
+  }
+
+  @override
+  String balanceCouldNotOpen(String error) {
+    return 'Could not open wallet: $error';
+  }
+
+  @override
+  String get balanceVaultLocked => 'Vault is locked.';
+
+  @override
+  String get ageJustNow => 'just now';
+
+  @override
+  String ageMinutes(int n) {
+    return '$n min';
+  }
+
+  @override
+  String ageHours(int n) {
+    return '$n hr';
+  }
+
+  @override
+  String ageDays(int n) {
+    return '$n d';
   }
 
   @override
@@ -116,4 +205,134 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get txCopiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get txIdLabel => 'TX ID';
+
+  @override
+  String get txHashLabel => 'Hash';
+
+  @override
+  String get txSignatureLabel => 'Signature';
+
+  @override
+  String get txAmountLabel => 'Net amount';
+
+  @override
+  String get txFeeLabel => 'Fee';
+
+  @override
+  String get txGasFeeLabel => 'Gas fee';
+
+  @override
+  String get txNetworkFeeLabel => 'Network fee';
+
+  @override
+  String get txBlockHeightLabel => 'Block height';
+
+  @override
+  String get txSlotLabel => 'Slot';
+
+  @override
+  String get txDateLabel => 'Date';
+
+  @override
+  String get txTokenLabel => 'Token';
+
+  @override
+  String get txCounterpartyLabel => 'Counterparty';
+
+  @override
+  String get sendFormRecipientLabel => 'Recipient address';
+
+  @override
+  String get sendFormAmountLabel => 'Amount';
+
+  @override
+  String get sendFormMaxButton => 'Max';
+
+  @override
+  String get sendFormBookTooltip => 'From address book';
+
+  @override
+  String get sendFormScanTooltip => 'Scan QR';
+
+  @override
+  String get sendFormPasteTooltip => 'Paste from clipboard';
+
+  @override
+  String get sendFormFeePriorityLabel => 'FEE PRIORITY';
+
+  @override
+  String get sendFormAvailableLabel => 'available';
+
+  @override
+  String get sendFormConfirmHint => 'Type SEND to confirm';
+
+  @override
+  String get sendFormConfirmPlaceholder => 'SEND';
+
+  @override
+  String get sendFormErrorInvalidAmount => 'Enter a valid amount';
+
+  @override
+  String get sendFormErrorAmountExceedsBalance =>
+      'Amount + fee exceeds balance';
+
+  @override
+  String get sendFormErrorRecipientRequired => 'Recipient address is required';
+
+  @override
+  String get sendFormWillBeSentTo => 'will be sent to';
+
+  @override
+  String get sendFormToLabel => 'To';
+
+  @override
+  String get tronTokensTitle => 'Tokens (TRC-20)';
+
+  @override
+  String get splTokensTitle => 'Tokens (SPL)';
+
+  @override
+  String get erc20TokensTitle => 'Tokens';
+
+  @override
+  String experimentalSendWarning(String symbol) {
+    return 'Send is experimental — test with small amounts before moving meaningful $symbol.';
+  }
+
+  @override
+  String get erc20EmptyHint =>
+      'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
+
+  @override
+  String get ercAddCustomTitle => 'Add custom ERC-20 token';
+
+  @override
+  String get ercAddCustomBody =>
+      'Paste the token\'s contract address. We\'ll fetch its symbol and decimals from the chain.';
+
+  @override
+  String get ercContractLabel => 'Contract address';
+
+  @override
+  String get ercProbeAction => 'Probe';
+
+  @override
+  String get ercContractError => 'Contract must be 0x + 40 hex chars';
+
+  @override
+  String ercProbingMsg(String prefix) {
+    return 'Probing $prefix…';
+  }
+
+  @override
+  String get ercProbeFailedMsg =>
+      'Could not read token metadata — wrong chain or not an ERC-20?';
+
+  @override
+  String ercAddedMsg(String symbol, int decimals) {
+    return 'Added $symbol ($decimals decimals)';
+  }
 }

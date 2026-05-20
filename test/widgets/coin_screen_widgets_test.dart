@@ -7,11 +7,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:peek_wallet/l10n/gen/app_localizations.dart';
 import 'package:peek_wallet/theme.dart';
 import 'package:peek_wallet/widgets/coin_screen_widgets.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
       theme: PeekTheme.dark,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: child),
     );
 

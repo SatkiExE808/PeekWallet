@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
@@ -39,6 +40,7 @@ Future<void> showTxDetailSheet(
   IconData? statusIcon,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
+  final l = AppLocalizations.of(context);
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: PeekColors.bg2,
@@ -59,17 +61,18 @@ Future<void> showTxDetailSheet(
       statusIcon: statusIcon,
       onCopied: () {
         messenger.showSnackBar(SnackBar(
-          content: Row(children: const [
-            Icon(Icons.check_circle, size: 16, color: PeekColors.green),
-            SizedBox(width: 8),
-            Text('Copied to clipboard'),
+          content: Row(children: [
+            const Icon(Icons.check_circle,
+                size: 16, color: PeekColors.green),
+            const SizedBox(width: 8),
+            Text(l.txCopiedToClipboard),
           ]),
           duration: const Duration(seconds: 2),
         ));
       },
       onExplorerFailed: () {
-        messenger.showSnackBar(const SnackBar(
-            content: Text('Could not open browser')));
+        messenger.showSnackBar(SnackBar(
+            content: Text(l.receiveCouldNotOpenBrowser)));
       },
     ),
   );
@@ -106,6 +109,7 @@ class _TxDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
@@ -166,7 +170,9 @@ class _TxDetailBody extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              isIncoming ? 'Incoming' : 'Outgoing',
+                              isIncoming
+                                  ? l.txDirectionIncoming
+                                  : l.txDirectionOutgoing,
                               style: TextStyle(
                                 color: isIncoming
                                     ? PeekColors.green
@@ -287,7 +293,7 @@ class _TxDetailBody extends StatelessWidget {
                       onCopied();
                     },
                     icon: const Icon(Icons.copy_rounded, size: 16),
-                    label: const Text('Copy'),
+                    label: Text(l.actionCopy),
                   ),
                 ),
                 const SizedBox(width: PeekDesign.sp2),
@@ -302,7 +308,7 @@ class _TxDetailBody extends StatelessWidget {
                     },
                     icon:
                         const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: const Text('Explorer'),
+                    label: Text(l.actionExplorer),
                   ),
                 ),
               ],

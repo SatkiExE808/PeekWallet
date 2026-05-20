@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../coins/bitcoin/bitcoin_wallet.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../coins/bitcoin_cash/bch_wallet.dart';
 import '../coins/coin.dart';
 import '../coins/ethereum/custom_token_store.dart';
@@ -247,9 +248,10 @@ class _WalletsScreenState extends State<WalletsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Wallets'),
+        title: Text(l.walletsTitle),
         actions: [
           IconButton(
             icon: _autoLoading
@@ -261,14 +263,14 @@ class _WalletsScreenState extends State<WalletsScreen> {
                         color: PeekColors.accent),
                   )
                 : const Icon(Icons.refresh),
-            tooltip: 'Refresh balances',
+            tooltip: l.walletsRefreshTooltip,
             onPressed: _autoLoading
                 ? null
                 : () => _maybeAutoLoadBalances(force: true),
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Add wallet',
+            tooltip: l.walletsAddTooltip,
             onPressed: _add,
           ),
         ],
@@ -504,6 +506,7 @@ class _PortfolioHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: PriceFeed.I,
       builder: (_, _) {
@@ -537,9 +540,9 @@ class _PortfolioHeader extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Text(
-                    'Total balance',
-                    style: TextStyle(
+                  Text(
+                    l.homeTotalBalance,
+                    style: const TextStyle(
                         color: PeekColors.text2,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -555,7 +558,7 @@ class _PortfolioHeader extends StatelessWidget {
                       border: Border.all(color: PeekColors.border),
                     ),
                     child: Text(
-                      '$counted / ${entries.length} synced',
+                      l.homeSyncedCount(counted, entries.length),
                       style: const TextStyle(
                           color: PeekColors.text2,
                           fontSize: 11,
@@ -587,7 +590,7 @@ class _PortfolioHeader extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'across ${entries.length} wallet${entries.length == 1 ? '' : 's'}',
+                l.homeAcrossWallets(entries.length),
                 style: const TextStyle(
                     color: PeekColors.text3,
                     fontSize: 12),
@@ -721,6 +724,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -757,20 +761,19 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: PeekDesign.sp5),
-            const Text(
-              'No wallets yet',
-              style: TextStyle(
+            Text(
+              l.homeEmptyTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: PeekDesign.sp2),
-            const Text(
-              'Create a fresh wallet or restore from a recovery phrase '
-              'to get started.',
+            Text(
+              l.homeEmptyBody,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                   color: PeekColors.text2, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: PeekDesign.sp6),
@@ -779,7 +782,7 @@ class _EmptyState extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onAdd,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add wallet'),
+                label: Text(l.homeAddWallet),
               ),
             ),
           ],

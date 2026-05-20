@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
 
@@ -21,6 +22,7 @@ Future<void> showReceiveSheet(
   required String derivationHint,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
+  final l = AppLocalizations.of(context);
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: PeekColors.bg2,
@@ -35,10 +37,10 @@ Future<void> showReceiveSheet(
       derivationHint: derivationHint,
       onCopied: () {
         messenger.showSnackBar(SnackBar(
-          content: Row(children: const [
-            Icon(Icons.check_circle, size: 16, color: PeekColors.green),
-            SizedBox(width: 8),
-            Text('Address copied'),
+          content: Row(children: [
+            const Icon(Icons.check_circle, size: 16, color: PeekColors.green),
+            const SizedBox(width: 8),
+            Text(l.receiveAddressCopied),
           ]),
           duration: const Duration(seconds: 2),
         ));
@@ -65,7 +67,9 @@ class _ReceiveSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: Builder(builder: (context) {
+        final l = AppLocalizations.of(context);
+        return Padding(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -91,7 +95,7 @@ class _ReceiveSheetBody extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Receive $coinId',
+                        l.receiveTitle(coinId),
                         style: const TextStyle(
                           color: PeekColors.text,
                           fontSize: 17,
@@ -144,9 +148,9 @@ class _ReceiveSheetBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: PeekDesign.sp5),
-            const Text(
-              'YOUR ADDRESS',
-              style: TextStyle(
+            Text(
+              l.receiveAddressLabel,
+              style: const TextStyle(
                   color: PeekColors.text3,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
@@ -194,15 +198,15 @@ class _ReceiveSheetBody extends StatelessWidget {
                           border:
                               Border.all(color: PeekColors.border2),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.ios_share_rounded,
+                            const Icon(Icons.ios_share_rounded,
                                 size: 18, color: PeekColors.text),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'Share',
-                              style: TextStyle(
+                              l.actionShare,
+                              style: const TextStyle(
                                 color: PeekColors.text,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -228,17 +232,17 @@ class _ReceiveSheetBody extends StatelessWidget {
                         if (context.mounted) Navigator.of(context).pop();
                         onCopied();
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.copy_rounded,
+                            const Icon(Icons.copy_rounded,
                                 size: 18, color: Colors.white),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'Copy',
-                              style: TextStyle(
+                              l.actionCopy,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -282,7 +286,8 @@ class _ReceiveSheetBody extends StatelessWidget {
             ),
           ],
         ),
-      ),
+        );
+      }),
     );
   }
 }

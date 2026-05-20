@@ -6,6 +6,7 @@ import '../coins/tron/tron_module.dart';
 import '../coins/tron/tron_wallet.dart';
 import '../coins/tron/trongrid_client.dart';
 import 'send_tron_screen.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
@@ -31,9 +32,13 @@ class TronCoinScreen extends StatefulWidget {
   State<TronCoinScreen> createState() => _TronCoinScreenState();
 }
 
+enum _SetupErrKind { none, vaultLocked, openFailed }
+
 class _TronCoinScreenState extends State<TronCoinScreen> {
   TronWallet? _wallet;
   String? _err;
+  _SetupErrKind _setupErrKind = _SetupErrKind.none;
+  String? _setupErrDetail;
   int _balanceSun = 0;
   DateTime? _balanceFromCacheAt;
   List<TronTx> _txes = const [];
@@ -59,7 +64,11 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
   }
 
   Future<void> _open() async {
-    setState(() => _err = null);
+    setState(() {
+      _err = null;
+      _setupErrKind = _SetupErrKind.none;
+      _setupErrDetail = null;
+    });
     // Pre-fill from BalanceCache so the user sees a number before
     // the TronGrid balance call completes (or fails — public TronGrid
     // is rate-limited and 429s under contention).
@@ -79,7 +88,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
     }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
-      setState(() => _err = 'Vault is locked.');
+      setState(() => _setupErrKind = _SetupErrKind.vaultLocked);
       return;
     }
     try {
@@ -101,7 +110,10 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
       unawaited(_refresh());
       _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
     } catch (e) {
-      setState(() => _err = 'Could not open wallet: $e');
+      setState(() {
+        _setupErrKind = _SetupErrKind.openFailed;
+        _setupErrDetail = e.toString();
+      });
     }
   }
 
@@ -175,12 +187,12 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
     return '${trx.toStringAsFixed(6)} TRX';
   }
 
-  static String _relTime(DateTime then) {
+  static String _relTime(AppLocalizations l, DateTime then) {
     final d = DateTime.now().difference(then);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} min';
-    if (d.inHours < 24) return '${d.inHours} hr';
-    return '${d.inDays} d';
+    if (d.inMinutes < 1) return l.ageJustNow;
+    if (d.inMinutes < 60) return l.ageMinutes(d.inMinutes);
+    if (d.inHours < 24) return l.ageHours(d.inHours);
+    return l.ageDays(d.inDays);
   }
 
   /// Native TRX + TRC-20 transfer history merged into a single
@@ -229,14 +241,28 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final w = _wallet;
+    final String? setupErrText;
+    switch (_setupErrKind) {
+      case _SetupErrKind.vaultLocked:
+        setupErrText = l.balanceVaultLocked;
+        break;
+      case _SetupErrKind.openFailed:
+        setupErrText = l.balanceCouldNotOpen(_setupErrDetail ?? '');
+        break;
+      case _SetupErrKind.none:
+        setupErrText = null;
+        break;
+    }
+    final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tron'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+            tooltip: l.coinScreenRefreshTooltip,
             onPressed: _refresh,
           ),
         ],
@@ -267,11 +293,11 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                         children: [
                           coinAvatar('TRX', radius: 22),
                           const SizedBox(width: PeekDesign.sp3),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Tron',
                                   style: TextStyle(
                                     color: PeekColors.text,
@@ -281,8 +307,8 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'TRX balance',
-                                  style: TextStyle(
+                                  l.coinScreenBalanceLabel('TRX'),
+                                  style: const TextStyle(
                                       color: PeekColors.text3,
                                       fontSize: 11,
                                       letterSpacing: 0.3),
@@ -344,17 +370,17 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text:
-                                'Cached · ${_relTime(_balanceFromCacheAt!)}',
+                            text: l.balanceCached(
+                                _relTime(l, _balanceFromCacheAt!)),
                             color: PeekColors.accent,
                             icon: Icons.cloud_off_rounded,
                           ),
                         ),
-                      if (_err != null)
+                      if (displayErr != null)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text: _err!,
+                            text: displayErr,
                             color: PeekColors.red,
                             icon: Icons.error_outline_rounded,
                           ),
@@ -369,7 +395,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.qr_code_rounded,
-                          label: 'Receive',
+                          label: l.actionReceive,
                           primary: false,
                           onTap: _showReceiveSheet,
                         ),
@@ -378,7 +404,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.arrow_upward_rounded,
-                          label: 'Send',
+                          label: l.actionSend,
                           primary: true,
                           onTap: _balanceSun == 0
                               ? null
@@ -389,18 +415,16 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                   ),
                 if (w != null) ...[
                   const SizedBox(height: 6),
-                  const Text(
-                    'Send is experimental — Tron tx is built by the '
-                    'RPC and signed locally with a txid-hash check. '
-                    'Test with small amounts. TRC-20 sends need a '
-                    'small TRX balance for bandwidth/energy.',
-                    style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                  Text(
+                    l.experimentalSendWarning('TRX'),
+                    style: const TextStyle(
+                        color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
                 if (w != null && _tokenBalances.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  const Text('Tokens (TRC-20)',
-                      style: TextStyle(
+                  Text(l.tronTokensTitle,
+                      style: const TextStyle(
                           color: PeekColors.text2, fontSize: 12)),
                   const SizedBox(height: 6),
                   for (final token in w.defaultTokens)
@@ -413,37 +437,15 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
                       ),
                 ],
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Transactions',
-                        style:
-                            TextStyle(color: PeekColors.text2, fontSize: 12),
-                      ),
-                    ),
-                    if (_txes.isNotEmpty || _tokenTxes.isNotEmpty)
-                      Text(
-                        '${_txes.length + _tokenTxes.length} total',
-                        style: const TextStyle(
-                            color: PeekColors.text3, fontSize: 11),
-                      ),
-                  ],
+                SectionHeader(
+                  title: l.coinScreenActivityTitle,
+                  countChip: (_txes.isEmpty && _tokenTxes.isEmpty)
+                      ? null
+                      : (_txes.length + _tokenTxes.length).toString(),
                 ),
                 const SizedBox(height: 6),
                 if (_txes.isEmpty && _tokenTxes.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      _wallet == null
-                          ? 'Loading…'
-                          : 'No transactions yet — receive TRX or '
-                              'USDT/USDC to this address and they\'ll '
-                              'appear here.',
-                      style: const TextStyle(
-                          color: PeekColors.text3, fontSize: 12),
-                    ),
-                  )
+                  EmptyActivity(loading: _wallet == null, coinLabel: 'TRX')
                 else
                   for (final row in _mergedTrxHistory())
                     if (row is TronTx)
@@ -545,12 +547,14 @@ class _Trc20TxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     final digits = tx.tokenDecimals == 6 ? 2 : 4;
     final amount =
         '$sign${tx.displayAmount.toStringAsFixed(digits)} ${tx.tokenSymbol}';
-    final subtitle = '${_fmtDate(tx.timestamp.toLocal())} · Confirmed';
+    final subtitle =
+        '${_fmtDate(tx.timestamp.toLocal())} · ${l.txStatusConfirmed}';
     return InkWell(
       onTap: () async {
         final url = explorerTxUrl(coinId: 'TRX', txid: tx.hash);
@@ -617,12 +621,13 @@ class _TrxTxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     final amount = '$sign${tx.netTrx.abs().toStringAsFixed(6)} TRX';
     final subtitle = tx.confirmed
-        ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
-        : 'Failed';
+        ? '${_fmtDate(tx.timestamp.toLocal())} · ${l.txStatusConfirmed}'
+        : l.txStatusFailed;
     return InkWell(
       onTap: () => _showDetails(context, tx),
       child: Padding(
@@ -675,6 +680,7 @@ class _TrxTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, TronTx tx) {
+    final l = AppLocalizations.of(context);
     final sign = tx.isIncoming ? '+' : '−';
     showTxDetailSheet(
       context,
@@ -683,12 +689,12 @@ class _TrxTxRow extends StatelessWidget {
       amountText: '$sign${tx.netTrx.abs().toStringAsFixed(6)} TRX',
       amountColor: tx.isIncoming ? PeekColors.green : PeekColors.text,
       rows: [
-        TxDetailRow('Fee', '${tx.feeTrx.toStringAsFixed(6)} TRX'),
-        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+        TxDetailRow(l.txFeeLabel, '${tx.feeTrx.toStringAsFixed(6)} TRX'),
+        TxDetailRow(l.txDateLabel, fmtTxDate(tx.timestamp.toLocal())),
       ],
-      hashLabel: 'Hash',
+      hashLabel: l.txHashLabel,
       hashValue: tx.hash,
-      statusText: tx.confirmed ? 'Confirmed' : 'Failed',
+      statusText: tx.confirmed ? l.txStatusConfirmed : l.txStatusFailed,
       statusColor:
           tx.confirmed ? PeekColors.green : PeekColors.red,
       statusIcon: tx.confirmed

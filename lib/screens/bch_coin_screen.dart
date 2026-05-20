@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../coins/bitcoin_cash/bch_module.dart';
 import '../coins/bitcoin_cash/bch_wallet.dart';
 import '../coins/bitcoin_cash/blockchair_client.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
@@ -29,9 +30,13 @@ class BitcoinCashCoinScreen extends StatefulWidget {
   State<BitcoinCashCoinScreen> createState() => _BitcoinCashCoinScreenState();
 }
 
+enum _SetupErrKind { none, vaultLocked, openFailed }
+
 class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
   BitcoinCashWallet? _wallet;
   String? _err;
+  _SetupErrKind _setupErrKind = _SetupErrKind.none;
+  String? _setupErrDetail;
   int _balanceSat = 0;
   List<BchTx> _txes = const [];
   DateTime? _balanceFromCacheAt;
@@ -52,7 +57,11 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
   }
 
   Future<void> _open() async {
-    setState(() => _err = null);
+    setState(() {
+      _err = null;
+      _setupErrKind = _SetupErrKind.none;
+      _setupErrDetail = null;
+    });
     // Pre-fill from BalanceCache so the user sees a real balance
     // before the live fetch returns (or fails — Blockchair can
     // take 30+ s under load).
@@ -72,7 +81,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
     }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
-      setState(() => _err = 'Vault is locked.');
+      setState(() => _setupErrKind = _SetupErrKind.vaultLocked);
       return;
     }
     try {
@@ -94,7 +103,10 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
       unawaited(_refresh());
       _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
     } catch (e) {
-      setState(() => _err = 'Could not open wallet: $e');
+      setState(() {
+        _setupErrKind = _SetupErrKind.openFailed;
+        _setupErrDetail = e.toString();
+      });
     }
   }
 
@@ -132,12 +144,12 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
     }
   }
 
-  String _relTime(DateTime then) {
+  String _relTime(AppLocalizations l, DateTime then) {
     final d = DateTime.now().difference(then);
-    if (d.inSeconds < 60) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-    if (d.inHours < 24) return '${d.inHours}h ago';
-    return '${d.inDays}d ago';
+    if (d.inSeconds < 60) return l.ageJustNow;
+    if (d.inMinutes < 60) return l.ageMinutes(d.inMinutes);
+    if (d.inHours < 24) return l.ageHours(d.inHours);
+    return l.ageDays(d.inDays);
   }
 
   String _balanceText() {
@@ -173,14 +185,28 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final w = _wallet;
+    final String? setupErrText;
+    switch (_setupErrKind) {
+      case _SetupErrKind.vaultLocked:
+        setupErrText = l.balanceVaultLocked;
+        break;
+      case _SetupErrKind.openFailed:
+        setupErrText = l.balanceCouldNotOpen(_setupErrDetail ?? '');
+        break;
+      case _SetupErrKind.none:
+        setupErrText = null;
+        break;
+    }
+    final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bitcoin Cash'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+            tooltip: l.coinScreenRefreshTooltip,
             onPressed: _refresh,
           ),
         ],
@@ -211,11 +237,11 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                         children: [
                           coinAvatar('BCH', radius: 22),
                           const SizedBox(width: PeekDesign.sp3),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Bitcoin Cash',
                                   style: TextStyle(
                                     color: PeekColors.text,
@@ -225,8 +251,8 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'BCH balance',
-                                  style: TextStyle(
+                                  l.coinScreenBalanceLabel('BCH'),
+                                  style: const TextStyle(
                                       color: PeekColors.text3,
                                       fontSize: 11,
                                       letterSpacing: 0.3),
@@ -288,17 +314,17 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text:
-                                'Cached · ${_relTime(_balanceFromCacheAt!)}',
+                            text: l.balanceCached(
+                                _relTime(l, _balanceFromCacheAt!)),
                             color: PeekColors.accent,
                             icon: Icons.cloud_off_rounded,
                           ),
                         ),
-                      if (_err != null)
+                      if (displayErr != null)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text: _err!,
+                            text: displayErr,
                             color: PeekColors.red,
                             icon: Icons.error_outline_rounded,
                           ),
@@ -313,7 +339,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.qr_code_rounded,
-                          label: 'Receive',
+                          label: l.actionReceive,
                           primary: false,
                           onTap: _showReceiveSheet,
                         ),
@@ -322,7 +348,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.arrow_upward_rounded,
-                          label: 'Send',
+                          label: l.actionSend,
                           primary: true,
                           onTap: _balanceSat == 0
                               ? null
@@ -333,44 +359,21 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
                   ),
                 if (w != null) ...[
                   const SizedBox(height: 6),
-                  const Text(
-                    'Send is experimental — legacy P2PKH with '
-                    'SIGHASH_FORKID. Test with small amounts first.',
-                    style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                  Text(
+                    l.experimentalSendWarning('BCH'),
+                    style: const TextStyle(
+                        color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Transactions',
-                        style:
-                            TextStyle(color: PeekColors.text2, fontSize: 12),
-                      ),
-                    ),
-                    if (_txes.isNotEmpty)
-                      Text(
-                        '${_txes.length} total',
-                        style: const TextStyle(
-                            color: PeekColors.text3, fontSize: 11),
-                      ),
-                  ],
+                SectionHeader(
+                  title: l.coinScreenActivityTitle,
+                  countChip:
+                      _txes.isEmpty ? null : _txes.length.toString(),
                 ),
                 const SizedBox(height: 6),
                 if (_txes.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      _wallet == null
-                          ? 'Loading…'
-                          : 'No transactions yet — give your receive '
-                              'address to a sender, refresh, and incoming '
-                              'BCH appears here.',
-                      style: const TextStyle(
-                          color: PeekColors.text3, fontSize: 12),
-                    ),
-                  )
+                  EmptyActivity(loading: _wallet == null, coinLabel: 'BCH')
                 else
                   for (final tx in _txes) _BchTxRow(tx: tx),
               ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../coins/bitcoin/bitcoin_module.dart';
 import '../coins/bitcoin/bitcoin_wallet.dart';
 import '../coins/bitcoin/mempool_client.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
@@ -29,9 +30,17 @@ class BitcoinCoinScreen extends StatefulWidget {
   State<BitcoinCoinScreen> createState() => _BitcoinCoinScreenState();
 }
 
+enum _SetupErrKind { none, vaultLocked, openFailed }
+
 class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
   BitcoinWallet? _wallet;
+  /// Live RPC error from _refresh — already an upstream exception
+  /// string, shown as-is.
   String? _err;
+  /// Setup-path error kind (vault locked, open failed). Resolved
+  /// to a localized string in [build].
+  _SetupErrKind _setupErrKind = _SetupErrKind.none;
+  String? _setupErrDetail;
   int _balanceSat = 0;
   List<BitcoinTx> _txes = const [];
   /// When the live fetch fails (litecoinspace 521, network down,
@@ -56,7 +65,11 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
   }
 
   Future<void> _open() async {
-    setState(() => _err = null);
+    setState(() {
+      _err = null;
+      _setupErrKind = _SetupErrKind.none;
+      _setupErrDetail = null;
+    });
     // Bring up the cached balance immediately so the user sees a
     // number even before the live fetch returns (or fails). The
     // refresh below will overwrite if it succeeds; if it 521s we
@@ -85,7 +98,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
     }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
-      setState(() => _err = 'Vault is locked.');
+      setState(() => _setupErrKind = _SetupErrKind.vaultLocked);
       return;
     }
     try {
@@ -115,7 +128,10 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
       // don't get rate-limited".
       _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
     } catch (e) {
-      setState(() => _err = 'Could not open wallet: $e');
+      setState(() {
+        _setupErrKind = _SetupErrKind.openFailed;
+        _setupErrDetail = e.toString();
+      });
     }
   }
 
@@ -161,14 +177,15 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
     }
   }
 
-  /// Human-readable "5 min ago" / "3 hours ago" / "yesterday" for
-  /// the cached-balance staleness badge.
-  String _relTime(DateTime then) {
+  /// Human-readable "5 min" / "3 hours" / "2 days" for the
+  /// cached-balance staleness badge. Localized via [AppLocalizations]
+  /// so it follows the device locale.
+  String _relTime(AppLocalizations l, DateTime then) {
     final d = DateTime.now().difference(then);
-    if (d.inSeconds < 60) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-    if (d.inHours < 24) return '${d.inHours}h ago';
-    return '${d.inDays}d ago';
+    if (d.inSeconds < 60) return l.ageJustNow;
+    if (d.inMinutes < 60) return l.ageMinutes(d.inMinutes);
+    if (d.inHours < 24) return l.ageHours(d.inHours);
+    return l.ageDays(d.inDays);
   }
 
   String get _symbol => _wallet?.params.symbol ?? widget.walletMeta.coinId;
@@ -215,14 +232,28 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final w = _wallet;
+    final String? setupErrText;
+    switch (_setupErrKind) {
+      case _SetupErrKind.vaultLocked:
+        setupErrText = l.balanceVaultLocked;
+        break;
+      case _SetupErrKind.openFailed:
+        setupErrText = l.balanceCouldNotOpen(_setupErrDetail ?? '');
+        break;
+      case _SetupErrKind.none:
+        setupErrText = null;
+        break;
+    }
+    final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
         title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+            tooltip: l.coinScreenRefreshTooltip,
             onPressed: _refresh,
           ),
         ],
@@ -270,7 +301,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '$_symbol balance',
+                                  l.coinScreenBalanceLabel(_symbol),
                                   style: const TextStyle(
                                       color: PeekColors.text3,
                                       fontSize: 11,
@@ -344,17 +375,17 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text:
-                                'Cached · ${_relTime(_balanceFromCacheAt!)}',
+                            text: l.balanceCached(
+                                _relTime(l, _balanceFromCacheAt!)),
                             color: PeekColors.accent,
                             icon: Icons.cloud_off_rounded,
                           ),
                         ),
-                      if (_err != null)
+                      if (displayErr != null)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text: _err!,
+                            text: displayErr,
                             color: PeekColors.red,
                             icon: Icons.error_outline_rounded,
                           ),
@@ -369,7 +400,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.qr_code_rounded,
-                          label: 'Receive',
+                          label: l.actionReceive,
                           primary: false,
                           onTap: _showReceiveSheet,
                         ),
@@ -378,7 +409,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.arrow_upward_rounded,
-                          label: 'Send',
+                          label: l.actionSend,
                           primary: true,
                           onTap: _balanceSat == 0
                               ? null
@@ -391,9 +422,9 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Activity',
-                      style: TextStyle(
+                    Text(
+                      l.coinScreenActivityTitle,
+                      style: const TextStyle(
                           color: PeekColors.text,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -420,45 +451,9 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                 ),
                 const SizedBox(height: PeekDesign.sp3),
                 if (_txes.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: PeekColors.surface.withAlpha(120),
-                      borderRadius: PeekDesign.brCard,
-                      border: Border.all(color: PeekColors.hairline),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _wallet == null
-                              ? Icons.hourglass_top_rounded
-                              : Icons.inbox_rounded,
-                          size: 28,
-                          color: PeekColors.text3,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          _wallet == null
-                              ? 'Loading…'
-                              : 'No transactions yet',
-                          style: const TextStyle(
-                              color: PeekColors.text2,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500),
-                        ),
-                        if (_wallet != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'Share your address to receive $_symbol',
-                            style: const TextStyle(
-                                color: PeekColors.text3, fontSize: 11),
-                          ),
-                        ],
-                      ],
-                    ),
+                  EmptyActivity(
+                    loading: _wallet == null,
+                    coinLabel: _symbol,
                   )
                 else
                   for (final tx in _txes) _BtcTxRow(tx: tx, symbol: _symbol),
@@ -478,8 +473,7 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Send is experimental — test with small amounts '
-                            'before moving meaningful $_symbol.',
+                            l.experimentalSendWarning(_symbol),
                             style: const TextStyle(
                                 color: PeekColors.text3,
                                 fontSize: 11,
@@ -509,12 +503,13 @@ class _BtcTxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     final amount = '$sign${tx.netBtc.abs().toStringAsFixed(8)} $symbol';
     final subtitle = tx.confirmed
-        ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
-        : 'In mempool';
+        ? '${_fmtDate(tx.timestamp.toLocal())} · ${l.txStatusConfirmed}'
+        : l.txStatusInMempool;
     return InkWell(
       onTap: () => _showDetails(context, tx),
       child: Padding(
@@ -566,6 +561,7 @@ class _BtcTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, BitcoinTx tx) {
+    final l = AppLocalizations.of(context);
     final amountColor = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     showTxDetailSheet(
@@ -575,14 +571,16 @@ class _BtcTxRow extends StatelessWidget {
       amountText: '$sign${tx.netBtc.abs().toStringAsFixed(8)} $symbol',
       amountColor: amountColor,
       rows: [
-        TxDetailRow('Fee', '${tx.feeBtc.toStringAsFixed(8)} $symbol'),
-        TxDetailRow('Block height',
+        TxDetailRow(
+            l.txFeeLabel, '${tx.feeBtc.toStringAsFixed(8)} $symbol'),
+        TxDetailRow(l.txBlockHeightLabel,
             tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
-        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+        TxDetailRow(l.txDateLabel, fmtTxDate(tx.timestamp.toLocal())),
       ],
-      hashLabel: 'TX ID',
+      hashLabel: l.txIdLabel,
       hashValue: tx.txid,
-      statusText: tx.confirmed ? 'Confirmed' : 'In mempool',
+      statusText:
+          tx.confirmed ? l.txStatusConfirmed : l.txStatusInMempool,
       statusColor:
           tx.confirmed ? PeekColors.green : PeekColors.accent,
       statusIcon: tx.confirmed

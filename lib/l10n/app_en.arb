@@ -7,20 +7,18 @@
   },
 
   "lockScreenSubtitle": "Enter your password to unlock",
-  "@lockScreenSubtitle": {
-    "description": "Tagline below the PeekWallet wordmark on the lock screen"
-  },
-
   "lockPasswordHint": "Password",
   "lockUnlock": "Unlock",
   "lockUseBiometric": "Use biometric",
   "lockTooManyAttempts": "Too many failed attempts",
   "lockTimerWarning": "Locking your phone or restarting the app won't reset the timer — this is intentional.",
 
+  "walletsTitle": "My Wallets",
+  "walletsRefreshTooltip": "Refresh balances",
+  "walletsAddTooltip": "Add wallet",
   "homeTotalBalance": "Total balance",
   "homeSyncedCount": "{counted} / {total} synced",
   "@homeSyncedCount": {
-    "description": "Shown in the portfolio hero chip — e.g. '3 / 5 synced'",
     "placeholders": {
       "counted": {"type": "int"},
       "total": {"type": "int"}
@@ -43,6 +41,11 @@
   "actionShare": "Share",
   "actionExplorer": "Explorer",
   "actionSending": "Sending…",
+  "actionContinue": "Continue",
+  "actionCancel": "Cancel",
+  "actionSave": "Save",
+  "actionDelete": "Delete",
+  "actionRefresh": "Refresh",
 
   "receiveTitle": "Receive {coinId}",
   "@receiveTitle": {
@@ -52,12 +55,60 @@
   },
   "receiveAddressLabel": "YOUR ADDRESS",
   "receiveAddressCopied": "Address copied",
+  "receiveCopiedToClipboard": "Copied to clipboard",
+  "receiveCouldNotOpenBrowser": "Could not open browser",
+
+  "coinScreenBalanceLabel": "{symbol} balance",
+  "@coinScreenBalanceLabel": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "coinScreenActivityTitle": "Activity",
+  "coinScreenTokensTitle": "Tokens",
+  "coinScreenNoTxYet": "No transactions yet",
+  "coinScreenShareAddressHint": "Share your address to receive {symbol}",
+  "@coinScreenShareAddressHint": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "coinScreenLoading": "Loading…",
+  "coinScreenRefreshTooltip": "Refresh",
+  "coinScreenAddTokenLabel": "Add token",
 
   "balanceCached": "Cached · {ago} ago",
   "@balanceCached": {
     "placeholders": {
       "ago": {"type": "String"}
     }
+  },
+  "balanceCachedShort": "Cached · {ago}",
+  "@balanceCachedShort": {
+    "placeholders": {
+      "ago": {"type": "String"}
+    }
+  },
+  "balanceCouldNotOpen": "Could not open wallet: {error}",
+  "@balanceCouldNotOpen": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "balanceVaultLocked": "Vault is locked.",
+
+  "ageJustNow": "just now",
+  "ageMinutes": "{n} min",
+  "@ageMinutes": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "ageHours": "{n} hr",
+  "@ageHours": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "ageDays": "{n} d",
+  "@ageDays": {
+    "placeholders": {"n": {"type": "int"}}
   },
 
   "txDirectionIncoming": "Incoming",
@@ -66,5 +117,65 @@
   "txStatusPending": "Pending",
   "txStatusFailed": "Failed",
   "txStatusInMempool": "In mempool",
-  "txCopiedToClipboard": "Copied to clipboard"
+  "txCopiedToClipboard": "Copied to clipboard",
+  "txIdLabel": "TX ID",
+  "txHashLabel": "Hash",
+  "txSignatureLabel": "Signature",
+  "txAmountLabel": "Net amount",
+  "txFeeLabel": "Fee",
+  "txGasFeeLabel": "Gas fee",
+  "txNetworkFeeLabel": "Network fee",
+  "txBlockHeightLabel": "Block height",
+  "txSlotLabel": "Slot",
+  "txDateLabel": "Date",
+  "txTokenLabel": "Token",
+  "txCounterpartyLabel": "Counterparty",
+
+  "sendFormRecipientLabel": "Recipient address",
+  "sendFormAmountLabel": "Amount",
+  "sendFormMaxButton": "Max",
+  "sendFormBookTooltip": "From address book",
+  "sendFormScanTooltip": "Scan QR",
+  "sendFormPasteTooltip": "Paste from clipboard",
+  "sendFormFeePriorityLabel": "FEE PRIORITY",
+  "sendFormAvailableLabel": "available",
+  "sendFormConfirmHint": "Type SEND to confirm",
+  "sendFormConfirmPlaceholder": "SEND",
+  "sendFormErrorInvalidAmount": "Enter a valid amount",
+  "sendFormErrorAmountExceedsBalance": "Amount + fee exceeds balance",
+  "sendFormErrorRecipientRequired": "Recipient address is required",
+  "sendFormWillBeSentTo": "will be sent to",
+  "sendFormToLabel": "To",
+
+  "tronTokensTitle": "Tokens (TRC-20)",
+  "splTokensTitle": "Tokens (SPL)",
+  "erc20TokensTitle": "Tokens",
+
+  "experimentalSendWarning": "Send is experimental — test with small amounts before moving meaningful {symbol}.",
+  "@experimentalSendWarning": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+
+  "erc20EmptyHint": "No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.",
+  "ercAddCustomTitle": "Add custom ERC-20 token",
+  "ercAddCustomBody": "Paste the token's contract address. We'll fetch its symbol and decimals from the chain.",
+  "ercContractLabel": "Contract address",
+  "ercProbeAction": "Probe",
+  "ercContractError": "Contract must be 0x + 40 hex chars",
+  "ercProbingMsg": "Probing {prefix}…",
+  "@ercProbingMsg": {
+    "placeholders": {
+      "prefix": {"type": "String"}
+    }
+  },
+  "ercProbeFailedMsg": "Could not read token metadata — wrong chain or not an ERC-20?",
+  "ercAddedMsg": "Added {symbol} ({decimals} decimals)",
+  "@ercAddedMsg": {
+    "placeholders": {
+      "symbol": {"type": "String"},
+      "decimals": {"type": "int"}
+    }
+  }
 }

@@ -6,6 +6,7 @@ import '../coins/ethereum/erc20_tokens.dart';
 import '../coins/ethereum/ethereum_module.dart';
 import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/ethereum/etherscan_client.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
@@ -29,9 +30,13 @@ class EthereumCoinScreen extends StatefulWidget {
   State<EthereumCoinScreen> createState() => _EthereumCoinScreenState();
 }
 
+enum _SetupErrKind { none, vaultLocked, openFailed }
+
 class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   EthereumWallet? _wallet;
   String? _err;
+  _SetupErrKind _setupErrKind = _SetupErrKind.none;
+  String? _setupErrDetail;
   BigInt _balanceWei = BigInt.zero;
   DateTime? _balanceFromCacheAt;
   List<EthereumTx> _txes = const [];
@@ -62,7 +67,11 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   }
 
   Future<void> _open() async {
-    setState(() => _err = null);
+    setState(() {
+      _err = null;
+      _setupErrKind = _SetupErrKind.none;
+      _setupErrDetail = null;
+    });
     // Pre-fill from BalanceCache so users see a balance instantly
     // even if the RPC takes a moment.
     final cached = await BalanceCache.I.get(widget.walletMeta.id);
@@ -95,7 +104,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     }
     final password = VaultState.I.cachedPassword;
     if (password == null) {
-      setState(() => _err = 'Vault is locked.');
+      setState(() => _setupErrKind = _SetupErrKind.vaultLocked);
       return;
     }
     try {
@@ -127,7 +136,10 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
       unawaited(_refresh());
       _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
     } catch (e) {
-      setState(() => _err = 'Could not open wallet: $e');
+      setState(() {
+        _setupErrKind = _SetupErrKind.openFailed;
+        _setupErrDetail = e.toString();
+      });
     }
   }
 
@@ -201,12 +213,12 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   String get _symbol => _wallet?.network.symbol ?? widget.walletMeta.coinId;
   String get _coinName => _wallet?.network.name ?? 'Ethereum';
 
-  String _relTime(DateTime then) {
+  String _relTime(AppLocalizations l, DateTime then) {
     final d = DateTime.now().difference(then);
-    if (d.inSeconds < 60) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-    if (d.inHours < 24) return '${d.inHours}h ago';
-    return '${d.inDays}d ago';
+    if (d.inSeconds < 60) return l.ageJustNow;
+    if (d.inMinutes < 60) return l.ageMinutes(d.inMinutes);
+    if (d.inHours < 24) return l.ageHours(d.inHours);
+    return l.ageDays(d.inDays);
   }
 
   String _balanceText() {
@@ -219,26 +231,27 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   /// address. We probe the chain for the token's symbol + decimals
   /// so the user doesn't have to type them manually.
   Future<void> _addCustomToken(EthereumWallet w) async {
+    final l = AppLocalizations.of(context);
     final controller = TextEditingController();
     final contract = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add custom ERC-20 token'),
+        title: Text(l.ercAddCustomTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Paste the token\'s contract address. We\'ll fetch its '
-              'symbol and decimals from the chain.',
-              style: TextStyle(color: PeekColors.text2, fontSize: 12),
+            Text(
+              l.ercAddCustomBody,
+              style: const TextStyle(
+                  color: PeekColors.text2, fontSize: 12),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Contract address',
+              decoration: InputDecoration(
+                labelText: l.ercContractLabel,
                 hintText: '0x…',
               ),
               autocorrect: false,
@@ -249,12 +262,12 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.of(ctx).pop(controller.text.trim()),
-            child: const Text('Probe'),
+            child: Text(l.ercProbeAction),
           ),
         ],
       ),
@@ -262,8 +275,8 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     controller.dispose();
     if (contract == null || contract.isEmpty || !mounted) return;
     if (!contract.startsWith('0x') || contract.length != 42) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Contract must be 0x + 40 hex chars'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l.ercContractError),
       ));
       return;
     }
@@ -277,7 +290,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2)),
           const SizedBox(width: 12),
-          Text('Probing ${contract.substring(0, 10)}…'),
+          Text(l.ercProbingMsg(contract.substring(0, 10))),
         ],
       ),
       duration: const Duration(seconds: 10),
@@ -287,9 +300,8 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
     if (!mounted) return;
     messenger.hideCurrentSnackBar();
     if (info == null || info.symbol == '?') {
-      messenger.showSnackBar(const SnackBar(
-        content: Text(
-            'Could not read token metadata — wrong chain or not an ERC-20?'),
+      messenger.showSnackBar(SnackBar(
+        content: Text(l.ercProbeFailedMsg),
       ));
       return;
     }
@@ -305,10 +317,8 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
       ),
     );
     messenger.showSnackBar(SnackBar(
-      content: Text(
-          'Added ${info.symbol} (${info.decimals} decimals)'),
+      content: Text(l.ercAddedMsg(info.symbol, info.decimals)),
     ));
-    // Trigger a refresh so the new token's balance loads.
     unawaited(_refresh());
   }
 
@@ -373,14 +383,28 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final w = _wallet;
+    final String? setupErrText;
+    switch (_setupErrKind) {
+      case _SetupErrKind.vaultLocked:
+        setupErrText = l.balanceVaultLocked;
+        break;
+      case _SetupErrKind.openFailed:
+        setupErrText = l.balanceCouldNotOpen(_setupErrDetail ?? '');
+        break;
+      case _SetupErrKind.none:
+        setupErrText = null;
+        break;
+    }
+    final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
         title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+            tooltip: l.coinScreenRefreshTooltip,
             onPressed: _refresh,
           ),
         ],
@@ -425,7 +449,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '$_symbol balance',
+                                  l.coinScreenBalanceLabel(_symbol),
                                   style: const TextStyle(
                                       color: PeekColors.text3,
                                       fontSize: 11,
@@ -490,17 +514,17 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text:
-                                'Cached · ${_relTime(_balanceFromCacheAt!)}',
+                            text: l.balanceCached(
+                                _relTime(l, _balanceFromCacheAt!)),
                             color: PeekColors.accent,
                             icon: Icons.cloud_off_rounded,
                           ),
                         ),
-                      if (_err != null)
+                      if (displayErr != null)
                         Padding(
                           padding: const EdgeInsets.only(top: PeekDesign.sp3),
                           child: StatusPill(
-                            text: _err!,
+                            text: displayErr,
                             color: PeekColors.red,
                             icon: Icons.error_outline_rounded,
                           ),
@@ -515,7 +539,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.qr_code_rounded,
-                          label: 'Receive',
+                          label: l.actionReceive,
                           primary: false,
                           onTap: _showReceiveSheet,
                         ),
@@ -524,7 +548,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.arrow_upward_rounded,
-                          label: 'Send',
+                          label: l.actionSend,
                           primary: true,
                           onTap: _balanceWei == BigInt.zero
                               ? null
@@ -535,28 +559,26 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                   ),
                 if (w != null) ...[
                   const SizedBox(height: 6),
-                  const Text(
-                    'Send is experimental — RLP + EIP-1559 sighash + '
-                    'ECDSA-recovery are unit-tested but the end-to-end '
-                    'flow has not been audited. Test with small amounts.',
-                    style:
-                        TextStyle(color: PeekColors.text3, fontSize: 11),
+                  Text(
+                    l.experimentalSendWarning(_symbol),
+                    style: const TextStyle(
+                        color: PeekColors.text3, fontSize: 11),
                   ),
                 ],
                 if (w != null) ...[
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      const Expanded(
-                        child: Text('Tokens',
-                            style: TextStyle(
+                      Expanded(
+                        child: Text(l.erc20TokensTitle,
+                            style: const TextStyle(
                                 color: PeekColors.text2, fontSize: 12)),
                       ),
                       TextButton.icon(
                         onPressed: () => _addCustomToken(w),
                         icon: const Icon(Icons.add, size: 14),
-                        label: const Text('Add token',
-                            style: TextStyle(fontSize: 12)),
+                        label: Text(l.coinScreenAddTokenLabel,
+                            style: const TextStyle(fontSize: 12)),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 0),
@@ -569,13 +591,11 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                   ),
                   const SizedBox(height: 6),
                   if (_tokenBalances.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        'No tokens yet — receive USDT/USDC/DAI to this '
-                        'address or tap "Add token" to track another '
-                        'ERC-20 by contract address.',
-                        style: TextStyle(
+                        l.erc20EmptyHint,
+                        style: const TextStyle(
                             color: PeekColors.text3, fontSize: 11),
                       ),
                     )
@@ -590,37 +610,15 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
                         ),
                 ],
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Transactions',
-                        style:
-                            TextStyle(color: PeekColors.text2, fontSize: 12),
-                      ),
-                    ),
-                    if (_txes.isNotEmpty || _tokenTxes.isNotEmpty)
-                      Text(
-                        '${_txes.length + _tokenTxes.length} total',
-                        style: const TextStyle(
-                            color: PeekColors.text3, fontSize: 11),
-                      ),
-                  ],
+                SectionHeader(
+                  title: l.coinScreenActivityTitle,
+                  countChip: (_txes.isEmpty && _tokenTxes.isEmpty)
+                      ? null
+                      : (_txes.length + _tokenTxes.length).toString(),
                 ),
                 const SizedBox(height: 6),
                 if (_txes.isEmpty && _tokenTxes.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      _wallet == null
-                          ? 'Loading…'
-                          : 'No transactions yet — give your receive '
-                              'address to a sender, refresh, and incoming '
-                              '$_symbol or tokens appear here.',
-                      style: const TextStyle(
-                          color: PeekColors.text3, fontSize: 12),
-                    ),
-                  )
+                  EmptyActivity(loading: _wallet == null, coinLabel: _symbol)
                 else
                   for (final row in _mergedTxList())
                     if (row is EthereumTx)
@@ -730,6 +728,7 @@ class _TokenTxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     final display = tx.displayAmount;
@@ -739,8 +738,8 @@ class _TokenTxRow extends StatelessWidget {
     final digits = tx.tokenDecimals == 6 ? 2 : 4;
     final amount = '$sign${display.toStringAsFixed(digits)} ${tx.tokenSymbol}';
     final subtitle = tx.confirmed
-        ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
-        : 'Pending';
+        ? '${_fmtDate(tx.timestamp.toLocal())} · ${l.txStatusConfirmed}'
+        : l.txStatusPending;
     return InkWell(
       onTap: () => _showDetails(context),
       child: Padding(
@@ -797,6 +796,7 @@ class _TokenTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final digits = tx.tokenDecimals == 6 ? 2 : 4;
     final sign = tx.isIncoming ? '+' : '−';
     showTxDetailSheet(
@@ -807,12 +807,12 @@ class _TokenTxRow extends StatelessWidget {
           '$sign${tx.displayAmount.toStringAsFixed(digits)} ${tx.tokenSymbol}',
       amountColor: tx.isIncoming ? PeekColors.green : PeekColors.text,
       rows: [
-        TxDetailRow('Token', tx.tokenSymbol),
-        TxDetailRow('Counterparty',
+        TxDetailRow(l.txTokenLabel, tx.tokenSymbol),
+        TxDetailRow(l.txCounterpartyLabel,
             '${(tx.isIncoming ? tx.from : tx.to).substring(0, 10)}…'),
-        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+        TxDetailRow(l.txDateLabel, fmtTxDate(tx.timestamp.toLocal())),
       ],
-      hashLabel: 'Hash',
+      hashLabel: l.txHashLabel,
       hashValue: tx.hash,
     );
   }
@@ -827,13 +827,14 @@ class _EthTxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final color = tx.isIncoming ? PeekColors.green : PeekColors.text;
     final sign = tx.isIncoming ? '+' : '−';
     final amount =
         '$sign${tx.netEth.abs().toStringAsFixed(6)} $symbol';
     final subtitle = tx.confirmed
-        ? '${_fmtDate(tx.timestamp.toLocal())} · Confirmed'
-        : 'Pending';
+        ? '${_fmtDate(tx.timestamp.toLocal())} · ${l.txStatusConfirmed}'
+        : l.txStatusPending;
     return InkWell(
       onTap: () => _showDetails(context, tx),
       child: Padding(
@@ -886,6 +887,7 @@ class _EthTxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, EthereumTx tx) {
+    final l = AppLocalizations.of(context);
     final sign = tx.isIncoming ? '+' : '−';
     showTxDetailSheet(
       context,
@@ -895,14 +897,15 @@ class _EthTxRow extends StatelessWidget {
           '$sign${tx.netEth.abs().toStringAsFixed(6)} $symbol',
       amountColor: tx.isIncoming ? PeekColors.green : PeekColors.text,
       rows: [
-        TxDetailRow('Gas fee', '${tx.gasFeeEth.toStringAsFixed(6)} $symbol'),
-        TxDetailRow('Block height',
+        TxDetailRow(l.txGasFeeLabel,
+            '${tx.gasFeeEth.toStringAsFixed(6)} $symbol'),
+        TxDetailRow(l.txBlockHeightLabel,
             tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
-        TxDetailRow('Date', fmtTxDate(tx.timestamp.toLocal())),
+        TxDetailRow(l.txDateLabel, fmtTxDate(tx.timestamp.toLocal())),
       ],
-      hashLabel: 'Hash',
+      hashLabel: l.txHashLabel,
       hashValue: tx.hash,
-      statusText: tx.confirmed ? 'Confirmed' : 'Pending',
+      statusText: tx.confirmed ? l.txStatusConfirmed : l.txStatusPending,
       statusColor: tx.confirmed ? PeekColors.green : PeekColors.accent,
       statusIcon: tx.confirmed
           ? Icons.check_circle_rounded

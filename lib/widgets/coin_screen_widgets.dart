@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 
 /// Small accent pill — used for "cached" + error indicators under
@@ -138,6 +139,7 @@ class EmptyActivity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32),
@@ -157,7 +159,7 @@ class EmptyActivity extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            loading ? 'Loading…' : 'No transactions yet',
+            loading ? l.coinScreenLoading : l.coinScreenNoTxYet,
             style: const TextStyle(
                 color: PeekColors.text2,
                 fontSize: 13,
@@ -166,7 +168,7 @@ class EmptyActivity extends StatelessWidget {
           if (!loading) ...[
             const SizedBox(height: 4),
             Text(
-              'Share your address to receive $coinLabel',
+              l.coinScreenShareAddressHint(coinLabel),
               style:
                   const TextStyle(color: PeekColors.text3, fontSize: 11),
             ),
