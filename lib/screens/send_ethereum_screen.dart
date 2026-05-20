@@ -10,6 +10,7 @@ import '../coins/ethereum/etherscan_client.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../widgets/send_success_snackbar.dart';
 import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
@@ -251,7 +252,6 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
       _broadcasting = true;
       _error = null;
     });
-    final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     try {
       final destAddress = _addrCtrl.text.trim();
@@ -268,14 +268,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
         address: destAddress,
       ));
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: PeekColors.green,
-          content:
-              Text(l.sendBroadcastSuccess(built.txHash.substring(0, 14))),
-          duration: const Duration(seconds: 6),
-        ),
-      );
+      showSendSuccess(context, txid: built.txHash);
       nav.pop(true);
     } catch (e) {
       if (mounted) {

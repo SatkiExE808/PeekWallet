@@ -9,6 +9,7 @@ import '../coins/tron/tron_wallet.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../widgets/send_success_snackbar.dart';
 import '../util/remember_recipient.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
@@ -234,7 +235,6 @@ class _SendTronScreenState extends State<SendTronScreen> {
       _broadcasting = true;
       _error = null;
     });
-    final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     try {
       final destAddress = _addrCtrl.text.trim();
@@ -257,13 +257,7 @@ class _SendTronScreenState extends State<SendTronScreen> {
         address: destAddress,
       ));
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: PeekColors.green,
-          content: Text(l.sendBroadcastSuccess(txid.substring(0, 16))),
-          duration: const Duration(seconds: 6),
-        ),
-      );
+      showSendSuccess(context, txid: txid);
       nav.pop(true);
     } catch (e) {
       if (mounted) {

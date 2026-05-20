@@ -7,6 +7,9 @@ import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
+// XMR keeps its own multi-recipient result-view screen rather than
+// the floating snackbar, so it doesn't need the send_success helper.
+// HapticFeedback is imported transitively via services.dart above.
 import '../util/screenshot_guard.dart';
 import '../widgets/coin_screen_widgets.dart';
 import 'address_book_screen.dart';
@@ -163,6 +166,10 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     });
     try {
       final txid = _pending!.commit();
+      // Tactile cue at the moment the XMR sub-transactions are
+      // committed to the mempool — same medium-impact stamp the
+      // other coins fire via showSendSuccess.
+      HapticFeedback.mediumImpact();
       setState(() {
         _broadcastTxid = txid;
         _busy = false;
