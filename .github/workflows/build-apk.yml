@@ -119,12 +119,16 @@ jobs:
           fi
 
       - name: Build release APK
-        # BUILD_TIME is consumed by lib/util/update_checker.dart so the
-        # in-app "Check for updates" row can compare against the
-        # latest GitHub release's published_at and tell the user
-        # whether their APK is current.
+        # BUILD_TIME is consumed by lib/util/update_checker.dart to
+        # decide whether the running APK predates the latest GitHub
+        # release. We embed the *current* UTC timestamp (the moment
+        # this build started), NOT the commit author time — the
+        # release's published_at is always ~minutes after the
+        # underlying commit, so commit-time comparison would
+        # phantom-flag the just-published APK as "update available"
+        # against itself.
         run: |
-          BUILD_TIME=$(git log -1 --format=%aI)
+          BUILD_TIME=$(date -u +%FT%TZ)
           flutter build apk --release --dart-define=BUILD_TIME="$BUILD_TIME"
 
       - name: Locate built APK

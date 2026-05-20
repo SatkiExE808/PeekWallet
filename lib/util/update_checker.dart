@@ -98,6 +98,18 @@ class UpdateChecker {
               headers: const {'Accept': 'application/vnd.github+json'})
           .timeout(const Duration(seconds: 10));
       if (resp.statusCode != 200) {
+        // GitHub's unauthenticated rate limit is 60 req/IP/hour. 403
+        // with X-RateLimit-Remaining: 0 is the common hit; surface
+        // a friendly retry message instead of the raw code.
+        String msg;
+        if (resp.statusCode == 403 &&
+            resp.headers['x-ratelimit-remaining'] == '0') {
+          msg = 'Rate-limited by GitHub. Try again in an hour.';
+        } else if (resp.statusCode == 404) {
+          msg = 'No releases published yet.';
+        } else {
+          msg = 'GitHub API returned ${resp.statusCode}';
+        }
         return _lastResult = UpdateCheckResult(
           checkedAt: now,
           currentBuildTime: buildTime,
@@ -106,7 +118,7 @@ class UpdateChecker {
           assetUrl: null,
           releaseUrl: null,
           isUpdateAvailable: false,
-          error: 'GitHub API returned ${resp.statusCode}',
+          error: msg,
         );
       }
       final json = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -126,9 +138,20 @@ class UpdateChecker {
       final publishedAt = publishedRaw == null
           ? null
           : DateTime.tryParse(publishedRaw)?.toUtc();
+      // A release publishes ~seconds to a few minutes AFTER the
+      // build that produced its APK finished (asset upload + release
+      // create are sequential after `flutter build apk`). With a
+      // strict isAfter() comparison, the freshly-installed APK from
+      // release R sees R.publishedAt > buildTime by ~30s and
+      // phantom-flags itself as "update available" pointing back at
+      // itself. A 10-minute slack window is wider than any
+      // realistic CI build → release lag, and narrower than the
+      // ~1h cadence of typical pushes, so genuine updates still
+      // surface promptly.
+      const publishLag = Duration(minutes: 10);
       final available = (buildTime != null &&
           publishedAt != null &&
-          publishedAt.isAfter(buildTime));
+          publishedAt.isAfter(buildTime.add(publishLag)));
       return _lastResult = UpdateCheckResult(
         checkedAt: now,
         currentBuildTime: buildTime,

@@ -102,6 +102,15 @@ class BitcoinWallet {
   /// Electrum use to rotate receive addresses for privacy. Empty
   /// before the first refresh; consumers fall back to [primaryAddress].
   Map<String, AddressBalance> _perAddressBalances = const {};
+  /// Monotonic sequence stamped onto each [balanceSat] call; the
+  /// snapshot from sequence N is only committed if no newer call
+  /// (N+1, N+2, …) has already landed. Without this, overlapping
+  /// refreshes (the 30 s poll fires while a pull-to-refresh is still
+  /// awaiting on the Blockchair fallback) could let the slower call
+  /// overwrite a fresher snapshot — re-serving an already-rotated
+  /// receive address.
+  int _balanceCallSeq = 0;
+  int _committedBalanceSeq = 0;
 
   /// The primary receive address. Index 0 on the external chain.
   /// Same address every other BIP84 wallet produces from the same
@@ -109,15 +118,23 @@ class BitcoinWallet {
   String get primaryAddress => addresses.first.address;
 
   /// The next unused receive address from the gap-limit window. An
-  /// address is "unused" when it has never received funds (confirmed
-  /// or mempool). The mempool-client populates [_perAddressBalances]
-  /// on each refresh; this just iterates derivation indices in order
-  /// and returns the first untouched one.
+  /// address is "unused" when it has ZERO on-chain activity — neither
+  /// received nor spent, confirmed or mempool. We skip spent
+  /// activity too because the deterministic change derivation at
+  /// [sendBitcoin] picks change indices from this same gap-limit
+  /// window: an address that already paid out as change must NOT
+  /// be served as a fresh receive (chain analysis would cluster the
+  /// new incoming payment with the prior outgoing send).
+  ///
+  /// The mempool-client populates [_perAddressBalances] on each
+  /// refresh; this just iterates derivation indices in order and
+  /// returns the first fully-untouched one.
   ///
   /// Falls back to [primaryAddress] when:
-  ///   - the wallet hasn't done its first refresh yet (cache empty)
+  ///   - the wallet hasn't done its first refresh yet (cache empty),
   ///   - every address in the window has prior activity (rare; user
-  ///     has run through their gap limit)
+  ///     has run through their gap limit and the auto-expand path
+  ///     hasn't widened the window yet).
   ///
   /// Rotating per-session matches Cake's UX: each receive sheet open
   /// shows a fresh address, which prevents a tip jar / pasted-once
@@ -128,8 +145,11 @@ class BitcoinWallet {
     for (final addr in addresses) {
       final bal = _perAddressBalances[addr.address];
       if (bal == null) continue;
-      final received = bal.confirmedReceivedSat + bal.mempoolReceivedSat;
-      if (received == 0) return addr.address;
+      final total = bal.confirmedReceivedSat +
+          bal.confirmedSpentSat +
+          bal.mempoolReceivedSat +
+          bal.mempoolSpentSat;
+      if (total == 0) return addr.address;
     }
     return primaryAddress;
   }
@@ -144,15 +164,23 @@ class BitcoinWallet {
   /// tick, not every frame.
   Future<int> balanceSat() async {
     if (_closed) return 0;
+    final mySeq = ++_balanceCallSeq;
     try {
       final b = await _client.multiBalance(watchAddresses);
-      _perAddressBalances = b.perAddress;
+      // Only commit if no newer call has already landed. Without
+      // this, a slow refresh resolving after a fast one would
+      // regress _perAddressBalances and re-expose a just-rotated
+      // receive address.
+      if (mySeq > _committedBalanceSeq) {
+        _committedBalanceSeq = mySeq;
+        _perAddressBalances = b.perAddress;
+      }
       PeekLogger.I.log(params.symbol.toLowerCase(),
-          'balance fetched: ${b.totalSat} sat');
+          'balance fetched: ${b.totalSat} sat (seq $mySeq)');
       return b.totalSat;
     } catch (e) {
       PeekLogger.I.log(params.symbol.toLowerCase(),
-          'balance fetch failed: $e');
+          'balance fetch failed: $e (seq $mySeq)');
       rethrow;
     }
   }

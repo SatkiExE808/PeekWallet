@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
 
 import 'mempool_client.dart';
 
@@ -77,8 +80,49 @@ class CompositeExplorer implements BitcoinExplorer {
   @override
   Future<FeeRates> feeRates() => _race((e) => e.feeRates());
 
+  /// Broadcast is NOT raced across providers like the read-path
+  /// methods. A 4xx-class failure from the primary (insufficient
+  /// fee, double-spend, malformed tx) is a real rejection that the
+  /// next provider would handle the same way — retrying it on
+  /// Blockchair after mempool said "no" risks broadcasting bytes
+  /// the user thought were rejected.
+  ///
+  /// Only infrastructure failures (timeout, socket, TLS, 5xx,
+  /// transient I/O) fall through to the next provider. Anything
+  /// else — including a generic `Exception` from a provider that
+  /// rejected the tx — propagates immediately.
   @override
-  Future<String> broadcast(String txHex) => _race((e) => e.broadcast(txHex));
+  Future<String> broadcast(String txHex) async {
+    Object? lastErr;
+    StackTrace? lastStack;
+    for (final e in _all) {
+      try {
+        return await e.broadcast(txHex);
+      } on SocketException catch (err, st) {
+        lastErr = err;
+        lastStack = st;
+      } on TimeoutException catch (err, st) {
+        lastErr = err;
+        lastStack = st;
+      } on HandshakeException catch (err, st) {
+        lastErr = err;
+        lastStack = st;
+      } on http.ClientException catch (err, st) {
+        lastErr = err;
+        lastStack = st;
+      } catch (err, st) {
+        // Everything else — provider-shaped errors (insufficient
+        // fee, double-spend, malformed tx) — is a real rejection.
+        // Propagate immediately so the user sees the actual reason
+        // instead of a misleading "broadcast OK" from a downstream
+        // provider that didn't know better.
+        Error.throwWithStackTrace(err, st);
+      }
+    }
+    Error.throwWithStackTrace(
+        lastErr ?? Exception('No explorer available'),
+        lastStack ?? StackTrace.current);
+  }
 
   @override
   void close() {

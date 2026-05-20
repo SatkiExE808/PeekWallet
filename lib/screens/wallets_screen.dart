@@ -122,18 +122,28 @@ class _WalletsScreenState extends State<WalletsScreen> {
     if (entries.isEmpty) return;
     final cache = await BalanceCache.I.all();
 
-    // Pick wallets whose cache entry is stale (or missing) AND that
-    // we know how to balance-probe without booting monero_c.
+    // Pick wallets whose cache entry is genuinely stale (or missing)
+    // AND that we know how to balance-probe without booting monero_c.
+    //
+    // The previous check was containsKey(m.id) — a presence-only
+    // gate that treated any cache entry, even 8 hours old, as fresh.
+    // Now we require the cached entry to be <5 minutes old to skip;
+    // older entries get re-probed on the next cold open or post-tab-
+    // switch frame.
+    final now = DateTime.now();
     final targets = entries.where((m) {
       if (m.coinId == 'XMR') return false; // skip — too expensive
-      if (!force && cache.containsKey(m.id)) return false;
-      return true;
+      if (force) return true;
+      final c = cache[m.id];
+      if (c == null) return true;
+      return now.difference(c.updatedAt) > const Duration(minutes: 5);
     }).toList();
     if (targets.isEmpty) return;
 
     final password = VaultState.I.cachedPassword;
     if (password == null) return; // locked — can't decrypt seeds
 
+    if (!mounted) return;
     setState(() => _autoLoading = true);
     try {
       // Fan out — most chains are independent HTTP. We don't try

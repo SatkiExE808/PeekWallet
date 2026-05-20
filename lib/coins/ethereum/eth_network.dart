@@ -69,9 +69,13 @@ const kEthMainnet = EthereumNetwork(
     'https://ethereum-rpc.publicnode.com',
     'https://rpc.ankr.com/eth',
   ],
-  fallbackBlockscoutUrls: [
-    'https://api.etherscan.io/api',
-  ],
+  // No api.etherscan.io here — it gates everything behind an API key
+  // and returns HTTP 200 + `status: "0"` body that EtherscanClient
+  // treats as a hard error. Effectively a dead fallback that also
+  // burns the user's anonymous rate-limit budget on every miss. Add
+  // it back here only if Settings → API key surfaces a way to plug
+  // in a user-supplied key.
+  fallbackBlockscoutUrls: [],
 );
 
 const kPolygonMainnet = EthereumNetwork(
@@ -90,7 +94,9 @@ const kPolygonMainnet = EthereumNetwork(
     'https://rpc.ankr.com/polygon',
     'https://polygon.llamarpc.com',
   ],
-  fallbackBlockscoutUrls: [
-    'https://api.polygonscan.com/api',
-  ],
+  // Same caveat as kEthMainnet — api.polygonscan.com requires an
+  // API key and returns 200 + status:0 without one, which the
+  // Etherscan-compat client treats as a hard error. Skip until we
+  // wire user-supplied keys.
+  fallbackBlockscoutUrls: [],
 );
