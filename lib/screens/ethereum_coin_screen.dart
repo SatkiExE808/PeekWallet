@@ -15,6 +15,7 @@ import '../wallets/wallet_store.dart';
 import '../util/coin_avatar.dart';
 import '../util/lifecycle_poller.dart';
 import '../wallets/balance_cache.dart';
+import '../widgets/animated_balance.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
 import '../widgets/tx_detail_sheet.dart';
@@ -226,11 +227,6 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen>
     return l.ageDays(d.inDays);
   }
 
-  String _balanceText() {
-    if (_wallet == null) return '… $_symbol';
-    final eth = EthereumTx.weiToEth(_balanceWei);
-    return '${eth.toStringAsFixed(6)} $_symbol';
-  }
 
   /// Dialog flow for adding a custom ERC-20 token by contract
   /// address. We probe the chain for the token's symbol + decimals
@@ -429,11 +425,25 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen>
                   padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                   decoration: BoxDecoration(
                     borderRadius: PeekDesign.brHero,
-                    gradient: PeekDesign.surfaceGradient,
+                    gradient: PeekDesign.coinHeroGradient(
+                        PeekColors.coinAccent(_symbol)),
                     border: Border.all(color: PeekColors.border, width: 1),
                     boxShadow: PeekDesign.cardShadow,
                   ),
-                  child: Column(
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: PeekDesign.heroAccentBloom(
+                              PeekColors.coinAccent(_symbol)),
+                        ),
+                      ),
+                      Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -485,8 +495,13 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen>
                         ],
                       ),
                       const SizedBox(height: PeekDesign.sp5),
-                      Text(
-                        _balanceText(),
+                      AnimatedBalance(
+                        amount: _wallet == null
+                            ? 0
+                            : EthereumTx.weiToEth(_balanceWei),
+                        formatter: (v) => _wallet == null
+                            ? '… $_symbol'
+                            : '${v.toStringAsFixed(6)} $_symbol',
                         style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w700,
@@ -534,6 +549,8 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen>
                             icon: Icons.error_outline_rounded,
                           ),
                         ),
+                    ],
+                  ),
                     ],
                   ),
                 ),

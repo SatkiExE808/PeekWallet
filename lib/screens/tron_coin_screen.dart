@@ -13,6 +13,7 @@ import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../util/lifecycle_poller.dart';
 import '../wallets/balance_cache.dart';
+import '../widgets/animated_balance.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -186,11 +187,6 @@ class _TronCoinScreenState extends State<TronCoinScreen>
     }
   }
 
-  String _balanceText() {
-    if (_wallet == null) return '… TRX';
-    final trx = _balanceSun / 1000000.0;
-    return '${trx.toStringAsFixed(6)} TRX';
-  }
 
   static String _relTime(AppLocalizations l, DateTime then) {
     final d = DateTime.now().difference(then);
@@ -287,11 +283,25 @@ class _TronCoinScreenState extends State<TronCoinScreen>
                   padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                   decoration: BoxDecoration(
                     borderRadius: PeekDesign.brHero,
-                    gradient: PeekDesign.surfaceGradient,
+                    gradient: PeekDesign.coinHeroGradient(
+                        PeekColors.coinAccent('TRX')),
                     border: Border.all(color: PeekColors.border, width: 1),
                     boxShadow: PeekDesign.cardShadow,
                   ),
-                  child: Column(
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: PeekDesign.heroAccentBloom(
+                              PeekColors.coinAccent('TRX')),
+                        ),
+                      ),
+                      Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -343,8 +353,13 @@ class _TronCoinScreenState extends State<TronCoinScreen>
                         ],
                       ),
                       const SizedBox(height: PeekDesign.sp5),
-                      Text(
-                        _balanceText(),
+                      AnimatedBalance(
+                        amount: _wallet == null
+                            ? 0
+                            : _balanceSun / 1000000.0,
+                        formatter: (v) => _wallet == null
+                            ? '… TRX'
+                            : '${v.toStringAsFixed(6)} TRX',
                         style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w700,
@@ -390,6 +405,8 @@ class _TronCoinScreenState extends State<TronCoinScreen>
                             icon: Icons.error_outline_rounded,
                           ),
                         ),
+                    ],
+                  ),
                     ],
                   ),
                 ),

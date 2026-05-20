@@ -8,6 +8,7 @@ import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/lifecycle_poller.dart';
+import '../widgets/animated_balance.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
@@ -157,12 +158,6 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
     return l.ageDays(d.inDays);
   }
 
-  String _balanceText() {
-    if (_wallet == null) return '… BCH';
-    final bch = _balanceSat / 100000000.0;
-    return '${bch.toStringAsFixed(8)} BCH';
-  }
-
   Future<void> _openSendScreen(BitcoinCashWallet w) async {
     final didSend = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -231,11 +226,25 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
                   padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                   decoration: BoxDecoration(
                     borderRadius: PeekDesign.brHero,
-                    gradient: PeekDesign.surfaceGradient,
+                    gradient: PeekDesign.coinHeroGradient(
+                        PeekColors.coinAccent('BCH')),
                     border: Border.all(color: PeekColors.border, width: 1),
                     boxShadow: PeekDesign.cardShadow,
                   ),
-                  child: Column(
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: PeekDesign.heroAccentBloom(
+                              PeekColors.coinAccent('BCH')),
+                        ),
+                      ),
+                      Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -287,8 +296,13 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
                         ],
                       ),
                       const SizedBox(height: PeekDesign.sp5),
-                      Text(
-                        _balanceText(),
+                      AnimatedBalance(
+                        amount: _wallet == null
+                            ? 0
+                            : _balanceSat / 100000000.0,
+                        formatter: (v) => _wallet == null
+                            ? '… BCH'
+                            : '${v.toStringAsFixed(8)} BCH',
                         style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w700,
@@ -334,6 +348,8 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
                             icon: Icons.error_outline_rounded,
                           ),
                         ),
+                    ],
+                  ),
                     ],
                   ),
                 ),

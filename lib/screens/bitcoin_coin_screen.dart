@@ -8,6 +8,7 @@ import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/lifecycle_poller.dart';
+import '../widgets/animated_balance.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -199,12 +200,6 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen>
   String get _symbol => _wallet?.params.symbol ?? widget.walletMeta.coinId;
   String get _coinName => _wallet?.params.name ?? 'Bitcoin';
 
-  String _balanceText() {
-    if (_wallet == null) return '… $_symbol';
-    final btc = _balanceSat / 100000000.0;
-    return '${btc.toStringAsFixed(8)} $_symbol';
-  }
-
   Future<void> _openSendScreen(BitcoinWallet w) async {
     final didSend = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -277,18 +272,36 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Hero balance card — gradient surface + soft accent
-                // glow + big balance with fiat. Replaces the
-                // previously-flat avatar + label + number stack.
+                // Hero balance card — coin-tinted gradient + bloom
+                // glow + big balance with fiat. The coin accent
+                // washes the surface so the user can tell BTC vs ETH
+                // vs SOL at a glance without reading the title.
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                   decoration: BoxDecoration(
                     borderRadius: PeekDesign.brHero,
-                    gradient: PeekDesign.surfaceGradient,
+                    gradient: PeekDesign.coinHeroGradient(
+                        PeekColors.coinAccent(_symbol)),
                     border: Border.all(color: PeekColors.border, width: 1),
                     boxShadow: PeekDesign.cardShadow,
                   ),
-                  child: Column(
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      // Soft top-right brand bloom — premium "lit from
+                      // the side" depth, same trick the portfolio hero
+                      // uses on the wallets list.
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: PeekDesign.heroAccentBloom(
+                              PeekColors.coinAccent(_symbol)),
+                        ),
+                      ),
+                      Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -340,22 +353,18 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen>
                         ],
                       ),
                       const SizedBox(height: PeekDesign.sp5),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.95, end: 1.0),
-                        duration: PeekDesign.tMed,
-                        curve: PeekDesign.easeOut,
-                        builder: (_, t, child) => Opacity(
-                          opacity: t,
-                          child: child,
-                        ),
-                        child: Text(
-                          _balanceText(),
-                          style: const TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.7,
-                            height: 1.1,
-                          ),
+                      AnimatedBalance(
+                        amount: _wallet == null
+                            ? 0
+                            : _balanceSat / 100000000.0,
+                        formatter: (v) => _wallet == null
+                            ? '… $_symbol'
+                            : '${v.toStringAsFixed(8)} $_symbol',
+                        style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.7,
+                          height: 1.1,
                         ),
                       ),
                       AnimatedBuilder(
@@ -398,6 +407,8 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen>
                             icon: Icons.error_outline_rounded,
                           ),
                         ),
+                    ],
+                  ),
                     ],
                   ),
                 ),

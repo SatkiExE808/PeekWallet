@@ -15,6 +15,7 @@ import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../util/lifecycle_poller.dart';
 import '../wallets/balance_cache.dart';
+import '../widgets/animated_balance.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
 import '../widgets/tx_detail_sheet.dart';
@@ -184,11 +185,6 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen>
     }
   }
 
-  String _balanceText() {
-    if (_wallet == null) return '… SOL';
-    final sol = _balanceLamports / 1000000000.0;
-    return '${sol.toStringAsFixed(6)} SOL';
-  }
 
   static String _relTime(AppLocalizations l, DateTime then) {
     final d = DateTime.now().difference(then);
@@ -298,11 +294,25 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen>
                   padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                   decoration: BoxDecoration(
                     borderRadius: PeekDesign.brHero,
-                    gradient: PeekDesign.surfaceGradient,
+                    gradient: PeekDesign.coinHeroGradient(
+                        PeekColors.coinAccent('SOL')),
                     border: Border.all(color: PeekColors.border, width: 1),
                     boxShadow: PeekDesign.cardShadow,
                   ),
-                  child: Column(
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: PeekDesign.heroAccentBloom(
+                              PeekColors.coinAccent('SOL')),
+                        ),
+                      ),
+                      Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -354,8 +364,13 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen>
                         ],
                       ),
                       const SizedBox(height: PeekDesign.sp5),
-                      Text(
-                        _balanceText(),
+                      AnimatedBalance(
+                        amount: _wallet == null
+                            ? 0
+                            : _balanceLamports / 1000000000.0,
+                        formatter: (v) => _wallet == null
+                            ? '… SOL'
+                            : '${v.toStringAsFixed(6)} SOL',
                         style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w700,
@@ -403,6 +418,8 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen>
                             icon: Icons.error_outline_rounded,
                           ),
                         ),
+                    ],
+                  ),
                     ],
                   ),
                 ),

@@ -149,6 +149,31 @@ class PeekDesign {
         end: Alignment.bottomRight,
         colors: [Color(0xFF1A1F2D), Color(0xFF161B27)],
       );
+
+  /// Hero gradient tinted by a coin's brand accent. Used on each
+  /// coin screen's balance card so the user sees an immediate
+  /// "this is BTC / ETH / SOL" cue without reading the title.
+  /// Subtle — the accent is at ~10% alpha on top of the standard
+  /// surface gradient so it reads as a wash, not a paint job.
+  static LinearGradient coinHeroGradient(Color accent) => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color.lerp(const Color(0xFF1A1F2D), accent, 0.12)!,
+          const Color(0xFF161B27),
+        ],
+      );
+
+  /// Soft accent glow used as a top-right bloom on hero cards — the
+  /// same "lit from the side" depth trick used on Tangem / Exodus
+  /// portfolio surfaces.
+  static BoxDecoration heroAccentBloom(Color accent) => BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [
+          accent.withAlpha(48),
+          accent.withAlpha(0),
+        ]),
+      );
 }
 
 class PeekTheme {

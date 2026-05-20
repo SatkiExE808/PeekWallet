@@ -57,7 +57,12 @@ class StatusPill extends StatelessWidget {
 /// Premium Receive/Send action button. Pill-shaped, generous vertical
 /// padding, primary (filled accent) vs secondary (outlined) variants.
 /// Disabled state dims both background and label.
-class ActionButton extends StatelessWidget {
+///
+/// Adds a subtle scale-down on press (0.96, eased over 100ms) for
+/// tactile feedback — same micro-animation Phantom / Tangem use on
+/// their primary CTAs so a tap feels like a button physically being
+/// pushed instead of a passive color change.
+class ActionButton extends StatefulWidget {
   const ActionButton({
     super.key,
     required this.icon,
@@ -72,50 +77,67 @@ class ActionButton extends StatelessWidget {
   final bool primary;
 
   @override
+  State<ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<ActionButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final isDisabled = onTap == null;
-    final bgColor = primary
+    final isDisabled = widget.onTap == null;
+    final bgColor = widget.primary
         ? (isDisabled ? PeekColors.surface2 : PeekColors.accent)
         : PeekColors.surface2;
-    final fgColor = primary
+    final fgColor = widget.primary
         ? (isDisabled ? PeekColors.text3 : Colors.white)
         : PeekColors.text;
     final borderColor =
-        primary ? Colors.transparent : PeekColors.border2;
+        widget.primary ? Colors.transparent : PeekColors.border2;
     return Semantics(
       button: true,
       enabled: !isDisabled,
-      label: label,
-      child: Material(
-        color: bgColor,
-        borderRadius: PeekDesign.brButton,
-        child: InkWell(
-          onTap: onTap,
+      label: widget.label,
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: Material(
+          color: bgColor,
           borderRadius: PeekDesign.brButton,
-          splashColor: primary
-              ? Colors.white.withAlpha(40)
-              : PeekColors.accentMuted,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              borderRadius: PeekDesign.brButton,
-              border: Border.all(color: borderColor, width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: fgColor),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: fgColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.1,
+          child: InkWell(
+            onTap: widget.onTap,
+            onTapDown: isDisabled
+                ? null
+                : (_) => setState(() => _pressed = true),
+            onTapUp: (_) => setState(() => _pressed = false),
+            onTapCancel: () => setState(() => _pressed = false),
+            borderRadius: PeekDesign.brButton,
+            splashColor: widget.primary
+                ? Colors.white.withAlpha(40)
+                : PeekColors.accentMuted,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: PeekDesign.brButton,
+                border: Border.all(color: borderColor, width: 1),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(widget.icon, size: 18, color: fgColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.label,
+                    style: TextStyle(
+                      color: fgColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.1,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
