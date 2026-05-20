@@ -7,6 +7,7 @@ import '../coins/bitcoin/mempool_client.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/lifecycle_poller.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
@@ -32,7 +33,8 @@ class BitcoinCoinScreen extends StatefulWidget {
 
 enum _SetupErrKind { none, vaultLocked, openFailed }
 
-class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
+class _BitcoinCoinScreenState extends State<BitcoinCoinScreen>
+    with LifecyclePoller {
   BitcoinWallet? _wallet;
   /// Live RPC error from _refresh — already an upstream exception
   /// string, shown as-is.
@@ -48,8 +50,17 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
   /// user keeps seeing a balance instead of "0". null = no cached
   /// snapshot was ever taken; render zeroes.
   DateTime? _balanceFromCacheAt;
-  Timer? _poll;
   bool _refreshing = false;
+
+  /// Mempool.space doesn't appreciate sub-10s pollers; 30 s is the
+  /// sweet spot between "users see new tx within a block-time" and
+  /// "we don't get rate-limited". Pauses automatically when the app
+  /// is backgrounded (see [LifecyclePoller]).
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
+
+  @override
+  Future<void> onPollTick() => _refresh();
 
   @override
   void initState() {
@@ -59,7 +70,6 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
 
   @override
   void dispose() {
-    _poll?.cancel();
     _wallet?.close();
     super.dispose();
   }
@@ -121,12 +131,10 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
       ) as BitcoinWallet;
       if (!mounted) return;
       setState(() => _wallet = w);
-      unawaited(_refresh());
-      // Poll every 30 s while the screen is alive. Mempool.space
-      // doesn't appreciate sub-10s pollers; 30 s is the sweet spot
-      // between "users see new tx within a block-time" and "we
-      // don't get rate-limited".
-      _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+      // startPolling fires onPollTick (== _refresh) immediately and
+      // then every pollInterval until the app backgrounds. The
+      // first tick replaces the old `unawaited(_refresh())` call.
+      startPolling();
     } catch (e) {
       setState(() {
         _setupErrKind = _SetupErrKind.openFailed;

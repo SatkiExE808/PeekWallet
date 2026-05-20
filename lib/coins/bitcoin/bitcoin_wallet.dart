@@ -303,57 +303,35 @@ class BitcoinWallet {
       );
     }
 
-    // Materialize spending keys for the addresses we're spending from.
-    // Receive-time we only stored publickey-only derivations; signing
-    // needs private keys so we re-derive on demand.
-    final signers = <String, BitcoinSpendingKey>{};
+    // Look up each spendable input's gap-limit index on the main
+    // thread — this is just a list scan, fast — then ship the
+    // derivation + build + sign to a background isolate so the UI
+    // doesn't stall on PBKDF2 + ECDSA work. The isolate gets just
+    // the index list, not the live BIP32 nodes (those don't cross
+    // the SendPort cleanly).
+    final inputIndices = <int>[];
     for (final utxo in selected) {
-      if (signers.containsKey(utxo.address)) continue;
       final idx = addresses.indexWhere((a) => a.address == utxo.address);
       if (idx < 0) {
         throw StateError(
             'UTXO references unknown address ${utxo.address}');
       }
-      signers[utxo.address] = deriveBitcoinSpendingKey(
+      inputIndices.add(idx);
+    }
+
+    final built = await compute(
+      _buildAndSignBitcoinInIsolate,
+      _BitcoinSignArgs(
         mnemonic: mnemonic,
         passphrase: passphrase,
-        addressIndex: idx,
+        gapLimit: gapLimit,
         params: params,
-      );
-    }
-
-    // Change goes to the BIP84 internal (change) chain — a different
-    // hierarchy from receive addresses, so the explorer + chain
-    // analysis can't trivially cluster every send under the same
-    // address. We pick an index derived from the input set: same
-    // input set → same change address (idempotent rebuilds), but
-    // any two real sends use different change addresses because
-    // they spend different UTXOs.
-    var seed = 0;
-    for (final u in selected) {
-      // Mix the txid + vout into a 64-bit accumulator. djb2-style.
-      for (final c in u.txid.codeUnits) {
-        seed = ((seed * 33) + c) & 0xffffffff;
-      }
-      seed = ((seed * 33) + u.vout) & 0xffffffff;
-    }
-    final changeIdx = seed % gapLimit;
-    final changeKey = deriveBitcoinSpendingKey(
-      mnemonic: mnemonic,
-      passphrase: passphrase,
-      addressIndex: changeIdx,
-      change: true,
-      params: params,
-    );
-
-    final built = buildAndSignP2WPKH(
-      inputs: selected,
-      signers: signers,
-      destAddress: destAddress,
-      amountSat: amountSat,
-      changeAddress: changeKey.address,
-      feeRateSatPerVByte: feeRateSatPerVByte,
-      params: params,
+        selected: selected,
+        inputIndices: inputIndices,
+        destAddress: destAddress,
+        amountSat: amountSat,
+        feeRateSatPerVByte: feeRateSatPerVByte,
+      ),
     );
 
     PeekLogger.I.log(
@@ -410,6 +388,84 @@ List<BitcoinAddressDerivation> _deriveAddressesInIsolate(
     mnemonic: args.mnemonic,
     passphrase: args.passphrase,
     count: args.gapLimit,
+    params: args.params,
+  );
+}
+
+/// Args for [_buildAndSignBitcoinInIsolate]. All fields are plain
+/// data — int / String / `List<plain>`. The BIP32 nodes are
+/// re-derived inside the isolate from the mnemonic + index list.
+class _BitcoinSignArgs {
+  const _BitcoinSignArgs({
+    required this.mnemonic,
+    required this.passphrase,
+    required this.gapLimit,
+    required this.params,
+    required this.selected,
+    required this.inputIndices,
+    required this.destAddress,
+    required this.amountSat,
+    required this.feeRateSatPerVByte,
+  });
+  final String mnemonic;
+  final String passphrase;
+  final int gapLimit;
+  final BitcoinChainParams params;
+  final List<Utxo> selected;
+  final List<int> inputIndices;
+  final String destAddress;
+  final int amountSat;
+  final int feeRateSatPerVByte;
+}
+
+/// Top-level entry point shipped to [compute] by
+/// [BitcoinWallet.sendBitcoin]. Re-derives the BIP32 spending keys
+/// for each selected input, derives a change-chain address, and
+/// runs the BIP143 build + sign — all on a background isolate so
+/// the UI thread doesn't stall during the ~400-800ms of crypto.
+///
+/// Inputs + outputs are plain serialisable data so the result
+/// (a [BuiltBitcoinTransaction]) crosses the SendPort cleanly.
+BuiltBitcoinTransaction _buildAndSignBitcoinInIsolate(
+    _BitcoinSignArgs args) {
+  final signers = <String, BitcoinSpendingKey>{};
+  for (var i = 0; i < args.selected.length; i++) {
+    final utxo = args.selected[i];
+    if (signers.containsKey(utxo.address)) continue;
+    signers[utxo.address] = deriveBitcoinSpendingKey(
+      mnemonic: args.mnemonic,
+      passphrase: args.passphrase,
+      addressIndex: args.inputIndices[i],
+      params: args.params,
+    );
+  }
+
+  // Change address: deterministic hash of the input set so the
+  // same selection always picks the same change index — keeps
+  // change-side analysis predictable for the user.
+  var seed = 0;
+  for (final u in args.selected) {
+    for (final c in u.txid.codeUnits) {
+      seed = ((seed * 33) + c) & 0xffffffff;
+    }
+    seed = ((seed * 33) + u.vout) & 0xffffffff;
+  }
+  final changeIdx = seed % args.gapLimit;
+  final changeKey = deriveBitcoinSpendingKey(
+    mnemonic: args.mnemonic,
+    passphrase: args.passphrase,
+    addressIndex: changeIdx,
+    change: true,
+    params: args.params,
+  );
+
+  return buildAndSignP2WPKH(
+    inputs: args.selected,
+    signers: signers,
+    destAddress: args.destAddress,
+    amountSat: args.amountSat,
+    changeAddress: changeKey.address,
+    feeRateSatPerVByte: args.feeRateSatPerVByte,
     params: args.params,
   );
 }

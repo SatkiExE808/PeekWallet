@@ -13,6 +13,7 @@ import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../util/coin_avatar.dart';
+import '../util/lifecycle_poller.dart';
 import '../wallets/balance_cache.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
@@ -32,7 +33,8 @@ class EthereumCoinScreen extends StatefulWidget {
 
 enum _SetupErrKind { none, vaultLocked, openFailed }
 
-class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
+class _EthereumCoinScreenState extends State<EthereumCoinScreen>
+    with LifecyclePoller {
   EthereumWallet? _wallet;
   String? _err;
   _SetupErrKind _setupErrKind = _SetupErrKind.none;
@@ -50,8 +52,13 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
   /// ERC-20 token transfer history, filtered to tokens we recognize
   /// (defaults + custom). Sorted newest-first.
   List<TokenTransfer> _tokenTxes = const [];
-  Timer? _poll;
   bool _refreshing = false;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
+
+  @override
+  Future<void> onPollTick() => _refresh();
 
   @override
   void initState() {
@@ -61,7 +68,6 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
 
   @override
   void dispose() {
-    _poll?.cancel();
     _wallet?.close();
     super.dispose();
   }
@@ -133,8 +139,7 @@ class _EthereumCoinScreenState extends State<EthereumCoinScreen> {
       ) as EthereumWallet;
       if (!mounted) return;
       setState(() => _wallet = w);
-      unawaited(_refresh());
-      _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+      startPolling();
     } catch (e) {
       setState(() {
         _setupErrKind = _SetupErrKind.openFailed;

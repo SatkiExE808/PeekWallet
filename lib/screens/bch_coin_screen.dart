@@ -7,6 +7,7 @@ import '../coins/bitcoin_cash/blockchair_client.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
+import '../util/lifecycle_poller.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
 import '../wallets/balance_cache.dart';
@@ -32,7 +33,8 @@ class BitcoinCashCoinScreen extends StatefulWidget {
 
 enum _SetupErrKind { none, vaultLocked, openFailed }
 
-class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
+class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
+    with LifecyclePoller {
   BitcoinCashWallet? _wallet;
   String? _err;
   _SetupErrKind _setupErrKind = _SetupErrKind.none;
@@ -40,8 +42,13 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
   int _balanceSat = 0;
   List<BchTx> _txes = const [];
   DateTime? _balanceFromCacheAt;
-  Timer? _poll;
   bool _refreshing = false;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
+
+  @override
+  Future<void> onPollTick() => _refresh();
 
   @override
   void initState() {
@@ -51,7 +58,6 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
 
   @override
   void dispose() {
-    _poll?.cancel();
     _wallet?.close();
     super.dispose();
   }
@@ -100,8 +106,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen> {
       ) as BitcoinCashWallet;
       if (!mounted) return;
       setState(() => _wallet = w);
-      unawaited(_refresh());
-      _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+      startPolling();
     } catch (e) {
       setState(() {
         _setupErrKind = _SetupErrKind.openFailed;

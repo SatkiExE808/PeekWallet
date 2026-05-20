@@ -13,6 +13,7 @@ import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
+import '../util/lifecycle_poller.dart';
 import '../wallets/balance_cache.dart';
 import '../widgets/coin_screen_widgets.dart';
 import '../widgets/receive_sheet.dart';
@@ -32,7 +33,8 @@ class SolanaCoinScreen extends StatefulWidget {
 
 enum _SetupErrKind { none, vaultLocked, openFailed }
 
-class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
+class _SolanaCoinScreenState extends State<SolanaCoinScreen>
+    with LifecyclePoller {
   SolanaWallet? _wallet;
   String? _err;
   _SetupErrKind _setupErrKind = _SetupErrKind.none;
@@ -48,8 +50,13 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
   /// from whether our wallet owner address is the authority on
   /// the source ATA.
   List<SolanaTokenTx> _tokenTxes = const [];
-  Timer? _poll;
   bool _refreshing = false;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
+
+  @override
+  Future<void> onPollTick() => _refresh();
 
   @override
   void initState() {
@@ -59,7 +66,6 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
 
   @override
   void dispose() {
-    _poll?.cancel();
     _wallet?.close();
     super.dispose();
   }
@@ -108,10 +114,9 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen> {
       ) as SolanaWallet;
       if (!mounted) return;
       setState(() => _wallet = w);
-      unawaited(_refresh());
       // Solana confirms every ~400ms but the public RPC rate-limits
-      // hard — 30s poll is the same cadence we use elsewhere.
-      _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+      // hard — 30s poll matches every other coin screen.
+      startPolling();
     } catch (e) {
       setState(() {
         _setupErrKind = _SetupErrKind.openFailed;

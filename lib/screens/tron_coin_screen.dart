@@ -11,6 +11,7 @@ import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
+import '../util/lifecycle_poller.dart';
 import '../wallets/balance_cache.dart';
 import '../vault/vault_state.dart';
 import '../wallets/wallet_meta.dart';
@@ -34,7 +35,8 @@ class TronCoinScreen extends StatefulWidget {
 
 enum _SetupErrKind { none, vaultLocked, openFailed }
 
-class _TronCoinScreenState extends State<TronCoinScreen> {
+class _TronCoinScreenState extends State<TronCoinScreen>
+    with LifecyclePoller {
   TronWallet? _wallet;
   String? _err;
   _SetupErrKind _setupErrKind = _SetupErrKind.none;
@@ -47,8 +49,13 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
   Map<String, BigInt> _tokenBalances = const {};
   /// TRC-20 transfer history, filtered to tokens we recognize.
   List<Trc20Transfer> _tokenTxes = const [];
-  Timer? _poll;
   bool _refreshing = false;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
+
+  @override
+  Future<void> onPollTick() => _refresh();
 
   @override
   void initState() {
@@ -58,7 +65,6 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
 
   @override
   void dispose() {
-    _poll?.cancel();
     _wallet?.close();
     super.dispose();
   }
@@ -107,8 +113,7 @@ class _TronCoinScreenState extends State<TronCoinScreen> {
       ) as TronWallet;
       if (!mounted) return;
       setState(() => _wallet = w);
-      unawaited(_refresh());
-      _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+      startPolling();
     } catch (e) {
       setState(() {
         _setupErrKind = _SetupErrKind.openFailed;
