@@ -693,6 +693,390 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendXmrErrorExceedsBalance => 'Total exceeds your balance.';
 
   @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsMoneroNode => 'Monero node';
+
+  @override
+  String get settingsMoneroNodeBody =>
+      'The Monero daemon PeekWallet connects to for sync. Default is Cake Wallet\'s public node. For full privacy, run your own monerod and point this at it.';
+
+  @override
+  String get settingsDaemonUrlLabel => 'Daemon URL';
+
+  @override
+  String get settingsPasteTooltip => 'Paste';
+
+  @override
+  String settingsConnectsToPreview(String hostPort, String ssl) {
+    return 'Connects to $hostPort (ssl=$ssl)';
+  }
+
+  @override
+  String get settingsMessageBadUrl =>
+      'Could not parse that URL. Try e.g. https://node.example.com:18081';
+
+  @override
+  String get settingsMessageSaved =>
+      'Saved. Lock + unlock the app to switch your wallet to the new node.';
+
+  @override
+  String settingsMessageReset(String url) {
+    return 'Reset. The app will use $url on next unlock.';
+  }
+
+  @override
+  String get settingsResetToDefault => 'Reset to default';
+
+  @override
+  String get settingsSectionPublicNodes => 'Public nodes';
+
+  @override
+  String get settingsSectionSecurity => 'Security';
+
+  @override
+  String get settingsSectionDisplay => 'Display';
+
+  @override
+  String get settingsBiometricUnlock => 'Biometric unlock';
+
+  @override
+  String get settingsBiometricUnlockOn => 'Use fingerprint / face to unlock';
+
+  @override
+  String get settingsBiometricUnlockOff =>
+      'Not available — no enrolled biometric';
+
+  @override
+  String get settingsBiometricEnableTitle => 'Enable biometric unlock';
+
+  @override
+  String get settingsBiometricEnableHint =>
+      'Enter your app password to confirm';
+
+  @override
+  String settingsBiometricEnableFailed(String error) {
+    return 'Could not enable: $error';
+  }
+
+  @override
+  String get settingsPasswordLabel => 'Password';
+
+  @override
+  String get settingsRevealSeedTitle => 'Reveal recovery phrase';
+
+  @override
+  String get settingsRevealSeedBody =>
+      'View your BIP39 seed + Monero spend/view keys';
+
+  @override
+  String get settingsAddressBookTitle => 'Address book';
+
+  @override
+  String get settingsAddressBookBody =>
+      'Saved labels for recipients you send to';
+
+  @override
+  String get settingsAutoLockTitle => 'Auto-lock';
+
+  @override
+  String get settingsAutoLockSheetTitle => 'Auto-lock after backgrounding';
+
+  @override
+  String get settingsAutoLockSheetBody =>
+      'How long PeekWallet can stay unlocked while you\'re using other apps. Returning within this window keeps you logged in; longer and the password is required again.';
+
+  @override
+  String get settingsAutoLockImmediately => 'Immediately';
+
+  @override
+  String get settingsAutoLockNever => 'Never';
+
+  @override
+  String settingsAutoLockSeconds(int n) {
+    return '$n s';
+  }
+
+  @override
+  String get settingsAutoLock30Seconds => '30 seconds';
+
+  @override
+  String get settingsAutoLock1Minute => '1 minute';
+
+  @override
+  String get settingsAutoLock2MinutesDefault => '2 minutes (default)';
+
+  @override
+  String get settingsAutoLock5Minutes => '5 minutes';
+
+  @override
+  String get settingsAutoLock15Minutes => '15 minutes';
+
+  @override
+  String get settingsAutoLock1Hour => '1 hour';
+
+  @override
+  String get settingsLockAppTitle => 'Lock app';
+
+  @override
+  String get settingsLockAppBody =>
+      'Clear the in-memory seed and require the password again';
+
+  @override
+  String get settingsLockConfirmTitle => 'Lock app?';
+
+  @override
+  String get settingsLockConfirmBody =>
+      'You will need to enter your password to unlock. Any in-progress Monero sync will pick up where it left off.';
+
+  @override
+  String get settingsLockConfirmAction => 'Lock';
+
+  @override
+  String get settingsDisplayCurrencyTitle => 'Display currency';
+
+  @override
+  String get settingsDisplayCurrencyDisabled => 'Disabled';
+
+  @override
+  String get settingsShowFiatValues => 'Show fiat values';
+
+  @override
+  String get settingsShowFiatValuesBody =>
+      'Polls CoinGecko every 5 min. No PII sent.';
+
+  @override
+  String get settingsExportLogsTitle => 'Export logs';
+
+  @override
+  String get settingsExportLogsBody =>
+      'Last 7 days. Addresses and keys are auto-redacted.';
+
+  @override
+  String get settingsExportLogsEmpty => 'No logs to export yet.';
+
+  @override
+  String get settingsExportLogsDialogTitle => 'Logs (last 7 days)';
+
+  @override
+  String get settingsExportLogsCopied => 'Logs copied to clipboard';
+
+  @override
+  String get settingsCloseAction => 'Close';
+
+  @override
+  String get settingsRestoreAllTitle => 'Restore all coins from vault seed';
+
+  @override
+  String get settingsRestoreAllBody =>
+      'One-tap derive a wallet for every coin from your existing 12/24-word seed.';
+
+  @override
+  String get settingsCustomRpcTitle => 'Custom RPC endpoints';
+
+  @override
+  String get settingsCustomRpcBody =>
+      'Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your own nodes.';
+
+  @override
+  String get settingsUpdateTitle => 'Check for updates';
+
+  @override
+  String get settingsUpdateChecking => 'Checking GitHub…';
+
+  @override
+  String get settingsUpdateTapToCheck => 'Tap to check';
+
+  @override
+  String get settingsUpdateFailedFallback => 'Check failed';
+
+  @override
+  String settingsUpdateAvailable(String ago) {
+    return 'Update available — released $ago. Tap to download.';
+  }
+
+  @override
+  String get settingsUpdateDebugBuild =>
+      'Debug build — version check disabled. Tap to retry.';
+
+  @override
+  String get settingsUpdateUpToDate => 'Up to date · checked just now';
+
+  @override
+  String get settingsAboutTitle => 'About PeekWallet';
+
+  @override
+  String get settingsAboutBody => 'Version, license, source code';
+
+  @override
+  String get addWalletChooseCoin => 'Choose coin';
+
+  @override
+  String addWalletTitle(String coin) {
+    return 'Add $coin wallet';
+  }
+
+  @override
+  String get addWalletCreateTitle => 'Create new wallet';
+
+  @override
+  String get addWalletCreateBody =>
+      'Generate a fresh seed phrase. Anyone with the phrase can spend the wallet — write it down on paper.';
+
+  @override
+  String get addWalletRestoreSeedTitle => 'Restore from seed';
+
+  @override
+  String get addWalletRestoreSeedBody =>
+      'Use a recovery phrase you already have (BIP39 12/24 words, Monero 25-word seed, or Polyseed 14 words).';
+
+  @override
+  String get addWalletRestoreKeysTitle => 'Restore from keys';
+
+  @override
+  String get addWalletRestoreKeysBody =>
+      'Address + private spend key + private view key. Use this when you have the keys but not a seed phrase.';
+
+  @override
+  String get addWalletFormatNew => 'New seed format';
+
+  @override
+  String get addWalletFormatRestore => 'Restore format';
+
+  @override
+  String get addWalletFormatBip39Hint =>
+      'BIP39 mnemonic — the standard 12/24 word format used by every modern wallet. Trezor, Ledger. Universal across many coins.';
+
+  @override
+  String get addWalletFormatMoneroLegacyHint =>
+      'Native Monero electrum-style seed. Direct interop with Cake, Feather, and Monero GUI.';
+
+  @override
+  String get addWalletFormatPolyseedHint =>
+      'Newer Monero standard — 14 words. Restore height baked in.';
+
+  @override
+  String get addWalletFormatKeysOnlyHint =>
+      'Spend key + view key + address. No words.';
+
+  @override
+  String get addWalletVaultLocked =>
+      'Vault is locked — re-unlock and try again.';
+
+  @override
+  String addWalletGenerateHeader(String format) {
+    return 'Generate a $format';
+  }
+
+  @override
+  String get addWalletGenerateBody =>
+      'When you tap Generate, the words will appear once. Write them down on paper before continuing. Anyone with these words can drain this wallet.';
+
+  @override
+  String get addWalletGenerateAction => 'Generate seed';
+
+  @override
+  String get addWalletWriteThisDown => 'Write this down';
+
+  @override
+  String get addWalletWordsWarning =>
+      'These words ARE the wallet. Anyone with them can spend it.';
+
+  @override
+  String get addWalletCopyClipboardClears =>
+      'Copied — clipboard auto-clears in 30 s';
+
+  @override
+  String get addWalletCopyPhraseAction => 'Copy phrase';
+
+  @override
+  String get addWalletNameLabel => 'Wallet name (only you can see this)';
+
+  @override
+  String get addWalletNameHint => 'e.g. \"Main Monero\"';
+
+  @override
+  String get addWalletSavedConfirm => 'I have saved the words — add wallet';
+
+  @override
+  String addWalletRestoreTitle(String format) {
+    return 'Restore $format';
+  }
+
+  @override
+  String get addWalletRestoreNameLabel => 'Wallet name';
+
+  @override
+  String get addWalletRestoreNameHint => 'e.g. \"Imported from Cake\"';
+
+  @override
+  String get addWalletRecoveryPhraseLabel => 'Recovery phrase';
+
+  @override
+  String get addWalletSeedWordsLabel => 'Seed words';
+
+  @override
+  String get addWalletPassphraseLabel =>
+      'BIP39 passphrase (25th word) — optional';
+
+  @override
+  String get addWalletPassphraseHint => 'Leave blank if not used';
+
+  @override
+  String get addWalletPassphraseWarning =>
+      'If the source wallet had a passphrase, you MUST enter it — otherwise you\'ll get a different wallet entirely.';
+
+  @override
+  String get addWalletSeedOffsetLabel => 'Seed offset — optional';
+
+  @override
+  String get addWalletSeedOffsetHint =>
+      'Leave blank if the seed isn\'t encrypted';
+
+  @override
+  String get addWalletRestoreHeightLabel => 'Restore height — optional';
+
+  @override
+  String get addWalletRestoreHeightHint =>
+      'Block number to start scanning from';
+
+  @override
+  String get addWalletRestoreHeightBody =>
+      'Lower = more thorough but slower sync; higher = faster but might miss old receipts.';
+
+  @override
+  String get addWalletRestoreAction => 'Restore wallet';
+
+  @override
+  String get addWalletKeysRestoreTitle => 'Restore from keys';
+
+  @override
+  String get addWalletPrimaryAddressLabel => 'Primary address';
+
+  @override
+  String get addWalletSpendKeyLabel => 'Private spend key (hex)';
+
+  @override
+  String get addWalletViewKeyLabel => 'Private view key (hex)';
+
+  @override
+  String get addWalletKeysRestoreHeightLabel => 'Restore height';
+
+  @override
+  String get addWalletKeysRestoreHeightHint =>
+      'Block number — earlier covers older receipts';
+
+  @override
+  String get addWalletScanAddressTitle => 'Scan address';
+
+  @override
+  String get addWalletConfirmPasswordTitle => 'Confirm password';
+
+  @override
+  String get addWalletAppPasswordLabel => 'App password';
+
+  @override
   String get erc20EmptyHint =>
       'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
 

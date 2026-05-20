@@ -674,6 +674,365 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sendXmrErrorExceedsBalance => '總額超過餘額。';
 
   @override
+  String get settingsTitle => '設定';
+
+  @override
+  String get settingsMoneroNode => 'Monero 節點';
+
+  @override
+  String get settingsMoneroNodeBody =>
+      'PeekWallet 用來同步的 Monero 守護程式。預設為 Cake Wallet 的公開節點。如需完全隱私,可自架 monerod 並指向自己的節點。';
+
+  @override
+  String get settingsDaemonUrlLabel => '節點 URL';
+
+  @override
+  String get settingsPasteTooltip => '貼上';
+
+  @override
+  String settingsConnectsToPreview(String hostPort, String ssl) {
+    return '連線至 $hostPort(ssl=$ssl)';
+  }
+
+  @override
+  String get settingsMessageBadUrl =>
+      '無法解析此 URL。請試試 https://node.example.com:18081';
+
+  @override
+  String get settingsMessageSaved => '已儲存。鎖定再解鎖即可切換到新節點。';
+
+  @override
+  String settingsMessageReset(String url) {
+    return '已重置。下次解鎖將使用 $url。';
+  }
+
+  @override
+  String get settingsResetToDefault => '重置為預設';
+
+  @override
+  String get settingsSectionPublicNodes => '公開節點';
+
+  @override
+  String get settingsSectionSecurity => '安全性';
+
+  @override
+  String get settingsSectionDisplay => '顯示';
+
+  @override
+  String get settingsBiometricUnlock => '生物辨識解鎖';
+
+  @override
+  String get settingsBiometricUnlockOn => '使用指紋 / 臉部解鎖';
+
+  @override
+  String get settingsBiometricUnlockOff => '無法使用 — 尚未註冊生物辨識';
+
+  @override
+  String get settingsBiometricEnableTitle => '啟用生物辨識解鎖';
+
+  @override
+  String get settingsBiometricEnableHint => '輸入應用程式密碼以確認';
+
+  @override
+  String settingsBiometricEnableFailed(String error) {
+    return '無法啟用:$error';
+  }
+
+  @override
+  String get settingsPasswordLabel => '密碼';
+
+  @override
+  String get settingsRevealSeedTitle => '顯示助記詞';
+
+  @override
+  String get settingsRevealSeedBody => '查看 BIP39 種子及 Monero 花費/檢視金鑰';
+
+  @override
+  String get settingsAddressBookTitle => '通訊錄';
+
+  @override
+  String get settingsAddressBookBody => '已儲存的收款人標籤';
+
+  @override
+  String get settingsAutoLockTitle => '自動鎖定';
+
+  @override
+  String get settingsAutoLockSheetTitle => '切換到背景後自動鎖定';
+
+  @override
+  String get settingsAutoLockSheetBody =>
+      'PeekWallet 在你使用其他應用程式時可保持解鎖多久。在此期間返回保持登入;超時則需重新輸入密碼。';
+
+  @override
+  String get settingsAutoLockImmediately => '立即';
+
+  @override
+  String get settingsAutoLockNever => '永不';
+
+  @override
+  String settingsAutoLockSeconds(int n) {
+    return '$n 秒';
+  }
+
+  @override
+  String get settingsAutoLock30Seconds => '30 秒';
+
+  @override
+  String get settingsAutoLock1Minute => '1 分鐘';
+
+  @override
+  String get settingsAutoLock2MinutesDefault => '2 分鐘(預設)';
+
+  @override
+  String get settingsAutoLock5Minutes => '5 分鐘';
+
+  @override
+  String get settingsAutoLock15Minutes => '15 分鐘';
+
+  @override
+  String get settingsAutoLock1Hour => '1 小時';
+
+  @override
+  String get settingsLockAppTitle => '鎖定應用程式';
+
+  @override
+  String get settingsLockAppBody => '清除記憶體中的種子,需重新輸入密碼';
+
+  @override
+  String get settingsLockConfirmTitle => '鎖定應用程式?';
+
+  @override
+  String get settingsLockConfirmBody => '需重新輸入密碼以解鎖。任何進行中的 Monero 同步將從中斷處繼續。';
+
+  @override
+  String get settingsLockConfirmAction => '鎖定';
+
+  @override
+  String get settingsDisplayCurrencyTitle => '顯示幣別';
+
+  @override
+  String get settingsDisplayCurrencyDisabled => '已停用';
+
+  @override
+  String get settingsShowFiatValues => '顯示法幣值';
+
+  @override
+  String get settingsShowFiatValuesBody => '每 5 分鐘輪詢 CoinGecko。不傳送個人識別資訊。';
+
+  @override
+  String get settingsExportLogsTitle => '匯出日誌';
+
+  @override
+  String get settingsExportLogsBody => '最近 7 天。地址與金鑰會自動遮罩。';
+
+  @override
+  String get settingsExportLogsEmpty => '尚無日誌可匯出。';
+
+  @override
+  String get settingsExportLogsDialogTitle => '日誌(最近 7 天)';
+
+  @override
+  String get settingsExportLogsCopied => '日誌已複製到剪貼簿';
+
+  @override
+  String get settingsCloseAction => '關閉';
+
+  @override
+  String get settingsRestoreAllTitle => '從金庫種子還原所有幣種';
+
+  @override
+  String get settingsRestoreAllBody => '一鍵用既有的 12/24 字種子衍生每種幣的錢包。';
+
+  @override
+  String get settingsCustomRpcTitle => '自訂 RPC 端點';
+
+  @override
+  String get settingsCustomRpcBody => '將 BTC/LTC/BCH/ETH/POL/SOL/TRX 指向你自己的節點。';
+
+  @override
+  String get settingsUpdateTitle => '檢查更新';
+
+  @override
+  String get settingsUpdateChecking => '正在查詢 GitHub…';
+
+  @override
+  String get settingsUpdateTapToCheck => '點擊以檢查';
+
+  @override
+  String get settingsUpdateFailedFallback => '檢查失敗';
+
+  @override
+  String settingsUpdateAvailable(String ago) {
+    return '有可用更新 — 發佈於 $ago。點擊下載。';
+  }
+
+  @override
+  String get settingsUpdateDebugBuild => 'Debug 版本 — 已停用版本檢查。點擊重試。';
+
+  @override
+  String get settingsUpdateUpToDate => '已是最新版 · 剛剛檢查';
+
+  @override
+  String get settingsAboutTitle => '關於 PeekWallet';
+
+  @override
+  String get settingsAboutBody => '版本、授權、原始碼';
+
+  @override
+  String get addWalletChooseCoin => '選擇幣種';
+
+  @override
+  String addWalletTitle(String coin) {
+    return '新增 $coin 錢包';
+  }
+
+  @override
+  String get addWalletCreateTitle => '建立新錢包';
+
+  @override
+  String get addWalletCreateBody => '產生全新的助記詞。任何持有此助記詞的人都能花費此錢包 — 請寫在紙上。';
+
+  @override
+  String get addWalletRestoreSeedTitle => '從助記詞還原';
+
+  @override
+  String get addWalletRestoreSeedBody =>
+      '使用既有的助記詞(BIP39 12/24 字、Monero 25 字、Polyseed 14 字)。';
+
+  @override
+  String get addWalletRestoreKeysTitle => '從金鑰還原';
+
+  @override
+  String get addWalletRestoreKeysBody => '地址 + 私人花費金鑰 + 私人檢視金鑰。當你有金鑰但無助記詞時使用。';
+
+  @override
+  String get addWalletFormatNew => '新種子格式';
+
+  @override
+  String get addWalletFormatRestore => '還原格式';
+
+  @override
+  String get addWalletFormatBip39Hint =>
+      'BIP39 助記詞 — 所有現代錢包使用的標準 12/24 字格式。Trezor、Ledger 通用。';
+
+  @override
+  String get addWalletFormatMoneroLegacyHint =>
+      'Monero 原生 electrum 風格助記詞。可直接與 Cake、Feather、Monero GUI 互通。';
+
+  @override
+  String get addWalletFormatPolyseedHint => '新版 Monero 標準 — 14 字。內含還原高度。';
+
+  @override
+  String get addWalletFormatKeysOnlyHint => '花費金鑰 + 檢視金鑰 + 地址。沒有助記詞。';
+
+  @override
+  String get addWalletVaultLocked => '金庫已鎖定 — 請重新解鎖後再試。';
+
+  @override
+  String addWalletGenerateHeader(String format) {
+    return '產生 $format';
+  }
+
+  @override
+  String get addWalletGenerateBody =>
+      '點擊「產生」後,助記詞只會顯示一次。請先寫在紙上再繼續。任何持有這些字的人都能轉走此錢包。';
+
+  @override
+  String get addWalletGenerateAction => '產生助記詞';
+
+  @override
+  String get addWalletWriteThisDown => '請寫下這些字';
+
+  @override
+  String get addWalletWordsWarning => '這些字就是錢包。任何人有了就能花費。';
+
+  @override
+  String get addWalletCopyClipboardClears => '已複製 — 剪貼簿將於 30 秒後自動清除';
+
+  @override
+  String get addWalletCopyPhraseAction => '複製助記詞';
+
+  @override
+  String get addWalletNameLabel => '錢包名稱(僅你看得到)';
+
+  @override
+  String get addWalletNameHint => '例如「主 Monero」';
+
+  @override
+  String get addWalletSavedConfirm => '我已保存助記詞 — 新增錢包';
+
+  @override
+  String addWalletRestoreTitle(String format) {
+    return '還原 $format';
+  }
+
+  @override
+  String get addWalletRestoreNameLabel => '錢包名稱';
+
+  @override
+  String get addWalletRestoreNameHint => '例如「從 Cake 匯入」';
+
+  @override
+  String get addWalletRecoveryPhraseLabel => '助記詞';
+
+  @override
+  String get addWalletSeedWordsLabel => '種子字';
+
+  @override
+  String get addWalletPassphraseLabel => 'BIP39 通行短語(第 25 字) — 選填';
+
+  @override
+  String get addWalletPassphraseHint => '若未使用請留空';
+
+  @override
+  String get addWalletPassphraseWarning => '若來源錢包有通行短語,必須輸入 — 否則會得到完全不同的錢包。';
+
+  @override
+  String get addWalletSeedOffsetLabel => '種子偏移 — 選填';
+
+  @override
+  String get addWalletSeedOffsetHint => '若種子未加密請留空';
+
+  @override
+  String get addWalletRestoreHeightLabel => '還原高度 — 選填';
+
+  @override
+  String get addWalletRestoreHeightHint => '開始掃描的區塊高度';
+
+  @override
+  String get addWalletRestoreHeightBody => '較低 = 較徹底但較慢;較高 = 較快但可能遺漏舊收款。';
+
+  @override
+  String get addWalletRestoreAction => '還原錢包';
+
+  @override
+  String get addWalletKeysRestoreTitle => '從金鑰還原';
+
+  @override
+  String get addWalletPrimaryAddressLabel => '主要地址';
+
+  @override
+  String get addWalletSpendKeyLabel => '私人花費金鑰(hex)';
+
+  @override
+  String get addWalletViewKeyLabel => '私人檢視金鑰(hex)';
+
+  @override
+  String get addWalletKeysRestoreHeightLabel => '還原高度';
+
+  @override
+  String get addWalletKeysRestoreHeightHint => '區塊號 — 越早涵蓋越多舊收款';
+
+  @override
+  String get addWalletScanAddressTitle => '掃描地址';
+
+  @override
+  String get addWalletConfirmPasswordTitle => '確認密碼';
+
+  @override
+  String get addWalletAppPasswordLabel => '應用程式密碼';
+
+  @override
   String get erc20EmptyHint =>
       '尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。';
 
@@ -1374,6 +1733,365 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get sendXmrErrorExceedsBalance => '總額超過餘額。';
+
+  @override
+  String get settingsTitle => '設定';
+
+  @override
+  String get settingsMoneroNode => 'Monero 節點';
+
+  @override
+  String get settingsMoneroNodeBody =>
+      'PeekWallet 用來同步的 Monero 守護程式。預設為 Cake Wallet 的公開節點。如需完全隱私,可自架 monerod 並指向自己的節點。';
+
+  @override
+  String get settingsDaemonUrlLabel => '節點 URL';
+
+  @override
+  String get settingsPasteTooltip => '貼上';
+
+  @override
+  String settingsConnectsToPreview(String hostPort, String ssl) {
+    return '連線至 $hostPort(ssl=$ssl)';
+  }
+
+  @override
+  String get settingsMessageBadUrl =>
+      '無法解析此 URL。請試試 https://node.example.com:18081';
+
+  @override
+  String get settingsMessageSaved => '已儲存。鎖定再解鎖即可切換到新節點。';
+
+  @override
+  String settingsMessageReset(String url) {
+    return '已重置。下次解鎖將使用 $url。';
+  }
+
+  @override
+  String get settingsResetToDefault => '重置為預設';
+
+  @override
+  String get settingsSectionPublicNodes => '公開節點';
+
+  @override
+  String get settingsSectionSecurity => '安全性';
+
+  @override
+  String get settingsSectionDisplay => '顯示';
+
+  @override
+  String get settingsBiometricUnlock => '生物辨識解鎖';
+
+  @override
+  String get settingsBiometricUnlockOn => '使用指紋 / 臉部解鎖';
+
+  @override
+  String get settingsBiometricUnlockOff => '無法使用 — 尚未註冊生物辨識';
+
+  @override
+  String get settingsBiometricEnableTitle => '啟用生物辨識解鎖';
+
+  @override
+  String get settingsBiometricEnableHint => '輸入應用程式密碼以確認';
+
+  @override
+  String settingsBiometricEnableFailed(String error) {
+    return '無法啟用:$error';
+  }
+
+  @override
+  String get settingsPasswordLabel => '密碼';
+
+  @override
+  String get settingsRevealSeedTitle => '顯示助記詞';
+
+  @override
+  String get settingsRevealSeedBody => '查看 BIP39 種子及 Monero 花費/檢視金鑰';
+
+  @override
+  String get settingsAddressBookTitle => '通訊錄';
+
+  @override
+  String get settingsAddressBookBody => '已儲存的收款人標籤';
+
+  @override
+  String get settingsAutoLockTitle => '自動鎖定';
+
+  @override
+  String get settingsAutoLockSheetTitle => '切換到背景後自動鎖定';
+
+  @override
+  String get settingsAutoLockSheetBody =>
+      'PeekWallet 在你使用其他應用程式時可保持解鎖多久。在此期間返回保持登入;超時則需重新輸入密碼。';
+
+  @override
+  String get settingsAutoLockImmediately => '立即';
+
+  @override
+  String get settingsAutoLockNever => '永不';
+
+  @override
+  String settingsAutoLockSeconds(int n) {
+    return '$n 秒';
+  }
+
+  @override
+  String get settingsAutoLock30Seconds => '30 秒';
+
+  @override
+  String get settingsAutoLock1Minute => '1 分鐘';
+
+  @override
+  String get settingsAutoLock2MinutesDefault => '2 分鐘(預設)';
+
+  @override
+  String get settingsAutoLock5Minutes => '5 分鐘';
+
+  @override
+  String get settingsAutoLock15Minutes => '15 分鐘';
+
+  @override
+  String get settingsAutoLock1Hour => '1 小時';
+
+  @override
+  String get settingsLockAppTitle => '鎖定應用程式';
+
+  @override
+  String get settingsLockAppBody => '清除記憶體中的種子,需重新輸入密碼';
+
+  @override
+  String get settingsLockConfirmTitle => '鎖定應用程式?';
+
+  @override
+  String get settingsLockConfirmBody => '需重新輸入密碼以解鎖。任何進行中的 Monero 同步將從中斷處繼續。';
+
+  @override
+  String get settingsLockConfirmAction => '鎖定';
+
+  @override
+  String get settingsDisplayCurrencyTitle => '顯示幣別';
+
+  @override
+  String get settingsDisplayCurrencyDisabled => '已停用';
+
+  @override
+  String get settingsShowFiatValues => '顯示法幣值';
+
+  @override
+  String get settingsShowFiatValuesBody => '每 5 分鐘輪詢 CoinGecko。不傳送個人識別資訊。';
+
+  @override
+  String get settingsExportLogsTitle => '匯出日誌';
+
+  @override
+  String get settingsExportLogsBody => '最近 7 天。地址與金鑰會自動遮罩。';
+
+  @override
+  String get settingsExportLogsEmpty => '尚無日誌可匯出。';
+
+  @override
+  String get settingsExportLogsDialogTitle => '日誌(最近 7 天)';
+
+  @override
+  String get settingsExportLogsCopied => '日誌已複製到剪貼簿';
+
+  @override
+  String get settingsCloseAction => '關閉';
+
+  @override
+  String get settingsRestoreAllTitle => '從金庫種子還原所有幣種';
+
+  @override
+  String get settingsRestoreAllBody => '一鍵用既有的 12/24 字種子衍生每種幣的錢包。';
+
+  @override
+  String get settingsCustomRpcTitle => '自訂 RPC 端點';
+
+  @override
+  String get settingsCustomRpcBody => '將 BTC/LTC/BCH/ETH/POL/SOL/TRX 指向你自己的節點。';
+
+  @override
+  String get settingsUpdateTitle => '檢查更新';
+
+  @override
+  String get settingsUpdateChecking => '正在查詢 GitHub…';
+
+  @override
+  String get settingsUpdateTapToCheck => '點擊以檢查';
+
+  @override
+  String get settingsUpdateFailedFallback => '檢查失敗';
+
+  @override
+  String settingsUpdateAvailable(String ago) {
+    return '有可用更新 — 發佈於 $ago。點擊下載。';
+  }
+
+  @override
+  String get settingsUpdateDebugBuild => 'Debug 版本 — 已停用版本檢查。點擊重試。';
+
+  @override
+  String get settingsUpdateUpToDate => '已是最新版 · 剛剛檢查';
+
+  @override
+  String get settingsAboutTitle => '關於 PeekWallet';
+
+  @override
+  String get settingsAboutBody => '版本、授權、原始碼';
+
+  @override
+  String get addWalletChooseCoin => '選擇幣種';
+
+  @override
+  String addWalletTitle(String coin) {
+    return '新增 $coin 錢包';
+  }
+
+  @override
+  String get addWalletCreateTitle => '建立新錢包';
+
+  @override
+  String get addWalletCreateBody => '產生全新的助記詞。任何持有此助記詞的人都能花費此錢包 — 請寫在紙上。';
+
+  @override
+  String get addWalletRestoreSeedTitle => '從助記詞還原';
+
+  @override
+  String get addWalletRestoreSeedBody =>
+      '使用既有的助記詞(BIP39 12/24 字、Monero 25 字、Polyseed 14 字)。';
+
+  @override
+  String get addWalletRestoreKeysTitle => '從金鑰還原';
+
+  @override
+  String get addWalletRestoreKeysBody => '地址 + 私人花費金鑰 + 私人檢視金鑰。當你有金鑰但無助記詞時使用。';
+
+  @override
+  String get addWalletFormatNew => '新種子格式';
+
+  @override
+  String get addWalletFormatRestore => '還原格式';
+
+  @override
+  String get addWalletFormatBip39Hint =>
+      'BIP39 助記詞 — 所有現代錢包使用的標準 12/24 字格式。Trezor、Ledger 通用。';
+
+  @override
+  String get addWalletFormatMoneroLegacyHint =>
+      'Monero 原生 electrum 風格助記詞。可直接與 Cake、Feather、Monero GUI 互通。';
+
+  @override
+  String get addWalletFormatPolyseedHint => '新版 Monero 標準 — 14 字。內含還原高度。';
+
+  @override
+  String get addWalletFormatKeysOnlyHint => '花費金鑰 + 檢視金鑰 + 地址。沒有助記詞。';
+
+  @override
+  String get addWalletVaultLocked => '金庫已鎖定 — 請重新解鎖後再試。';
+
+  @override
+  String addWalletGenerateHeader(String format) {
+    return '產生 $format';
+  }
+
+  @override
+  String get addWalletGenerateBody =>
+      '點擊「產生」後,助記詞只會顯示一次。請先寫在紙上再繼續。任何持有這些字的人都能轉走此錢包。';
+
+  @override
+  String get addWalletGenerateAction => '產生助記詞';
+
+  @override
+  String get addWalletWriteThisDown => '請寫下這些字';
+
+  @override
+  String get addWalletWordsWarning => '這些字就是錢包。任何人有了就能花費。';
+
+  @override
+  String get addWalletCopyClipboardClears => '已複製 — 剪貼簿將於 30 秒後自動清除';
+
+  @override
+  String get addWalletCopyPhraseAction => '複製助記詞';
+
+  @override
+  String get addWalletNameLabel => '錢包名稱(僅你看得到)';
+
+  @override
+  String get addWalletNameHint => '例如「主 Monero」';
+
+  @override
+  String get addWalletSavedConfirm => '我已保存助記詞 — 新增錢包';
+
+  @override
+  String addWalletRestoreTitle(String format) {
+    return '還原 $format';
+  }
+
+  @override
+  String get addWalletRestoreNameLabel => '錢包名稱';
+
+  @override
+  String get addWalletRestoreNameHint => '例如「從 Cake 匯入」';
+
+  @override
+  String get addWalletRecoveryPhraseLabel => '助記詞';
+
+  @override
+  String get addWalletSeedWordsLabel => '種子字';
+
+  @override
+  String get addWalletPassphraseLabel => 'BIP39 通行短語(第 25 字) — 選填';
+
+  @override
+  String get addWalletPassphraseHint => '若未使用請留空';
+
+  @override
+  String get addWalletPassphraseWarning => '若來源錢包有通行短語,必須輸入 — 否則會得到完全不同的錢包。';
+
+  @override
+  String get addWalletSeedOffsetLabel => '種子偏移 — 選填';
+
+  @override
+  String get addWalletSeedOffsetHint => '若種子未加密請留空';
+
+  @override
+  String get addWalletRestoreHeightLabel => '還原高度 — 選填';
+
+  @override
+  String get addWalletRestoreHeightHint => '開始掃描的區塊高度';
+
+  @override
+  String get addWalletRestoreHeightBody => '較低 = 較徹底但較慢;較高 = 較快但可能遺漏舊收款。';
+
+  @override
+  String get addWalletRestoreAction => '還原錢包';
+
+  @override
+  String get addWalletKeysRestoreTitle => '從金鑰還原';
+
+  @override
+  String get addWalletPrimaryAddressLabel => '主要地址';
+
+  @override
+  String get addWalletSpendKeyLabel => '私人花費金鑰(hex)';
+
+  @override
+  String get addWalletViewKeyLabel => '私人檢視金鑰(hex)';
+
+  @override
+  String get addWalletKeysRestoreHeightLabel => '還原高度';
+
+  @override
+  String get addWalletKeysRestoreHeightHint => '區塊號 — 越早涵蓋越多舊收款';
+
+  @override
+  String get addWalletScanAddressTitle => '掃描地址';
+
+  @override
+  String get addWalletConfirmPasswordTitle => '確認密碼';
+
+  @override
+  String get addWalletAppPasswordLabel => '應用程式密碼';
 
   @override
   String get erc20EmptyHint =>

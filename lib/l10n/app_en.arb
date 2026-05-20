@@ -387,6 +387,161 @@
     }
   },
   "sendXmrErrorExceedsBalance": "Total exceeds your balance.",
+
+  "settingsTitle": "Settings",
+  "settingsMoneroNode": "Monero node",
+  "settingsMoneroNodeBody": "The Monero daemon PeekWallet connects to for sync. Default is Cake Wallet's public node. For full privacy, run your own monerod and point this at it.",
+  "settingsDaemonUrlLabel": "Daemon URL",
+  "settingsPasteTooltip": "Paste",
+  "settingsConnectsToPreview": "Connects to {hostPort} (ssl={ssl})",
+  "@settingsConnectsToPreview": {
+    "placeholders": {
+      "hostPort": {"type": "String"},
+      "ssl": {"type": "String"}
+    }
+  },
+  "settingsMessageBadUrl": "Could not parse that URL. Try e.g. https://node.example.com:18081",
+  "settingsMessageSaved": "Saved. Lock + unlock the app to switch your wallet to the new node.",
+  "settingsMessageReset": "Reset. The app will use {url} on next unlock.",
+  "@settingsMessageReset": {
+    "placeholders": {
+      "url": {"type": "String"}
+    }
+  },
+  "settingsResetToDefault": "Reset to default",
+  "settingsSectionPublicNodes": "Public nodes",
+  "settingsSectionSecurity": "Security",
+  "settingsSectionDisplay": "Display",
+  "settingsBiometricUnlock": "Biometric unlock",
+  "settingsBiometricUnlockOn": "Use fingerprint / face to unlock",
+  "settingsBiometricUnlockOff": "Not available — no enrolled biometric",
+  "settingsBiometricEnableTitle": "Enable biometric unlock",
+  "settingsBiometricEnableHint": "Enter your app password to confirm",
+  "settingsBiometricEnableFailed": "Could not enable: {error}",
+  "@settingsBiometricEnableFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "settingsPasswordLabel": "Password",
+  "settingsRevealSeedTitle": "Reveal recovery phrase",
+  "settingsRevealSeedBody": "View your BIP39 seed + Monero spend/view keys",
+  "settingsAddressBookTitle": "Address book",
+  "settingsAddressBookBody": "Saved labels for recipients you send to",
+  "settingsAutoLockTitle": "Auto-lock",
+  "settingsAutoLockSheetTitle": "Auto-lock after backgrounding",
+  "settingsAutoLockSheetBody": "How long PeekWallet can stay unlocked while you're using other apps. Returning within this window keeps you logged in; longer and the password is required again.",
+  "settingsAutoLockImmediately": "Immediately",
+  "settingsAutoLockNever": "Never",
+  "settingsAutoLockSeconds": "{n} s",
+  "@settingsAutoLockSeconds": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "settingsAutoLock30Seconds": "30 seconds",
+  "settingsAutoLock1Minute": "1 minute",
+  "settingsAutoLock2MinutesDefault": "2 minutes (default)",
+  "settingsAutoLock5Minutes": "5 minutes",
+  "settingsAutoLock15Minutes": "15 minutes",
+  "settingsAutoLock1Hour": "1 hour",
+  "settingsLockAppTitle": "Lock app",
+  "settingsLockAppBody": "Clear the in-memory seed and require the password again",
+  "settingsLockConfirmTitle": "Lock app?",
+  "settingsLockConfirmBody": "You will need to enter your password to unlock. Any in-progress Monero sync will pick up where it left off.",
+  "settingsLockConfirmAction": "Lock",
+  "settingsDisplayCurrencyTitle": "Display currency",
+  "settingsDisplayCurrencyDisabled": "Disabled",
+  "settingsShowFiatValues": "Show fiat values",
+  "settingsShowFiatValuesBody": "Polls CoinGecko every 5 min. No PII sent.",
+  "settingsExportLogsTitle": "Export logs",
+  "settingsExportLogsBody": "Last 7 days. Addresses and keys are auto-redacted.",
+  "settingsExportLogsEmpty": "No logs to export yet.",
+  "settingsExportLogsDialogTitle": "Logs (last 7 days)",
+  "settingsExportLogsCopied": "Logs copied to clipboard",
+  "settingsCloseAction": "Close",
+  "settingsRestoreAllTitle": "Restore all coins from vault seed",
+  "settingsRestoreAllBody": "One-tap derive a wallet for every coin from your existing 12/24-word seed.",
+  "settingsCustomRpcTitle": "Custom RPC endpoints",
+  "settingsCustomRpcBody": "Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your own nodes.",
+  "settingsUpdateTitle": "Check for updates",
+  "settingsUpdateChecking": "Checking GitHub…",
+  "settingsUpdateTapToCheck": "Tap to check",
+  "settingsUpdateFailedFallback": "Check failed",
+  "settingsUpdateAvailable": "Update available — released {ago}. Tap to download.",
+  "@settingsUpdateAvailable": {
+    "placeholders": {
+      "ago": {"type": "String"}
+    }
+  },
+  "settingsUpdateDebugBuild": "Debug build — version check disabled. Tap to retry.",
+  "settingsUpdateUpToDate": "Up to date · checked just now",
+  "settingsAboutTitle": "About PeekWallet",
+  "settingsAboutBody": "Version, license, source code",
+
+  "addWalletChooseCoin": "Choose coin",
+  "addWalletTitle": "Add {coin} wallet",
+  "@addWalletTitle": {
+    "placeholders": {
+      "coin": {"type": "String"}
+    }
+  },
+  "addWalletCreateTitle": "Create new wallet",
+  "addWalletCreateBody": "Generate a fresh seed phrase. Anyone with the phrase can spend the wallet — write it down on paper.",
+  "addWalletRestoreSeedTitle": "Restore from seed",
+  "addWalletRestoreSeedBody": "Use a recovery phrase you already have (BIP39 12/24 words, Monero 25-word seed, or Polyseed 14 words).",
+  "addWalletRestoreKeysTitle": "Restore from keys",
+  "addWalletRestoreKeysBody": "Address + private spend key + private view key. Use this when you have the keys but not a seed phrase.",
+  "addWalletFormatNew": "New seed format",
+  "addWalletFormatRestore": "Restore format",
+  "addWalletFormatBip39Hint": "BIP39 mnemonic — the standard 12/24 word format used by every modern wallet. Trezor, Ledger. Universal across many coins.",
+  "addWalletFormatMoneroLegacyHint": "Native Monero electrum-style seed. Direct interop with Cake, Feather, and Monero GUI.",
+  "addWalletFormatPolyseedHint": "Newer Monero standard — 14 words. Restore height baked in.",
+  "addWalletFormatKeysOnlyHint": "Spend key + view key + address. No words.",
+  "addWalletVaultLocked": "Vault is locked — re-unlock and try again.",
+  "addWalletGenerateHeader": "Generate a {format}",
+  "@addWalletGenerateHeader": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "addWalletGenerateBody": "When you tap Generate, the words will appear once. Write them down on paper before continuing. Anyone with these words can drain this wallet.",
+  "addWalletGenerateAction": "Generate seed",
+  "addWalletWriteThisDown": "Write this down",
+  "addWalletWordsWarning": "These words ARE the wallet. Anyone with them can spend it.",
+  "addWalletCopyClipboardClears": "Copied — clipboard auto-clears in 30 s",
+  "addWalletCopyPhraseAction": "Copy phrase",
+  "addWalletNameLabel": "Wallet name (only you can see this)",
+  "addWalletNameHint": "e.g. \"Main Monero\"",
+  "addWalletSavedConfirm": "I have saved the words — add wallet",
+  "addWalletRestoreTitle": "Restore {format}",
+  "@addWalletRestoreTitle": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "addWalletRestoreNameLabel": "Wallet name",
+  "addWalletRestoreNameHint": "e.g. \"Imported from Cake\"",
+  "addWalletRecoveryPhraseLabel": "Recovery phrase",
+  "addWalletSeedWordsLabel": "Seed words",
+  "addWalletPassphraseLabel": "BIP39 passphrase (25th word) — optional",
+  "addWalletPassphraseHint": "Leave blank if not used",
+  "addWalletPassphraseWarning": "If the source wallet had a passphrase, you MUST enter it — otherwise you'll get a different wallet entirely.",
+  "addWalletSeedOffsetLabel": "Seed offset — optional",
+  "addWalletSeedOffsetHint": "Leave blank if the seed isn't encrypted",
+  "addWalletRestoreHeightLabel": "Restore height — optional",
+  "addWalletRestoreHeightHint": "Block number to start scanning from",
+  "addWalletRestoreHeightBody": "Lower = more thorough but slower sync; higher = faster but might miss old receipts.",
+  "addWalletRestoreAction": "Restore wallet",
+  "addWalletKeysRestoreTitle": "Restore from keys",
+  "addWalletPrimaryAddressLabel": "Primary address",
+  "addWalletSpendKeyLabel": "Private spend key (hex)",
+  "addWalletViewKeyLabel": "Private view key (hex)",
+  "addWalletKeysRestoreHeightLabel": "Restore height",
+  "addWalletKeysRestoreHeightHint": "Block number — earlier covers older receipts",
+  "addWalletScanAddressTitle": "Scan address",
+  "addWalletConfirmPasswordTitle": "Confirm password",
+  "addWalletAppPasswordLabel": "App password",
   "@sendSolFinalFeeHintNewAta": {
     "placeholders": {
       "symbol": {"type": "String"}

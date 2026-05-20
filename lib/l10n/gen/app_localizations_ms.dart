@@ -688,6 +688,392 @@ class AppLocalizationsMs extends AppLocalizations {
   String get sendXmrErrorExceedsBalance => 'Jumlah melebihi baki anda.';
 
   @override
+  String get settingsTitle => 'Tetapan';
+
+  @override
+  String get settingsMoneroNode => 'Nod Monero';
+
+  @override
+  String get settingsMoneroNodeBody =>
+      'Daemon Monero yang PeekWallet sambung untuk sinkronisasi. Lalai ialah nod awam Cake Wallet. Untuk privasi penuh, jalankan monerod sendiri dan tunjukkan ke sini.';
+
+  @override
+  String get settingsDaemonUrlLabel => 'URL Daemon';
+
+  @override
+  String get settingsPasteTooltip => 'Tampal';
+
+  @override
+  String settingsConnectsToPreview(String hostPort, String ssl) {
+    return 'Menyambung ke $hostPort (ssl=$ssl)';
+  }
+
+  @override
+  String get settingsMessageBadUrl =>
+      'Tidak dapat menghuraikan URL itu. Cuba contohnya https://node.example.com:18081';
+
+  @override
+  String get settingsMessageSaved =>
+      'Disimpan. Kunci + buka kunci aplikasi untuk menukar dompet anda ke nod baharu.';
+
+  @override
+  String settingsMessageReset(String url) {
+    return 'Tetapan semula. Aplikasi akan menggunakan $url pada kunci semula berikutnya.';
+  }
+
+  @override
+  String get settingsResetToDefault => 'Tetapkan semula ke lalai';
+
+  @override
+  String get settingsSectionPublicNodes => 'Nod awam';
+
+  @override
+  String get settingsSectionSecurity => 'Keselamatan';
+
+  @override
+  String get settingsSectionDisplay => 'Paparan';
+
+  @override
+  String get settingsBiometricUnlock => 'Buka kunci biometrik';
+
+  @override
+  String get settingsBiometricUnlockOn =>
+      'Guna cap jari / muka untuk membuka kunci';
+
+  @override
+  String get settingsBiometricUnlockOff =>
+      'Tidak tersedia — tiada biometrik yang didaftar';
+
+  @override
+  String get settingsBiometricEnableTitle => 'Aktifkan buka kunci biometrik';
+
+  @override
+  String get settingsBiometricEnableHint =>
+      'Masukkan kata laluan aplikasi untuk mengesahkan';
+
+  @override
+  String settingsBiometricEnableFailed(String error) {
+    return 'Tidak dapat diaktifkan: $error';
+  }
+
+  @override
+  String get settingsPasswordLabel => 'Kata laluan';
+
+  @override
+  String get settingsRevealSeedTitle => 'Dedahkan frasa pemulihan';
+
+  @override
+  String get settingsRevealSeedBody =>
+      'Lihat benih BIP39 + kunci belanja/lihat Monero';
+
+  @override
+  String get settingsAddressBookTitle => 'Buku alamat';
+
+  @override
+  String get settingsAddressBookBody =>
+      'Label tersimpan untuk penerima yang anda hantar';
+
+  @override
+  String get settingsAutoLockTitle => 'Kunci auto';
+
+  @override
+  String get settingsAutoLockSheetTitle => 'Kunci auto selepas pergi latar';
+
+  @override
+  String get settingsAutoLockSheetBody =>
+      'Berapa lama PeekWallet boleh kekal terbuka kunci semasa anda menggunakan aplikasi lain. Pulang dalam tempoh ini kekal log masuk; lebih lama, kata laluan diperlukan semula.';
+
+  @override
+  String get settingsAutoLockImmediately => 'Serta-merta';
+
+  @override
+  String get settingsAutoLockNever => 'Tidak pernah';
+
+  @override
+  String settingsAutoLockSeconds(int n) {
+    return '$n s';
+  }
+
+  @override
+  String get settingsAutoLock30Seconds => '30 saat';
+
+  @override
+  String get settingsAutoLock1Minute => '1 minit';
+
+  @override
+  String get settingsAutoLock2MinutesDefault => '2 minit (lalai)';
+
+  @override
+  String get settingsAutoLock5Minutes => '5 minit';
+
+  @override
+  String get settingsAutoLock15Minutes => '15 minit';
+
+  @override
+  String get settingsAutoLock1Hour => '1 jam';
+
+  @override
+  String get settingsLockAppTitle => 'Kunci aplikasi';
+
+  @override
+  String get settingsLockAppBody =>
+      'Kosongkan benih dalam memori dan perlukan kata laluan semula';
+
+  @override
+  String get settingsLockConfirmTitle => 'Kunci aplikasi?';
+
+  @override
+  String get settingsLockConfirmBody =>
+      'Anda perlu masukkan kata laluan untuk membuka kunci. Sebarang sinkronisasi Monero akan menyambung dari tempat ia berhenti.';
+
+  @override
+  String get settingsLockConfirmAction => 'Kunci';
+
+  @override
+  String get settingsDisplayCurrencyTitle => 'Mata wang paparan';
+
+  @override
+  String get settingsDisplayCurrencyDisabled => 'Dinyahaktifkan';
+
+  @override
+  String get settingsShowFiatValues => 'Tunjuk nilai fiat';
+
+  @override
+  String get settingsShowFiatValuesBody =>
+      'Mengundi CoinGecko setiap 5 minit. Tiada PII dihantar.';
+
+  @override
+  String get settingsExportLogsTitle => 'Eksport log';
+
+  @override
+  String get settingsExportLogsBody =>
+      '7 hari terakhir. Alamat dan kunci diredaksi automatik.';
+
+  @override
+  String get settingsExportLogsEmpty => 'Belum ada log untuk dieksport.';
+
+  @override
+  String get settingsExportLogsDialogTitle => 'Log (7 hari terakhir)';
+
+  @override
+  String get settingsExportLogsCopied => 'Log disalin ke papan keratan';
+
+  @override
+  String get settingsCloseAction => 'Tutup';
+
+  @override
+  String get settingsRestoreAllTitle =>
+      'Pulihkan semua syiling daripada benih bilik kebal';
+
+  @override
+  String get settingsRestoreAllBody =>
+      'Sekali ketik untuk menerbitkan dompet bagi setiap syiling daripada benih 12/24-perkataan sedia ada anda.';
+
+  @override
+  String get settingsCustomRpcTitle => 'Titik akhir RPC tersuai';
+
+  @override
+  String get settingsCustomRpcBody =>
+      'Tunjukkan BTC/LTC/BCH/ETH/POL/SOL/TRX ke nod anda sendiri.';
+
+  @override
+  String get settingsUpdateTitle => 'Semak kemas kini';
+
+  @override
+  String get settingsUpdateChecking => 'Menyemak GitHub…';
+
+  @override
+  String get settingsUpdateTapToCheck => 'Ketik untuk semak';
+
+  @override
+  String get settingsUpdateFailedFallback => 'Semakan gagal';
+
+  @override
+  String settingsUpdateAvailable(String ago) {
+    return 'Kemas kini tersedia — dikeluarkan $ago. Ketik untuk muat turun.';
+  }
+
+  @override
+  String get settingsUpdateDebugBuild =>
+      'Binaan debug — semakan versi dinyahaktifkan. Ketik untuk cuba semula.';
+
+  @override
+  String get settingsUpdateUpToDate => 'Terkini · disemak baru sahaja';
+
+  @override
+  String get settingsAboutTitle => 'Mengenai PeekWallet';
+
+  @override
+  String get settingsAboutBody => 'Versi, lesen, kod sumber';
+
+  @override
+  String get addWalletChooseCoin => 'Pilih syiling';
+
+  @override
+  String addWalletTitle(String coin) {
+    return 'Tambah dompet $coin';
+  }
+
+  @override
+  String get addWalletCreateTitle => 'Cipta dompet baharu';
+
+  @override
+  String get addWalletCreateBody =>
+      'Hasilkan frasa benih baharu. Sesiapa dengan frasa itu boleh membelanjakan dompet — tulis di atas kertas.';
+
+  @override
+  String get addWalletRestoreSeedTitle => 'Pulihkan dari benih';
+
+  @override
+  String get addWalletRestoreSeedBody =>
+      'Gunakan frasa pemulihan yang anda sudah ada (BIP39 12/24 perkataan, benih Monero 25-perkataan, atau Polyseed 14 perkataan).';
+
+  @override
+  String get addWalletRestoreKeysTitle => 'Pulihkan dari kunci';
+
+  @override
+  String get addWalletRestoreKeysBody =>
+      'Alamat + kunci belanja peribadi + kunci lihat peribadi. Gunakan jika anda ada kunci tetapi bukan frasa benih.';
+
+  @override
+  String get addWalletFormatNew => 'Format benih baharu';
+
+  @override
+  String get addWalletFormatRestore => 'Format pulih';
+
+  @override
+  String get addWalletFormatBip39Hint =>
+      'Mnemonik BIP39 — format standard 12/24 perkataan yang digunakan setiap dompet moden. Trezor, Ledger. Universal merentas banyak syiling.';
+
+  @override
+  String get addWalletFormatMoneroLegacyHint =>
+      'Benih asli Monero gaya electrum. Interoperabiliti terus dengan Cake, Feather, dan Monero GUI.';
+
+  @override
+  String get addWalletFormatPolyseedHint =>
+      'Standard Monero terbaru — 14 perkataan. Tinggi pemulihan disertakan.';
+
+  @override
+  String get addWalletFormatKeysOnlyHint =>
+      'Kunci belanja + kunci lihat + alamat. Tiada perkataan.';
+
+  @override
+  String get addWalletVaultLocked =>
+      'Bilik kebal berkunci — buka kunci semula dan cuba lagi.';
+
+  @override
+  String addWalletGenerateHeader(String format) {
+    return 'Hasilkan $format';
+  }
+
+  @override
+  String get addWalletGenerateBody =>
+      'Apabila anda ketik Hasilkan, perkataan akan muncul sekali sahaja. Tuliskannya di atas kertas sebelum meneruskan. Sesiapa dengan perkataan ini boleh menguras dompet ini.';
+
+  @override
+  String get addWalletGenerateAction => 'Hasilkan benih';
+
+  @override
+  String get addWalletWriteThisDown => 'Tuliskan ini';
+
+  @override
+  String get addWalletWordsWarning =>
+      'Perkataan ini ADALAH dompet. Sesiapa dengannya boleh membelanjakannya.';
+
+  @override
+  String get addWalletCopyClipboardClears =>
+      'Disalin — papan keratan dikosongkan auto dalam 30 s';
+
+  @override
+  String get addWalletCopyPhraseAction => 'Salin frasa';
+
+  @override
+  String get addWalletNameLabel => 'Nama dompet (hanya anda yang nampak)';
+
+  @override
+  String get addWalletNameHint => 'cth. \"Monero Utama\"';
+
+  @override
+  String get addWalletSavedConfirm =>
+      'Saya telah simpan perkataan — tambah dompet';
+
+  @override
+  String addWalletRestoreTitle(String format) {
+    return 'Pulihkan $format';
+  }
+
+  @override
+  String get addWalletRestoreNameLabel => 'Nama dompet';
+
+  @override
+  String get addWalletRestoreNameHint => 'cth. \"Diimport dari Cake\"';
+
+  @override
+  String get addWalletRecoveryPhraseLabel => 'Frasa pemulihan';
+
+  @override
+  String get addWalletSeedWordsLabel => 'Perkataan benih';
+
+  @override
+  String get addWalletPassphraseLabel =>
+      'Frasa laluan BIP39 (perkataan ke-25) — pilihan';
+
+  @override
+  String get addWalletPassphraseHint => 'Biar kosong jika tidak digunakan';
+
+  @override
+  String get addWalletPassphraseWarning =>
+      'Jika dompet sumber mempunyai frasa laluan, anda MESTI masukkan — jika tidak anda akan dapat dompet yang berbeza sama sekali.';
+
+  @override
+  String get addWalletSeedOffsetLabel => 'Offset benih — pilihan';
+
+  @override
+  String get addWalletSeedOffsetHint =>
+      'Biar kosong jika benih tidak disulitkan';
+
+  @override
+  String get addWalletRestoreHeightLabel => 'Tinggi pemulihan — pilihan';
+
+  @override
+  String get addWalletRestoreHeightHint => 'Nombor blok untuk mula mengimbas';
+
+  @override
+  String get addWalletRestoreHeightBody =>
+      'Lebih rendah = lebih menyeluruh tapi sinkronisasi perlahan; lebih tinggi = lebih cepat tapi mungkin terlepas resit lama.';
+
+  @override
+  String get addWalletRestoreAction => 'Pulihkan dompet';
+
+  @override
+  String get addWalletKeysRestoreTitle => 'Pulihkan dari kunci';
+
+  @override
+  String get addWalletPrimaryAddressLabel => 'Alamat utama';
+
+  @override
+  String get addWalletSpendKeyLabel => 'Kunci belanja peribadi (hex)';
+
+  @override
+  String get addWalletViewKeyLabel => 'Kunci lihat peribadi (hex)';
+
+  @override
+  String get addWalletKeysRestoreHeightLabel => 'Tinggi pemulihan';
+
+  @override
+  String get addWalletKeysRestoreHeightHint =>
+      'Nombor blok — lebih awal merangkumi resit lebih lama';
+
+  @override
+  String get addWalletScanAddressTitle => 'Imbas alamat';
+
+  @override
+  String get addWalletConfirmPasswordTitle => 'Sahkan kata laluan';
+
+  @override
+  String get addWalletAppPasswordLabel => 'Kata laluan aplikasi';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.';
 

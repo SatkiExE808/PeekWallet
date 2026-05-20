@@ -686,6 +686,385 @@ class AppLocalizationsVi extends AppLocalizations {
   String get sendXmrErrorExceedsBalance => 'Tổng vượt số dư.';
 
   @override
+  String get settingsTitle => 'Cài đặt';
+
+  @override
+  String get settingsMoneroNode => 'Nút Monero';
+
+  @override
+  String get settingsMoneroNodeBody =>
+      'Daemon Monero mà PeekWallet kết nối để đồng bộ. Mặc định là nút công khai của Cake Wallet. Để bảo mật tối đa, hãy tự chạy monerod và trỏ về đó.';
+
+  @override
+  String get settingsDaemonUrlLabel => 'URL Daemon';
+
+  @override
+  String get settingsPasteTooltip => 'Dán';
+
+  @override
+  String settingsConnectsToPreview(String hostPort, String ssl) {
+    return 'Kết nối tới $hostPort (ssl=$ssl)';
+  }
+
+  @override
+  String get settingsMessageBadUrl =>
+      'Không phân tích được URL đó. Hãy thử ví dụ https://node.example.com:18081';
+
+  @override
+  String get settingsMessageSaved =>
+      'Đã lưu. Khoá rồi mở khoá ứng dụng để chuyển ví sang nút mới.';
+
+  @override
+  String settingsMessageReset(String url) {
+    return 'Đã đặt lại. Ứng dụng sẽ dùng $url ở lần mở khoá kế tiếp.';
+  }
+
+  @override
+  String get settingsResetToDefault => 'Đặt lại mặc định';
+
+  @override
+  String get settingsSectionPublicNodes => 'Nút công khai';
+
+  @override
+  String get settingsSectionSecurity => 'Bảo mật';
+
+  @override
+  String get settingsSectionDisplay => 'Hiển thị';
+
+  @override
+  String get settingsBiometricUnlock => 'Mở khoá sinh trắc';
+
+  @override
+  String get settingsBiometricUnlockOn => 'Dùng vân tay / khuôn mặt để mở khoá';
+
+  @override
+  String get settingsBiometricUnlockOff =>
+      'Không khả dụng — chưa đăng ký sinh trắc';
+
+  @override
+  String get settingsBiometricEnableTitle => 'Bật mở khoá sinh trắc';
+
+  @override
+  String get settingsBiometricEnableHint =>
+      'Nhập mật khẩu ứng dụng để xác nhận';
+
+  @override
+  String settingsBiometricEnableFailed(String error) {
+    return 'Không thể bật: $error';
+  }
+
+  @override
+  String get settingsPasswordLabel => 'Mật khẩu';
+
+  @override
+  String get settingsRevealSeedTitle => 'Hiện cụm từ khôi phục';
+
+  @override
+  String get settingsRevealSeedBody =>
+      'Xem seed BIP39 + khoá chi tiêu/xem Monero';
+
+  @override
+  String get settingsAddressBookTitle => 'Sổ địa chỉ';
+
+  @override
+  String get settingsAddressBookBody => 'Nhãn đã lưu cho người nhận bạn gửi';
+
+  @override
+  String get settingsAutoLockTitle => 'Tự khoá';
+
+  @override
+  String get settingsAutoLockSheetTitle => 'Tự khoá sau khi vào nền';
+
+  @override
+  String get settingsAutoLockSheetBody =>
+      'PeekWallet có thể mở khoá bao lâu khi bạn dùng ứng dụng khác. Trở lại trong khoảng này thì vẫn đăng nhập; lâu hơn thì cần nhập mật khẩu lại.';
+
+  @override
+  String get settingsAutoLockImmediately => 'Ngay lập tức';
+
+  @override
+  String get settingsAutoLockNever => 'Không bao giờ';
+
+  @override
+  String settingsAutoLockSeconds(int n) {
+    return '$n giây';
+  }
+
+  @override
+  String get settingsAutoLock30Seconds => '30 giây';
+
+  @override
+  String get settingsAutoLock1Minute => '1 phút';
+
+  @override
+  String get settingsAutoLock2MinutesDefault => '2 phút (mặc định)';
+
+  @override
+  String get settingsAutoLock5Minutes => '5 phút';
+
+  @override
+  String get settingsAutoLock15Minutes => '15 phút';
+
+  @override
+  String get settingsAutoLock1Hour => '1 giờ';
+
+  @override
+  String get settingsLockAppTitle => 'Khoá ứng dụng';
+
+  @override
+  String get settingsLockAppBody =>
+      'Xoá seed trong bộ nhớ và yêu cầu mật khẩu lại';
+
+  @override
+  String get settingsLockConfirmTitle => 'Khoá ứng dụng?';
+
+  @override
+  String get settingsLockConfirmBody =>
+      'Bạn sẽ cần nhập mật khẩu để mở khoá. Đồng bộ Monero đang chạy sẽ tiếp tục từ nơi nó dừng.';
+
+  @override
+  String get settingsLockConfirmAction => 'Khoá';
+
+  @override
+  String get settingsDisplayCurrencyTitle => 'Tiền tệ hiển thị';
+
+  @override
+  String get settingsDisplayCurrencyDisabled => 'Đã tắt';
+
+  @override
+  String get settingsShowFiatValues => 'Hiện giá trị fiat';
+
+  @override
+  String get settingsShowFiatValuesBody =>
+      'Truy vấn CoinGecko 5 phút một lần. Không gửi PII.';
+
+  @override
+  String get settingsExportLogsTitle => 'Xuất log';
+
+  @override
+  String get settingsExportLogsBody =>
+      '7 ngày qua. Địa chỉ và khoá tự động che.';
+
+  @override
+  String get settingsExportLogsEmpty => 'Chưa có log để xuất.';
+
+  @override
+  String get settingsExportLogsDialogTitle => 'Log (7 ngày qua)';
+
+  @override
+  String get settingsExportLogsCopied => 'Đã sao chép log vào bộ nhớ tạm';
+
+  @override
+  String get settingsCloseAction => 'Đóng';
+
+  @override
+  String get settingsRestoreAllTitle => 'Khôi phục mọi đồng từ seed kho';
+
+  @override
+  String get settingsRestoreAllBody =>
+      'Một chạm để dẫn xuất ví cho mọi đồng từ seed 12/24-từ hiện có của bạn.';
+
+  @override
+  String get settingsCustomRpcTitle => 'Endpoint RPC tuỳ chỉnh';
+
+  @override
+  String get settingsCustomRpcBody =>
+      'Trỏ BTC/LTC/BCH/ETH/POL/SOL/TRX sang nút của bạn.';
+
+  @override
+  String get settingsUpdateTitle => 'Kiểm tra cập nhật';
+
+  @override
+  String get settingsUpdateChecking => 'Đang kiểm tra GitHub…';
+
+  @override
+  String get settingsUpdateTapToCheck => 'Nhấn để kiểm tra';
+
+  @override
+  String get settingsUpdateFailedFallback => 'Kiểm tra thất bại';
+
+  @override
+  String settingsUpdateAvailable(String ago) {
+    return 'Có bản cập nhật — phát hành $ago. Nhấn để tải.';
+  }
+
+  @override
+  String get settingsUpdateDebugBuild =>
+      'Bản debug — đã tắt kiểm tra phiên bản. Nhấn để thử lại.';
+
+  @override
+  String get settingsUpdateUpToDate => 'Đã mới nhất · vừa kiểm tra';
+
+  @override
+  String get settingsAboutTitle => 'Về PeekWallet';
+
+  @override
+  String get settingsAboutBody => 'Phiên bản, giấy phép, mã nguồn';
+
+  @override
+  String get addWalletChooseCoin => 'Chọn đồng';
+
+  @override
+  String addWalletTitle(String coin) {
+    return 'Thêm ví $coin';
+  }
+
+  @override
+  String get addWalletCreateTitle => 'Tạo ví mới';
+
+  @override
+  String get addWalletCreateBody =>
+      'Sinh cụm từ seed mới. Bất kỳ ai có cụm từ này đều có thể chi ví — hãy ghi ra giấy.';
+
+  @override
+  String get addWalletRestoreSeedTitle => 'Khôi phục từ seed';
+
+  @override
+  String get addWalletRestoreSeedBody =>
+      'Dùng cụm từ khôi phục bạn đã có (BIP39 12/24 từ, Monero 25 từ, hoặc Polyseed 14 từ).';
+
+  @override
+  String get addWalletRestoreKeysTitle => 'Khôi phục từ khoá';
+
+  @override
+  String get addWalletRestoreKeysBody =>
+      'Địa chỉ + khoá chi tiêu riêng + khoá xem riêng. Dùng khi bạn có khoá nhưng không có seed.';
+
+  @override
+  String get addWalletFormatNew => 'Định dạng seed mới';
+
+  @override
+  String get addWalletFormatRestore => 'Định dạng khôi phục';
+
+  @override
+  String get addWalletFormatBip39Hint =>
+      'Cụm từ BIP39 — định dạng tiêu chuẩn 12/24 từ mọi ví hiện đại dùng. Trezor, Ledger. Phổ quát cho nhiều đồng.';
+
+  @override
+  String get addWalletFormatMoneroLegacyHint =>
+      'Seed kiểu electrum gốc của Monero. Tương thích trực tiếp với Cake, Feather, và Monero GUI.';
+
+  @override
+  String get addWalletFormatPolyseedHint =>
+      'Chuẩn Monero mới hơn — 14 từ. Đã bao gồm restore height.';
+
+  @override
+  String get addWalletFormatKeysOnlyHint =>
+      'Khoá chi tiêu + khoá xem + địa chỉ. Không có từ.';
+
+  @override
+  String get addWalletVaultLocked => 'Két bị khoá — mở khoá lại và thử tiếp.';
+
+  @override
+  String addWalletGenerateHeader(String format) {
+    return 'Sinh $format';
+  }
+
+  @override
+  String get addWalletGenerateBody =>
+      'Khi bạn nhấn Sinh, các từ sẽ xuất hiện một lần. Hãy ghi ra giấy trước khi tiếp tục. Bất cứ ai có những từ này có thể rút sạch ví.';
+
+  @override
+  String get addWalletGenerateAction => 'Sinh seed';
+
+  @override
+  String get addWalletWriteThisDown => 'Ghi lại các từ này';
+
+  @override
+  String get addWalletWordsWarning =>
+      'Những từ này CHÍNH LÀ ví. Bất cứ ai có chúng đều có thể tiêu.';
+
+  @override
+  String get addWalletCopyClipboardClears =>
+      'Đã sao chép — bộ nhớ tạm tự xoá sau 30 s';
+
+  @override
+  String get addWalletCopyPhraseAction => 'Sao chép cụm từ';
+
+  @override
+  String get addWalletNameLabel => 'Tên ví (chỉ bạn thấy)';
+
+  @override
+  String get addWalletNameHint => 'ví dụ \"Monero chính\"';
+
+  @override
+  String get addWalletSavedConfirm => 'Đã lưu các từ — thêm ví';
+
+  @override
+  String addWalletRestoreTitle(String format) {
+    return 'Khôi phục $format';
+  }
+
+  @override
+  String get addWalletRestoreNameLabel => 'Tên ví';
+
+  @override
+  String get addWalletRestoreNameHint => 'ví dụ \"Nhập từ Cake\"';
+
+  @override
+  String get addWalletRecoveryPhraseLabel => 'Cụm từ khôi phục';
+
+  @override
+  String get addWalletSeedWordsLabel => 'Từ seed';
+
+  @override
+  String get addWalletPassphraseLabel => 'Passphrase BIP39 (từ 25) — tuỳ chọn';
+
+  @override
+  String get addWalletPassphraseHint => 'Bỏ trống nếu không dùng';
+
+  @override
+  String get addWalletPassphraseWarning =>
+      'Nếu ví nguồn có passphrase, bạn PHẢI nhập — nếu không sẽ ra ví hoàn toàn khác.';
+
+  @override
+  String get addWalletSeedOffsetLabel => 'Seed offset — tuỳ chọn';
+
+  @override
+  String get addWalletSeedOffsetHint => 'Bỏ trống nếu seed không mã hoá';
+
+  @override
+  String get addWalletRestoreHeightLabel => 'Restore height — tuỳ chọn';
+
+  @override
+  String get addWalletRestoreHeightHint => 'Số block bắt đầu quét';
+
+  @override
+  String get addWalletRestoreHeightBody =>
+      'Thấp = kỹ hơn nhưng sync chậm; cao = nhanh hơn nhưng có thể bỏ qua biên lai cũ.';
+
+  @override
+  String get addWalletRestoreAction => 'Khôi phục ví';
+
+  @override
+  String get addWalletKeysRestoreTitle => 'Khôi phục từ khoá';
+
+  @override
+  String get addWalletPrimaryAddressLabel => 'Địa chỉ chính';
+
+  @override
+  String get addWalletSpendKeyLabel => 'Khoá chi tiêu riêng (hex)';
+
+  @override
+  String get addWalletViewKeyLabel => 'Khoá xem riêng (hex)';
+
+  @override
+  String get addWalletKeysRestoreHeightLabel => 'Restore height';
+
+  @override
+  String get addWalletKeysRestoreHeightHint =>
+      'Số block — sớm hơn bao quát biên lai cũ hơn';
+
+  @override
+  String get addWalletScanAddressTitle => 'Quét địa chỉ';
+
+  @override
+  String get addWalletConfirmPasswordTitle => 'Xác nhận mật khẩu';
+
+  @override
+  String get addWalletAppPasswordLabel => 'Mật khẩu ứng dụng';
+
+  @override
   String get erc20EmptyHint =>
       'Chưa có token — nhận USDT/USDC/DAI vào địa chỉ này hoặc nhấn \"Thêm token\" để theo dõi ERC-20 khác qua địa chỉ hợp đồng.';
 

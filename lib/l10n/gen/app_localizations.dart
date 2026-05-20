@@ -1269,6 +1269,678 @@ abstract class AppLocalizations {
   /// **'Total exceeds your balance.'**
   String get sendXmrErrorExceedsBalance;
 
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsMoneroNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Monero node'**
+  String get settingsMoneroNode;
+
+  /// No description provided for @settingsMoneroNodeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The Monero daemon PeekWallet connects to for sync. Default is Cake Wallet\'s public node. For full privacy, run your own monerod and point this at it.'**
+  String get settingsMoneroNodeBody;
+
+  /// No description provided for @settingsDaemonUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon URL'**
+  String get settingsDaemonUrlLabel;
+
+  /// No description provided for @settingsPasteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get settingsPasteTooltip;
+
+  /// No description provided for @settingsConnectsToPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Connects to {hostPort} (ssl={ssl})'**
+  String settingsConnectsToPreview(String hostPort, String ssl);
+
+  /// No description provided for @settingsMessageBadUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not parse that URL. Try e.g. https://node.example.com:18081'**
+  String get settingsMessageBadUrl;
+
+  /// No description provided for @settingsMessageSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Lock + unlock the app to switch your wallet to the new node.'**
+  String get settingsMessageSaved;
+
+  /// No description provided for @settingsMessageReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset. The app will use {url} on next unlock.'**
+  String settingsMessageReset(String url);
+
+  /// No description provided for @settingsResetToDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get settingsResetToDefault;
+
+  /// No description provided for @settingsSectionPublicNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Public nodes'**
+  String get settingsSectionPublicNodes;
+
+  /// No description provided for @settingsSectionSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsSectionSecurity;
+
+  /// No description provided for @settingsSectionDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Display'**
+  String get settingsSectionDisplay;
+
+  /// No description provided for @settingsBiometricUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric unlock'**
+  String get settingsBiometricUnlock;
+
+  /// No description provided for @settingsBiometricUnlockOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Use fingerprint / face to unlock'**
+  String get settingsBiometricUnlockOn;
+
+  /// No description provided for @settingsBiometricUnlockOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available — no enrolled biometric'**
+  String get settingsBiometricUnlockOff;
+
+  /// No description provided for @settingsBiometricEnableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable biometric unlock'**
+  String get settingsBiometricEnableTitle;
+
+  /// No description provided for @settingsBiometricEnableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your app password to confirm'**
+  String get settingsBiometricEnableHint;
+
+  /// No description provided for @settingsBiometricEnableFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not enable: {error}'**
+  String settingsBiometricEnableFailed(String error);
+
+  /// No description provided for @settingsPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get settingsPasswordLabel;
+
+  /// No description provided for @settingsRevealSeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal recovery phrase'**
+  String get settingsRevealSeedTitle;
+
+  /// No description provided for @settingsRevealSeedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'View your BIP39 seed + Monero spend/view keys'**
+  String get settingsRevealSeedBody;
+
+  /// No description provided for @settingsAddressBookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Address book'**
+  String get settingsAddressBookTitle;
+
+  /// No description provided for @settingsAddressBookBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved labels for recipients you send to'**
+  String get settingsAddressBookBody;
+
+  /// No description provided for @settingsAutoLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-lock'**
+  String get settingsAutoLockTitle;
+
+  /// No description provided for @settingsAutoLockSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-lock after backgrounding'**
+  String get settingsAutoLockSheetTitle;
+
+  /// No description provided for @settingsAutoLockSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How long PeekWallet can stay unlocked while you\'re using other apps. Returning within this window keeps you logged in; longer and the password is required again.'**
+  String get settingsAutoLockSheetBody;
+
+  /// No description provided for @settingsAutoLockImmediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get settingsAutoLockImmediately;
+
+  /// No description provided for @settingsAutoLockNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get settingsAutoLockNever;
+
+  /// No description provided for @settingsAutoLockSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} s'**
+  String settingsAutoLockSeconds(int n);
+
+  /// No description provided for @settingsAutoLock30Seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'30 seconds'**
+  String get settingsAutoLock30Seconds;
+
+  /// No description provided for @settingsAutoLock1Minute.
+  ///
+  /// In en, this message translates to:
+  /// **'1 minute'**
+  String get settingsAutoLock1Minute;
+
+  /// No description provided for @settingsAutoLock2MinutesDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'2 minutes (default)'**
+  String get settingsAutoLock2MinutesDefault;
+
+  /// No description provided for @settingsAutoLock5Minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes'**
+  String get settingsAutoLock5Minutes;
+
+  /// No description provided for @settingsAutoLock15Minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'15 minutes'**
+  String get settingsAutoLock15Minutes;
+
+  /// No description provided for @settingsAutoLock1Hour.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour'**
+  String get settingsAutoLock1Hour;
+
+  /// No description provided for @settingsLockAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock app'**
+  String get settingsLockAppTitle;
+
+  /// No description provided for @settingsLockAppBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the in-memory seed and require the password again'**
+  String get settingsLockAppBody;
+
+  /// No description provided for @settingsLockConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock app?'**
+  String get settingsLockConfirmTitle;
+
+  /// No description provided for @settingsLockConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will need to enter your password to unlock. Any in-progress Monero sync will pick up where it left off.'**
+  String get settingsLockConfirmBody;
+
+  /// No description provided for @settingsLockConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get settingsLockConfirmAction;
+
+  /// No description provided for @settingsDisplayCurrencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Display currency'**
+  String get settingsDisplayCurrencyTitle;
+
+  /// No description provided for @settingsDisplayCurrencyDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get settingsDisplayCurrencyDisabled;
+
+  /// No description provided for @settingsShowFiatValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Show fiat values'**
+  String get settingsShowFiatValues;
+
+  /// No description provided for @settingsShowFiatValuesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Polls CoinGecko every 5 min. No PII sent.'**
+  String get settingsShowFiatValuesBody;
+
+  /// No description provided for @settingsExportLogsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export logs'**
+  String get settingsExportLogsTitle;
+
+  /// No description provided for @settingsExportLogsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days. Addresses and keys are auto-redacted.'**
+  String get settingsExportLogsBody;
+
+  /// No description provided for @settingsExportLogsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs to export yet.'**
+  String get settingsExportLogsEmpty;
+
+  /// No description provided for @settingsExportLogsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs (last 7 days)'**
+  String get settingsExportLogsDialogTitle;
+
+  /// No description provided for @settingsExportLogsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs copied to clipboard'**
+  String get settingsExportLogsCopied;
+
+  /// No description provided for @settingsCloseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get settingsCloseAction;
+
+  /// No description provided for @settingsRestoreAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore all coins from vault seed'**
+  String get settingsRestoreAllTitle;
+
+  /// No description provided for @settingsRestoreAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One-tap derive a wallet for every coin from your existing 12/24-word seed.'**
+  String get settingsRestoreAllBody;
+
+  /// No description provided for @settingsCustomRpcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom RPC endpoints'**
+  String get settingsCustomRpcTitle;
+
+  /// No description provided for @settingsCustomRpcBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your own nodes.'**
+  String get settingsCustomRpcBody;
+
+  /// No description provided for @settingsUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get settingsUpdateTitle;
+
+  /// No description provided for @settingsUpdateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking GitHub…'**
+  String get settingsUpdateChecking;
+
+  /// No description provided for @settingsUpdateTapToCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to check'**
+  String get settingsUpdateTapToCheck;
+
+  /// No description provided for @settingsUpdateFailedFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Check failed'**
+  String get settingsUpdateFailedFallback;
+
+  /// No description provided for @settingsUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available — released {ago}. Tap to download.'**
+  String settingsUpdateAvailable(String ago);
+
+  /// No description provided for @settingsUpdateDebugBuild.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug build — version check disabled. Tap to retry.'**
+  String get settingsUpdateDebugBuild;
+
+  /// No description provided for @settingsUpdateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date · checked just now'**
+  String get settingsUpdateUpToDate;
+
+  /// No description provided for @settingsAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About PeekWallet'**
+  String get settingsAboutTitle;
+
+  /// No description provided for @settingsAboutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Version, license, source code'**
+  String get settingsAboutBody;
+
+  /// No description provided for @addWalletChooseCoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose coin'**
+  String get addWalletChooseCoin;
+
+  /// No description provided for @addWalletTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {coin} wallet'**
+  String addWalletTitle(String coin);
+
+  /// No description provided for @addWalletCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new wallet'**
+  String get addWalletCreateTitle;
+
+  /// No description provided for @addWalletCreateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a fresh seed phrase. Anyone with the phrase can spend the wallet — write it down on paper.'**
+  String get addWalletCreateBody;
+
+  /// No description provided for @addWalletRestoreSeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from seed'**
+  String get addWalletRestoreSeedTitle;
+
+  /// No description provided for @addWalletRestoreSeedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a recovery phrase you already have (BIP39 12/24 words, Monero 25-word seed, or Polyseed 14 words).'**
+  String get addWalletRestoreSeedBody;
+
+  /// No description provided for @addWalletRestoreKeysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from keys'**
+  String get addWalletRestoreKeysTitle;
+
+  /// No description provided for @addWalletRestoreKeysBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Address + private spend key + private view key. Use this when you have the keys but not a seed phrase.'**
+  String get addWalletRestoreKeysBody;
+
+  /// No description provided for @addWalletFormatNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New seed format'**
+  String get addWalletFormatNew;
+
+  /// No description provided for @addWalletFormatRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore format'**
+  String get addWalletFormatRestore;
+
+  /// No description provided for @addWalletFormatBip39Hint.
+  ///
+  /// In en, this message translates to:
+  /// **'BIP39 mnemonic — the standard 12/24 word format used by every modern wallet. Trezor, Ledger. Universal across many coins.'**
+  String get addWalletFormatBip39Hint;
+
+  /// No description provided for @addWalletFormatMoneroLegacyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Native Monero electrum-style seed. Direct interop with Cake, Feather, and Monero GUI.'**
+  String get addWalletFormatMoneroLegacyHint;
+
+  /// No description provided for @addWalletFormatPolyseedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Newer Monero standard — 14 words. Restore height baked in.'**
+  String get addWalletFormatPolyseedHint;
+
+  /// No description provided for @addWalletFormatKeysOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend key + view key + address. No words.'**
+  String get addWalletFormatKeysOnlyHint;
+
+  /// No description provided for @addWalletVaultLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault is locked — re-unlock and try again.'**
+  String get addWalletVaultLocked;
+
+  /// No description provided for @addWalletGenerateHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a {format}'**
+  String addWalletGenerateHeader(String format);
+
+  /// No description provided for @addWalletGenerateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When you tap Generate, the words will appear once. Write them down on paper before continuing. Anyone with these words can drain this wallet.'**
+  String get addWalletGenerateBody;
+
+  /// No description provided for @addWalletGenerateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate seed'**
+  String get addWalletGenerateAction;
+
+  /// No description provided for @addWalletWriteThisDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Write this down'**
+  String get addWalletWriteThisDown;
+
+  /// No description provided for @addWalletWordsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'These words ARE the wallet. Anyone with them can spend it.'**
+  String get addWalletWordsWarning;
+
+  /// No description provided for @addWalletCopyClipboardClears.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied — clipboard auto-clears in 30 s'**
+  String get addWalletCopyClipboardClears;
+
+  /// No description provided for @addWalletCopyPhraseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy phrase'**
+  String get addWalletCopyPhraseAction;
+
+  /// No description provided for @addWalletNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet name (only you can see this)'**
+  String get addWalletNameLabel;
+
+  /// No description provided for @addWalletNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. \"Main Monero\"'**
+  String get addWalletNameHint;
+
+  /// No description provided for @addWalletSavedConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'I have saved the words — add wallet'**
+  String get addWalletSavedConfirm;
+
+  /// No description provided for @addWalletRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {format}'**
+  String addWalletRestoreTitle(String format);
+
+  /// No description provided for @addWalletRestoreNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet name'**
+  String get addWalletRestoreNameLabel;
+
+  /// No description provided for @addWalletRestoreNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. \"Imported from Cake\"'**
+  String get addWalletRestoreNameHint;
+
+  /// No description provided for @addWalletRecoveryPhraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase'**
+  String get addWalletRecoveryPhraseLabel;
+
+  /// No description provided for @addWalletSeedWordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed words'**
+  String get addWalletSeedWordsLabel;
+
+  /// No description provided for @addWalletPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BIP39 passphrase (25th word) — optional'**
+  String get addWalletPassphraseLabel;
+
+  /// No description provided for @addWalletPassphraseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank if not used'**
+  String get addWalletPassphraseHint;
+
+  /// No description provided for @addWalletPassphraseWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'If the source wallet had a passphrase, you MUST enter it — otherwise you\'ll get a different wallet entirely.'**
+  String get addWalletPassphraseWarning;
+
+  /// No description provided for @addWalletSeedOffsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed offset — optional'**
+  String get addWalletSeedOffsetLabel;
+
+  /// No description provided for @addWalletSeedOffsetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank if the seed isn\'t encrypted'**
+  String get addWalletSeedOffsetHint;
+
+  /// No description provided for @addWalletRestoreHeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore height — optional'**
+  String get addWalletRestoreHeightLabel;
+
+  /// No description provided for @addWalletRestoreHeightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Block number to start scanning from'**
+  String get addWalletRestoreHeightHint;
+
+  /// No description provided for @addWalletRestoreHeightBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower = more thorough but slower sync; higher = faster but might miss old receipts.'**
+  String get addWalletRestoreHeightBody;
+
+  /// No description provided for @addWalletRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore wallet'**
+  String get addWalletRestoreAction;
+
+  /// No description provided for @addWalletKeysRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from keys'**
+  String get addWalletKeysRestoreTitle;
+
+  /// No description provided for @addWalletPrimaryAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary address'**
+  String get addWalletPrimaryAddressLabel;
+
+  /// No description provided for @addWalletSpendKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private spend key (hex)'**
+  String get addWalletSpendKeyLabel;
+
+  /// No description provided for @addWalletViewKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private view key (hex)'**
+  String get addWalletViewKeyLabel;
+
+  /// No description provided for @addWalletKeysRestoreHeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore height'**
+  String get addWalletKeysRestoreHeightLabel;
+
+  /// No description provided for @addWalletKeysRestoreHeightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Block number — earlier covers older receipts'**
+  String get addWalletKeysRestoreHeightHint;
+
+  /// No description provided for @addWalletScanAddressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan address'**
+  String get addWalletScanAddressTitle;
+
+  /// No description provided for @addWalletConfirmPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get addWalletConfirmPasswordTitle;
+
+  /// No description provided for @addWalletAppPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App password'**
+  String get addWalletAppPasswordLabel;
+
   /// No description provided for @erc20EmptyHint.
   ///
   /// In en, this message translates to:

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../coins/coin_module.dart';
 import '../../coins/module_registry.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../theme.dart';
 import '../../util/coin_avatar.dart';
 import '../../util/screenshot_guard.dart';
@@ -25,11 +26,12 @@ class AddWalletFlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (kCoinModules.length == 1) {
       return AddWalletActionPicker(coin: kCoinModules.first);
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose coin')),
+      appBar: AppBar(title: Text(l.addWalletChooseCoin)),
       body: SafeArea(
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(
@@ -105,18 +107,18 @@ class AddWalletActionPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final hasKeysOnly = coin.supportedRestoreFormats.contains(SeedFormat.keysOnly);
     return Scaffold(
-      appBar: AppBar(title: Text('Add ${coin.name} wallet')),
+      appBar: AppBar(title: Text(l.addWalletTitle(coin.name))),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(12),
           children: [
             _ActionTile(
               icon: Icons.add_circle_outline,
-              title: 'Create new wallet',
-              subtitle: 'Generate a fresh seed phrase. Anyone with the phrase '
-                  'can spend the wallet — write it down on paper.',
+              title: l.addWalletCreateTitle,
+              subtitle: l.addWalletCreateBody,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => AddWalletFormatPicker(
@@ -130,9 +132,8 @@ class AddWalletActionPicker extends StatelessWidget {
             const SizedBox(height: 8),
             _ActionTile(
               icon: Icons.restore,
-              title: 'Restore from seed',
-              subtitle: 'Use a recovery phrase you already have '
-                  '(BIP39 12/24 words, Monero 25-word seed, or Polyseed 14 words).',
+              title: l.addWalletRestoreSeedTitle,
+              subtitle: l.addWalletRestoreSeedBody,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => AddWalletFormatPicker(
@@ -149,9 +150,8 @@ class AddWalletActionPicker extends StatelessWidget {
               const SizedBox(height: 8),
               _ActionTile(
                 icon: Icons.key,
-                title: 'Restore from keys',
-                subtitle: 'Address + private spend key + private view key. '
-                    'Use this when you have the keys but not a seed phrase.',
+                title: l.addWalletRestoreKeysTitle,
+                subtitle: l.addWalletRestoreKeysBody,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => AddWalletKeysRestoreScreen(coin: coin),
@@ -251,11 +251,12 @@ class AddWalletFormatPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(mode == WalletAddMode.create
-            ? 'New seed format'
-            : 'Restore format'),
+            ? l.addWalletFormatNew
+            : l.addWalletFormatRestore),
       ),
       body: SafeArea(
         child: ListView.separated(
@@ -313,7 +314,7 @@ class AddWalletFormatPicker extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: -0.1)),
                             const SizedBox(height: 4),
-                            Text(_subtitleFor(f),
+                            Text(_subtitleFor(l, f),
                                 style: const TextStyle(
                                     color: PeekColors.text2,
                                     fontSize: 12,
@@ -349,20 +350,17 @@ class AddWalletFormatPicker extends StatelessWidget {
     }
   }
 
-  static String _subtitleFor(SeedFormat f) {
+  static String _subtitleFor(AppLocalizations l, SeedFormat f) {
     switch (f) {
       case SeedFormat.bip39_12:
-        return '12 words — same format as vault-wallet, Trust Wallet, '
-            'Trezor, Ledger. Universal across many coins.';
       case SeedFormat.bip39_24:
-        return '24 words — more entropy than 12. Same universal format.';
+        return l.addWalletFormatBip39Hint;
       case SeedFormat.monero25:
-        return 'Native Monero electrum-style seed. Direct interop with '
-            'Cake, Feather, and Monero GUI.';
+        return l.addWalletFormatMoneroLegacyHint;
       case SeedFormat.moneroPolyseed:
-        return 'Newer Monero standard — 14 words. Restore height baked in.';
+        return l.addWalletFormatPolyseedHint;
       case SeedFormat.keysOnly:
-        return 'Spend key + view key + address. No words.';
+        return l.addWalletFormatKeysOnlyHint;
     }
   }
 }
@@ -398,10 +396,11 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
     // WalletStore.open() will compute later when reopening this
     // wallet. Derive it from (master password, walletId) — both
     // available here, both stable.
+    final l = AppLocalizations.of(context);
     final cachedPwd = VaultState.I.cachedPassword;
     if (cachedPwd == null) {
       setState(() {
-        _err = 'Vault is locked — re-unlock and try again.';
+        _err = l.addWalletVaultLocked;
         _busy = false;
       });
       return;
@@ -462,6 +461,7 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (_generated == null) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.format.displayName)),
@@ -498,7 +498,8 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
                 ),
                 const SizedBox(height: PeekDesign.sp5),
                 Text(
-                  'Generate a ${widget.format.displayName.toLowerCase()}',
+                  l.addWalletGenerateHeader(
+                      widget.format.displayName.toLowerCase()),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 18,
@@ -506,12 +507,10 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
                       letterSpacing: -0.3),
                 ),
                 const SizedBox(height: PeekDesign.sp2),
-                const Text(
-                  'When you tap Generate, the words will appear once. '
-                  'Write them down on paper before continuing. Anyone '
-                  'with the words can take your funds.',
+                Text(
+                  l.addWalletGenerateBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: PeekColors.text2, fontSize: 13, height: 1.4),
                 ),
                 if (_err != null) ...[
@@ -540,7 +539,7 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Generate seed'),
+                      : Text(l.addWalletGenerateAction),
                 ),
                 const SizedBox(height: PeekDesign.sp3),
               ],
@@ -551,7 +550,7 @@ class _AddWalletCreateScreenState extends State<AddWalletCreateScreen> {
     }
     return ScreenshotGuard(
       child: Scaffold(
-        appBar: AppBar(title: const Text('Write this down')),
+        appBar: AppBar(title: Text(l.addWalletWriteThisDown)),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -602,6 +601,7 @@ class _SeedRevealState extends State<_SeedReveal> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final words = widget.revealableSeed.split(RegExp(r'\s+'));
     return SingleChildScrollView(
       child: Column(
@@ -629,13 +629,10 @@ class _SeedRevealState extends State<_SeedReveal> {
                       color: PeekColors.red, size: 18),
                 ),
                 const SizedBox(width: PeekDesign.sp3),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'These words ARE the wallet. Anyone with them can '
-                    'spend it. Write them on paper, store offline, never '
-                    'paste them online, and never share them with '
-                    '"support".',
-                    style: TextStyle(
+                    l.addWalletWordsWarning,
+                    style: const TextStyle(
                         color: PeekColors.text, fontSize: 12, height: 1.4),
                   ),
                 ),
@@ -694,19 +691,18 @@ class _SeedRevealState extends State<_SeedReveal> {
               );
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Copied — clipboard auto-clears in 30 s')),
+                SnackBar(content: Text(l.addWalletCopyClipboardClears)),
               );
             },
             icon: const Icon(Icons.copy, size: 16),
-            label: const Text('Copy phrase'),
+            label: Text(l.addWalletCopyPhraseAction),
           ),
           const SizedBox(height: 18),
           TextField(
             controller: _name,
-            decoration: const InputDecoration(
-              labelText: 'Wallet name (only you can see this)',
-              hintText: 'e.g. "Main Monero"',
+            decoration: InputDecoration(
+              labelText: l.addWalletNameLabel,
+              hintText: l.addWalletNameHint,
             ),
           ),
           if (widget.err != null) ...[
@@ -723,7 +719,7 @@ class _SeedRevealState extends State<_SeedReveal> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('I have saved the words — add wallet'),
+                : Text(l.addWalletSavedConfirm),
           ),
         ],
       ),
@@ -773,20 +769,16 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
       _busy = true;
       _err = null;
     });
+    final l = AppLocalizations.of(context);
     final cachedPwd = VaultState.I.cachedPassword;
     if (cachedPwd == null) {
       setState(() {
-        _err = 'Vault is locked — re-unlock and try again.';
+        _err = l.addWalletVaultLocked;
         _busy = false;
       });
       return;
     }
     final id = WalletStore.I.generateId();
-    // Same derivation WalletStore.open() will use when reopening
-    // this wallet later. Pre-fix, this was the legacy shared
-    // VaultState.I.walletFilePassword which didn't match what open
-    // returned — guaranteeing "invalid password" on any non-BIP39
-    // wallet (no address-mismatch recovery to bail us out).
     final pwd =
         await WalletStore.I.deriveWalletFilePassword(cachedPwd, id);
     try {
@@ -834,8 +826,10 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text('Restore ${widget.format.displayName}')),
+      appBar: AppBar(
+          title: Text(l.addWalletRestoreTitle(widget.format.displayName))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -844,9 +838,9 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
             children: [
               TextField(
                 controller: _name,
-                decoration: const InputDecoration(
-                  labelText: 'Wallet name',
-                  hintText: 'e.g. "Imported from Cake"',
+                decoration: InputDecoration(
+                  labelText: l.addWalletRestoreNameLabel,
+                  hintText: l.addWalletRestoreNameHint,
                 ),
               ),
               const SizedBox(height: 14),
@@ -857,7 +851,9 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
                 minLines: 3,
                 maxLines: 5,
                 decoration: InputDecoration(
-                  labelText: _isBip39 ? 'Recovery phrase' : 'Seed words',
+                  labelText: _isBip39
+                      ? l.addWalletRecoveryPhraseLabel
+                      : l.addWalletSeedWordsLabel,
                   hintText: 'word1 word2 word3 …',
                 ),
               ),
@@ -866,25 +862,25 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
                 TextField(
                   controller: _passphrase,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'BIP39 passphrase (25th word) — optional',
-                    hintText: 'Leave blank if not used',
+                  decoration: InputDecoration(
+                    labelText: l.addWalletPassphraseLabel,
+                    hintText: l.addWalletPassphraseHint,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'If the source wallet had a passphrase, you MUST enter it — '
-                  'otherwise the imported addresses will be different.',
-                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                Text(
+                  l.addWalletPassphraseWarning,
+                  style: const TextStyle(
+                      color: PeekColors.text3, fontSize: 11),
                 ),
               ] else ...[
                 const SizedBox(height: 14),
                 TextField(
                   controller: _seedOffset,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Seed offset — optional',
-                    hintText: 'Leave blank if the seed isn\'t encrypted',
+                  decoration: InputDecoration(
+                    labelText: l.addWalletSeedOffsetLabel,
+                    hintText: l.addWalletSeedOffsetHint,
                   ),
                 ),
               ],
@@ -893,17 +889,16 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
                 controller: _restoreHeight,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Restore height — optional',
-                  hintText: 'Block number to start scanning from',
+                decoration: InputDecoration(
+                  labelText: l.addWalletRestoreHeightLabel,
+                  hintText: l.addWalletRestoreHeightHint,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Lower = more thorough but slower sync; higher = faster '
-                'but skips older transactions. Leave blank to let the '
-                'wallet decide.',
-                style: TextStyle(color: PeekColors.text3, fontSize: 11),
+              Text(
+                l.addWalletRestoreHeightBody,
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 11),
               ),
               if (_err != null) ...[
                 const SizedBox(height: PeekDesign.sp3),
@@ -942,7 +937,7 @@ class _AddWalletRestoreScreenState extends State<AddWalletRestoreScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Restore wallet'),
+                    : Text(l.addWalletRestoreAction),
               ),
             ],
           ),
@@ -987,10 +982,11 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
       _busy = true;
       _err = null;
     });
+    final l = AppLocalizations.of(context);
     final cachedPwd = VaultState.I.cachedPassword;
     if (cachedPwd == null) {
       setState(() {
-        _err = 'Vault is locked — re-unlock and try again.';
+        _err = l.addWalletVaultLocked;
         _busy = false;
       });
       return;
@@ -1041,8 +1037,9 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Restore from keys')),
+      appBar: AppBar(title: Text(l.addWalletKeysRestoreTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -1051,7 +1048,8 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
             children: [
               TextField(
                 controller: _name,
-                decoration: const InputDecoration(labelText: 'Wallet name'),
+                decoration: InputDecoration(
+                    labelText: l.addWalletRestoreNameLabel),
               ),
               const SizedBox(height: 14),
               TextField(
@@ -1060,15 +1058,15 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
                 textCapitalization: TextCapitalization.none,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                 decoration: InputDecoration(
-                  labelText: 'Primary address',
+                  labelText: l.addWalletPrimaryAddressLabel,
                   hintText: '4… (95 chars)',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.qr_code_scanner, size: 18),
                     onPressed: () async {
                       final scanned = await Navigator.of(context).push<String>(
                         MaterialPageRoute(
-                          builder: (_) =>
-                              const QrScanScreen(title: 'Scan address'),
+                          builder: (_) => QrScanScreen(
+                              title: l.addWalletScanAddressTitle),
                         ),
                       );
                       if (scanned != null) _address.text = scanned;
@@ -1082,8 +1080,8 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
                 obscureText: true,
                 autocorrect: false,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                decoration: const InputDecoration(
-                  labelText: 'Private spend key (hex)',
+                decoration: InputDecoration(
+                  labelText: l.addWalletSpendKeyLabel,
                   hintText: '64 hex chars — keep this secret',
                 ),
               ),
@@ -1093,8 +1091,8 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
                 obscureText: true,
                 autocorrect: false,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                decoration: const InputDecoration(
-                  labelText: 'Private view key (hex)',
+                decoration: InputDecoration(
+                  labelText: l.addWalletViewKeyLabel,
                   hintText: '64 hex chars',
                 ),
               ),
@@ -1103,9 +1101,9 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
                 controller: _restoreHeight,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Restore height',
-                  hintText: 'Block number — earlier covers older receipts',
+                decoration: InputDecoration(
+                  labelText: l.addWalletKeysRestoreHeightLabel,
+                  hintText: l.addWalletKeysRestoreHeightHint,
                 ),
               ),
               if (_err != null) ...[
@@ -1145,7 +1143,7 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Restore wallet'),
+                    : Text(l.addWalletRestoreAction),
               ),
             ],
           ),
@@ -1156,25 +1154,27 @@ class _AddWalletKeysRestoreScreenState extends State<AddWalletKeysRestoreScreen>
 }
 
 Future<String?> _promptPassword(BuildContext context) async {
+  final l = AppLocalizations.of(context);
   final controller = TextEditingController();
   final result = await showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Confirm password'),
+      title: Text(l.addWalletConfirmPasswordTitle),
       content: TextField(
         controller: controller,
         obscureText: true,
         autofocus: true,
-        decoration: const InputDecoration(labelText: 'App password'),
+        decoration:
+            InputDecoration(labelText: l.addWalletAppPasswordLabel),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel'),
+          child: Text(l.actionCancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(ctx).pop(controller.text),
-          child: const Text('Continue'),
+          child: Text(l.actionContinue),
         ),
       ],
     ),

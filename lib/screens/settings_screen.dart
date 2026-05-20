@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../coins/monero/monero_wallet.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prefs/prefs.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
@@ -65,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _toggleBiometric(bool wantOn) async {
+    final l = AppLocalizations.of(context);
     if (!wantOn) {
       await VaultState.I.disableBiometric();
       setState(() => _biometricEnabled = false);
@@ -75,8 +77,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // a wrong password here would lock the user out of biometric
     // unlock until they disabled + re-enabled.
     final password = await _askPassword(
-      title: 'Enable biometric unlock',
-      hint: 'Enter your app password to confirm',
+      title: l.settingsBiometricEnableTitle,
+      hint: l.settingsBiometricEnableHint,
     );
     if (password == null) return;
     try {
@@ -85,7 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not enable: $e')),
+        SnackBar(content: Text(l.settingsBiometricEnableFailed('$e'))),
       );
     }
   }
@@ -94,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     required String hint,
   }) async {
+    final l = AppLocalizations.of(context);
     final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
@@ -103,16 +106,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           controller: controller,
           obscureText: true,
           autofocus: true,
-          decoration: InputDecoration(labelText: 'Password', hintText: hint),
+          decoration: InputDecoration(
+              labelText: l.settingsPasswordLabel, hintText: hint),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: const Text('Continue'),
+            child: Text(l.actionContinue),
           ),
         ],
       ),
@@ -122,10 +126,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
+    final l = AppLocalizations.of(context);
     final input = _nodeController.text.trim();
     if (input.isNotEmpty && !MoneroDaemonEndpoint.isValid(input)) {
       setState(() {
-        _message = 'Could not parse that URL. Try e.g. https://node.example.com:18081';
+        _message = l.settingsMessageBadUrl;
         _messageColor = Colors.red;
       });
       return;
@@ -135,32 +140,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _message = null;
     });
     await Prefs.I.setMoneroDaemonUri(input.isEmpty ? null : input);
+    if (!mounted) return;
     setState(() {
       _savedUri = input.isEmpty ? null : input;
       _busy = false;
-      _message = 'Saved. Lock + unlock the app to switch your wallet to the new node.';
+      _message = l.settingsMessageSaved;
       _messageColor = Colors.green;
     });
   }
 
-  String _autoLockLabel(int seconds) {
-    if (seconds <= 0) return 'Immediately';
-    if (seconds >= 86400) return 'Never';
-    if (seconds < 60) return '$seconds s';
-    if (seconds < 3600) return '${seconds ~/ 60} min';
-    return '${seconds ~/ 3600} h';
+  String _autoLockLabel(AppLocalizations l, int seconds) {
+    if (seconds <= 0) return l.settingsAutoLockImmediately;
+    if (seconds >= 86400) return l.settingsAutoLockNever;
+    if (seconds < 60) return l.settingsAutoLockSeconds(seconds);
+    if (seconds < 3600) return l.ageMinutes(seconds ~/ 60);
+    return l.ageHours(seconds ~/ 3600);
   }
 
   Future<void> _pickAutoLock() async {
-    const options = <(int, String)>[
-      (0, 'Immediately'),
-      (30, '30 seconds'),
-      (60, '1 minute'),
-      (120, '2 minutes (default)'),
-      (300, '5 minutes'),
-      (900, '15 minutes'),
-      (3600, '1 hour'),
-      (86400, 'Never'),
+    final l = AppLocalizations.of(context);
+    final options = <(int, String)>[
+      (0, l.settingsAutoLockImmediately),
+      (30, l.settingsAutoLock30Seconds),
+      (60, l.settingsAutoLock1Minute),
+      (120, l.settingsAutoLock2MinutesDefault),
+      (300, l.settingsAutoLock5Minutes),
+      (900, l.settingsAutoLock15Minutes),
+      (3600, l.settingsAutoLock1Hour),
+      (86400, l.settingsAutoLockNever),
     ];
     final picked = await showModalBottomSheet<int>(
       context: context,
@@ -173,20 +180,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Text(
-                'Auto-lock after backgrounding',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                l.settingsAutoLockSheetTitle,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'How long PeekWallet can stay unlocked while you\'re using '
-                'other apps. Returning within this window keeps you logged '
-                'in; longer and the password is required again.',
-                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+                l.settingsAutoLockSheetBody,
+                style:
+                    const TextStyle(color: PeekColors.text3, fontSize: 12),
               ),
             ),
             const SizedBox(height: 8),
@@ -209,26 +217,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _exportLogs() async {
+    final l = AppLocalizations.of(context);
     final content = await PeekLogger.I.readCurrent();
     if (!mounted) return;
     if (content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('No logs to export yet.')),
+        SnackBar(content: Text(l.settingsExportLogsEmpty)),
       );
       return;
     }
-    // Show the contents in a scrollable dialog with a Copy button.
-    // Filesystem-share + email-attach is a follow-up — needs the
-    // share_plus plugin. The copy-to-clipboard path covers the
-    // primary use case ("paste into a GitHub issue").
-    // Capture the outer messenger so the post-pop SnackBar isn't
-    // racing against a disposed dialog context.
     final messenger = ScaffoldMessenger.of(context);
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Logs (last 7 days)'),
+        title: Text(l.settingsExportLogsDialogTitle),
         content: SizedBox(
           width: double.maxFinite,
           height: 400,
@@ -242,19 +244,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text(l.settingsCloseAction),
           ),
           ElevatedButton.icon(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: content));
               if (ctx.mounted) Navigator.of(ctx).pop();
               messenger.showSnackBar(
-                const SnackBar(
-                    content: Text('Logs copied to clipboard')),
+                SnackBar(content: Text(l.settingsExportLogsCopied)),
               );
             },
             icon: const Icon(Icons.copy, size: 16),
-            label: const Text('Copy'),
+            label: Text(l.actionCopy),
           ),
         ],
       ),
@@ -262,6 +263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickCurrency() async {
+    final l = AppLocalizations.of(context);
     const currencies = <String>[
       'usd', 'eur', 'gbp', 'jpy', 'cny', 'krw', 'rub',
       'aud', 'cad', 'inr', 'try', 'brl',
@@ -279,18 +281,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Text(
-                'Display currency',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                l.settingsDisplayCurrencyTitle,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
             SwitchListTile(
-              title: const Text('Show fiat values'),
-              subtitle: const Text(
-                'Polls CoinGecko every 5 min. No PII sent.',
-                style: TextStyle(color: PeekColors.text3, fontSize: 11),
+              title: Text(l.settingsShowFiatValues),
+              subtitle: Text(
+                l.settingsShowFiatValuesBody,
+                style:
+                    const TextStyle(color: PeekColors.text3, fontSize: 11),
               ),
               value: PriceFeed.I.enabled,
               onChanged: (v) async {
@@ -318,22 +323,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _confirmLock() async {
+    final l = AppLocalizations.of(context);
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Lock app?'),
-        content: const Text(
-          'You will need to enter your password to unlock. Any in-progress '
-          'Monero sync will pick up where it left off.',
-        ),
+        title: Text(l.settingsLockConfirmTitle),
+        content: Text(l.settingsLockConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Lock'),
+            child: Text(l.settingsLockConfirmAction),
           ),
         ],
       ),
@@ -342,22 +345,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _reset() async {
+    final l = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
     });
     await Prefs.I.setMoneroDaemonUri(null);
+    if (!mounted) return;
     setState(() {
       _savedUri = null;
       _nodeController.text = '';
       _busy = false;
-      _message = 'Reset. The app will use $kDefaultMoneroDaemon on next unlock.';
+      _message = l.settingsMessageReset(kDefaultMoneroDaemon);
       _messageColor = Colors.green;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final input = _nodeController.text.trim();
     final effective = input.isEmpty
         ? (_savedUri ?? kDefaultMoneroDaemon)
@@ -367,7 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l.settingsTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: PeekColors.accent))
           : SafeArea(
@@ -376,16 +382,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Monero node',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    Text(
+                      l.settingsMoneroNode,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'The Monero daemon PeekWallet connects to for sync. '
-                      'Default is Cake Wallet\'s public node. For full privacy, '
-                      'run your own monerod and point this at it.',
-                      style: TextStyle(color: PeekColors.text2, fontSize: 13),
+                    Text(
+                      l.settingsMoneroNodeBody,
+                      style: const TextStyle(
+                          color: PeekColors.text2, fontSize: 13),
                     ),
                     const SizedBox(height: 14),
                     TextField(
@@ -395,11 +401,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       keyboardType: TextInputType.url,
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        labelText: 'Daemon URL',
+                        labelText: l.settingsDaemonUrlLabel,
                         hintText: kDefaultMoneroDaemon,
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.content_paste, size: 18),
-                          tooltip: 'Paste',
+                          tooltip: l.settingsPasteTooltip,
                           onPressed: () async {
                             final data = await Clipboard.getData('text/plain');
                             if (data?.text != null) {
@@ -413,8 +419,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (preview != null) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Connects to ${preview.hostPort} (ssl=${preview.useSsl})',
-                        style: const TextStyle(color: PeekColors.text3, fontSize: 11),
+                        l.settingsConnectsToPreview(
+                            preview.hostPort, preview.useSsl.toString()),
+                        style: const TextStyle(
+                            color: PeekColors.text3, fontSize: 11),
                       ),
                     ],
                     if (_message != null) ...[
@@ -435,7 +443,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: _busy ? null : _reset,
-                            child: const Text('Reset to default'),
+                            child: Text(l.settingsResetToDefault),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -448,13 +456,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2, color: Colors.white),
                                   )
-                                : const Text('Save'),
+                                : Text(l.actionSave),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 28),
-                    const _SectionDivider(label: 'Public nodes'),
+                    _SectionDivider(label: l.settingsSectionPublicNodes),
                     const SizedBox(height: 8),
                     for (final url in const [
                       kDefaultMoneroDaemon,
@@ -468,22 +476,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() {});
                         },
                       ),
-                    const _SectionDivider(label: 'Security'),
+                    _SectionDivider(label: l.settingsSectionSecurity),
                     SettingsSwitchRow(
                       icon: Icons.fingerprint_rounded,
-                      title: 'Biometric unlock',
+                      title: l.settingsBiometricUnlock,
                       subtitle: _biometricAvailable
-                          ? 'Use fingerprint / face to unlock'
-                          : 'Not available — no enrolled biometric',
+                          ? l.settingsBiometricUnlockOn
+                          : l.settingsBiometricUnlockOff,
                       value: _biometricEnabled,
                       onChanged:
                           _biometricAvailable ? _toggleBiometric : null,
                     ),
                     SettingsRow(
                       icon: Icons.visibility_outlined,
-                      title: 'Reveal recovery phrase',
-                      subtitle:
-                          'View your BIP39 seed + Monero spend/view keys',
+                      title: l.settingsRevealSeedTitle,
+                      subtitle: l.settingsRevealSeedBody,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const RevealSeedScreen()),
@@ -491,8 +498,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SettingsRow(
                       icon: Icons.contact_page_outlined,
-                      title: 'Address book',
-                      subtitle: 'Saved labels for recipients you send to',
+                      title: l.settingsAddressBookTitle,
+                      subtitle: l.settingsAddressBookBody,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const AddressBookScreen(),
@@ -501,41 +508,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SettingsRow(
                       icon: Icons.timer_outlined,
-                      title: 'Auto-lock',
-                      subtitle: _autoLockLabel(_autoLockSeconds),
+                      title: l.settingsAutoLockTitle,
+                      subtitle: _autoLockLabel(l, _autoLockSeconds),
                       onTap: _pickAutoLock,
                     ),
                     SettingsRow(
                       icon: Icons.lock_outline_rounded,
-                      title: 'Lock app',
-                      subtitle:
-                          'Clear the in-memory seed and require the password again',
+                      title: l.settingsLockAppTitle,
+                      subtitle: l.settingsLockAppBody,
                       onTap: _confirmLock,
                     ),
-                    const _SectionDivider(label: 'Display'),
+                    _SectionDivider(label: l.settingsSectionDisplay),
                     AnimatedBuilder(
                       animation: PriceFeed.I,
                       builder: (_, _) => SettingsRow(
                         icon: Icons.currency_exchange_rounded,
-                        title: 'Display currency',
+                        title: l.settingsDisplayCurrencyTitle,
                         subtitle: PriceFeed.I.enabled
                             ? PriceFeed.I.currency.toUpperCase()
-                            : 'Disabled',
+                            : l.settingsDisplayCurrencyDisabled,
                         onTap: _pickCurrency,
                       ),
                     ),
                     SettingsRow(
                       icon: Icons.description_outlined,
-                      title: 'Export logs',
-                      subtitle:
-                          'Last 7 days. Addresses and keys are auto-redacted.',
+                      title: l.settingsExportLogsTitle,
+                      subtitle: l.settingsExportLogsBody,
                       onTap: _exportLogs,
                     ),
                     SettingsRow(
                       icon: Icons.auto_awesome_rounded,
-                      title: 'Restore all coins from vault seed',
-                      subtitle:
-                          'One-tap derive a wallet for every coin from your existing 12/24-word seed.',
+                      title: l.settingsRestoreAllTitle,
+                      subtitle: l.settingsRestoreAllBody,
                       iconAccent: true,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -545,9 +549,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SettingsRow(
                       icon: Icons.lan_outlined,
-                      title: 'Custom RPC endpoints',
-                      subtitle:
-                          'Point BTC/LTC/BCH/ETH/POL/SOL/TRX at your own nodes.',
+                      title: l.settingsCustomRpcTitle,
+                      subtitle: l.settingsCustomRpcBody,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const RpcOverridesScreen()),
@@ -556,8 +559,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _UpdateCheckerRow(),
                     SettingsRow(
                       icon: Icons.info_outline_rounded,
-                      title: 'About PeekWallet',
-                      subtitle: 'Version, license, source code',
+                      title: l.settingsAboutTitle,
+                      subtitle: l.settingsAboutBody,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const AboutScreen()),
                       ),
@@ -615,38 +618,36 @@ class _UpdateCheckerRowState extends State<_UpdateCheckerRow> {
     } catch (_) {/* swallow — browser failure isn't actionable */}
   }
 
-  String _subtitle() {
-    if (_busy) return 'Checking GitHub…';
+  String _subtitle(AppLocalizations l) {
+    if (_busy) return l.settingsUpdateChecking;
     final r = _result;
-    if (r == null) return 'Tap to check';
-    if (r.hasError) return r.error ?? 'Check failed';
+    if (r == null) return l.settingsUpdateTapToCheck;
+    if (r.hasError) return r.error ?? l.settingsUpdateFailedFallback;
     if (r.isUpdateAvailable) {
-      final ago = _ago(r.latestReleaseAt!);
-      return 'Update available — released $ago. Tap to download.';
+      return l.settingsUpdateAvailable(_ago(l, r.latestReleaseAt!));
     }
-    if (r.currentBuildTime == null) {
-      return 'Debug build — version check disabled. Tap to retry.';
-    }
-    return 'Up to date · checked just now';
+    if (r.currentBuildTime == null) return l.settingsUpdateDebugBuild;
+    return l.settingsUpdateUpToDate;
   }
 
-  String _ago(DateTime then) {
+  String _ago(AppLocalizations l, DateTime then) {
     final d = DateTime.now().toUtc().difference(then.toUtc());
-    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-    if (d.inHours < 24) return '${d.inHours} h ago';
-    return '${d.inDays} d ago';
+    if (d.inMinutes < 60) return l.ageMinutes(d.inMinutes);
+    if (d.inHours < 24) return l.ageHours(d.inHours);
+    return l.ageDays(d.inDays);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final r = _result;
     final iconAccent = r != null && r.isUpdateAvailable;
     return SettingsRow(
       icon: iconAccent
           ? Icons.system_update_rounded
           : Icons.cloud_download_outlined,
-      title: 'Check for updates',
-      subtitle: _subtitle(),
+      title: l.settingsUpdateTitle,
+      subtitle: _subtitle(l),
       iconAccent: iconAccent,
       onTap: _busy
           ? null
