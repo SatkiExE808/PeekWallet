@@ -1389,6 +1389,325 @@ class AppLocalizationsZh extends AppLocalizations {
   String get walletMenuDeleteBody => '鏈上錢包不受影響 — 持有助記詞的人仍能在日後還原。僅移除此裝置上的紀錄。';
 
   @override
+  String get cwSeedTitle => '助記詞';
+
+  @override
+  String get cwConfirmTitle => '確認助記詞';
+
+  @override
+  String get cwPasswordTitle => '設定密碼';
+
+  @override
+  String get cwSeedWarning =>
+      '請將這 12 個字寫在紙上並安全保存。任何持有助記詞的人都能轉走你的資金。切勿在任何網站上輸入。';
+
+  @override
+  String get cwIveWrittenItDown => '我已寫下';
+
+  @override
+  String get cwConfirmBody => '請輸入指定的字以確認你已保存助記詞。';
+
+  @override
+  String get cwWordPlaceholderHint => '小寫,無空格';
+
+  @override
+  String cwWordNumberLabel(int n) {
+    return '第 $n 個字';
+  }
+
+  @override
+  String get cwPasswordBody => '此密碼會在本機上加密你的錢包。每次解鎖都需要輸入。';
+
+  @override
+  String get cwPasswordMinLabel => '密碼(至少 8 個字元)';
+
+  @override
+  String get cwConfirmPasswordLabel => '確認密碼';
+
+  @override
+  String get cwPasswordTooShort => '密碼至少需 8 個字元。';
+
+  @override
+  String get cwPasswordsDontMatch => '兩次密碼不一致。';
+
+  @override
+  String get cwCreateWalletAction => '建立錢包';
+
+  @override
+  String get cwCopyPhrase => '複製助記詞';
+
+  @override
+  String get cwCopiedClipboardAutoClear => '已複製 — 剪貼簿 30 秒後自動清除';
+
+  @override
+  String get iwScreenTitle => '匯入錢包';
+
+  @override
+  String get iwIntro => '貼上你既有的 BIP39 助記詞(12 或 24 字)。格式與 vault-wallet 相同。';
+
+  @override
+  String get iwRecoveryPhraseLabel => '助記詞';
+
+  @override
+  String get iwPhraseHint => 'word1 word2 word3 ...';
+
+  @override
+  String get iwPassphraseOptionalLabel => 'BIP39 通行短語(第 25 個字)— 選填';
+
+  @override
+  String get iwPassphraseHintBlank => '若未設定請留空';
+
+  @override
+  String get iwPassphraseWarning =>
+      '若你曾在 vault-wallet(或其他錢包)中使用 BIP39 通行短語,必須在此輸入 — 否則匯入後的地址不會相符,餘額會顯示為零。';
+
+  @override
+  String get iwAppPasswordMinLabel => '應用程式密碼(至少 8 個字元)';
+
+  @override
+  String get iwConfirmAppPasswordLabel => '確認應用程式密碼';
+
+  @override
+  String get iwErrorBadWordCount => '請輸入 12 或 24 字的助記詞。';
+
+  @override
+  String get iwErrorBip39Checksum => '助記詞無效(BIP39 校驗失敗)。';
+
+  @override
+  String get iwErrorAppPasswordTooShort => '應用程式密碼至少需 8 個字元。';
+
+  @override
+  String get iwImportAction => '匯入錢包';
+
+  @override
+  String get xmrScreenUnlockTitle => '解鎖錢包';
+
+  @override
+  String get xmrScreenUnlockAction => '開啟';
+
+  @override
+  String get xmrScreenErrLocked => '錢包已鎖定';
+
+  @override
+  String xmrScreenErrAddressDerivation(String error) {
+    return '地址衍生失敗:$error';
+  }
+
+  @override
+  String get xmrScreenErrVaultLocked => '金庫已鎖定 — 無法取得錢包密碼';
+
+  @override
+  String get xmrScreenErrPasswordRequired => '需要密碼才能開啟此錢包';
+
+  @override
+  String xmrScreenErrCouldNotOpen(String error) {
+    return '無法開啟錢包:$error';
+  }
+
+  @override
+  String xmrScreenErrUnknownCoin(String coin) {
+    return '未知幣種:$coin';
+  }
+
+  @override
+  String xmrScreenBootStage(String stage) {
+    return '啟動:$stage';
+  }
+
+  @override
+  String get xmrScreenConnectingDaemon => '正在連線 daemon…';
+
+  @override
+  String xmrScreenSyncingPct(int pct) {
+    return '同步中 $pct%';
+  }
+
+  @override
+  String xmrScreenSyncedAtHeight(String h) {
+    return '已同步 · 高度 $h';
+  }
+
+  @override
+  String get xmrScreenSynced => '已同步';
+
+  @override
+  String xmrScreenDaemonError(String error) {
+    return 'Daemon:$error';
+  }
+
+  @override
+  String xmrScreenEngineError(String error) {
+    return '引擎:$error';
+  }
+
+  @override
+  String get xmrScreenBootingWallet => '正在啟動錢包…';
+
+  @override
+  String get xmrScreenResetTitle => '重置錢包檔案?';
+
+  @override
+  String get xmrScreenResetBody =>
+      '此操作會刪除磁碟上的錢包檔案,並由已儲存的種子重新建立。鏈上同步快取會遺失,因此錢包需要從你的還原高度重新掃描(可能需要一段時間)。種子不會更動 — 資金安全。\n\n若你持續遇到「密碼錯誤」錯誤,可使用此功能。';
+
+  @override
+  String get xmrScreenResetAction => '重置並重新掃描';
+
+  @override
+  String get xmrScreenResetAndRescanFromSeed => '由種子重置並重新掃描';
+
+  @override
+  String get xmrScreenActivity => '交易紀錄';
+
+  @override
+  String get xmrScreenWalletStillSyncing => '錢包仍在同步 — 新的交易會在追上鏈頂後出現。';
+
+  @override
+  String get xmrScreenAddressCopied => '地址已複製';
+
+  @override
+  String get xmrScreenCopyAddress => '複製地址';
+
+  @override
+  String get xmrScreenTxStatusFailed => '失敗';
+
+  @override
+  String get xmrScreenTxStatusPending => '待確認';
+
+  @override
+  String get xmrScreenTxStatusConfirmed => '已確認';
+
+  @override
+  String get xmrScreenDirIncoming => '收入';
+
+  @override
+  String get xmrScreenDirOutgoing => '支出';
+
+  @override
+  String get xmrScreenTxAmount => '金額';
+
+  @override
+  String get xmrScreenTxFee => '手續費';
+
+  @override
+  String get xmrScreenTxDate => '日期';
+
+  @override
+  String get xmrScreenTxBlockHeight => '區塊高度';
+
+  @override
+  String get xmrScreenTxConfirmations => '確認數';
+
+  @override
+  String get xmrScreenTxStatus => '狀態';
+
+  @override
+  String get xmrScreenTxPaymentId => 'Payment ID';
+
+  @override
+  String get xmrScreenTxNote => '備註';
+
+  @override
+  String get xmrScreenTxAdd => '新增';
+
+  @override
+  String get xmrScreenTxEdit => '編輯';
+
+  @override
+  String get xmrScreenTxId => '交易 ID';
+
+  @override
+  String get xmrScreenTxIdCopied => '交易 ID 已複製';
+
+  @override
+  String get xmrScreenCopy => '複製';
+
+  @override
+  String get xmrScreenExplorer => '瀏覽器';
+
+  @override
+  String get xmrScreenCouldNotOpenBrowser => '無法開啟瀏覽器';
+
+  @override
+  String get xmrScreenTxNoteTitle => '交易備註';
+
+  @override
+  String get xmrScreenTxNoteHint => '純文字 — 僅你看得到。';
+
+  @override
+  String get xmrScreenClear => '清除';
+
+  @override
+  String get xmrScreenNoteSaved => '備註已儲存';
+
+  @override
+  String get xmrScreenNoteCleared => '備註已清除';
+
+  @override
+  String xmrScreenCouldNotSaveNote(String error) {
+    return '無法儲存備註:$error';
+  }
+
+  @override
+  String get xmrScreenLabelPrimary => '主要';
+
+  @override
+  String xmrScreenLabelSubaddress(int index) {
+    return '標記子地址 #$index';
+  }
+
+  @override
+  String xmrScreenCouldNotSaveLabel(String error) {
+    return '無法儲存標籤:$error';
+  }
+
+  @override
+  String get xmrScreenReceiveTitle => '接收 XMR';
+
+  @override
+  String get xmrScreenSubaddrUnavailable => '子地址需待錢包啟動完成後才能使用。';
+
+  @override
+  String get xmrScreenSubaddrSectionTitle => '子地址';
+
+  @override
+  String get xmrScreenSubaddrNew => '新增';
+
+  @override
+  String get xmrScreenSubaddrBody =>
+      '為每位付款者產生新的地址,避免觀察者將兩筆款項連結至同一錢包。所有地址共用同一個餘額。';
+
+  @override
+  String get xmrScreenEditLabelTooltip => '編輯標籤';
+
+  @override
+  String get xmrScreenAppPasswordLabel => '應用程式密碼';
+
+  @override
+  String xmrScreenSyncingPctBehind(int pct, int behind) {
+    return '同步中 $pct% · 落後 $behind 個區塊';
+  }
+
+  @override
+  String xmrScreenConfirmationsShort(int n) {
+    return '$n 確認';
+  }
+
+  @override
+  String get xmrScreenNoNote => '— 無備註 —';
+
+  @override
+  String get xmrScreenSubaddrLabelHint => '例如「客戶款項」、「副業收入」';
+
+  @override
+  String get xmrScreenEngineLoaded => '✓ 原生 monero_c 引擎已載入';
+
+  @override
+  String xmrScreenEngineNotLoaded(String error) {
+    return '✗ 引擎未載入:$error';
+  }
+
+  @override
   String get erc20EmptyHint =>
       '尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。';
 
@@ -2804,6 +3123,325 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get walletMenuDeleteBody => '鏈上錢包不受影響 — 持有助記詞的人仍能在日後還原。僅移除此裝置上的紀錄。';
+
+  @override
+  String get cwSeedTitle => '助記詞';
+
+  @override
+  String get cwConfirmTitle => '確認助記詞';
+
+  @override
+  String get cwPasswordTitle => '設定密碼';
+
+  @override
+  String get cwSeedWarning =>
+      '請將這 12 個字寫在紙上並安全保存。任何持有助記詞的人都能轉走你的資金。切勿在任何網站上輸入。';
+
+  @override
+  String get cwIveWrittenItDown => '我已寫下';
+
+  @override
+  String get cwConfirmBody => '請輸入指定的字以確認你已保存助記詞。';
+
+  @override
+  String get cwWordPlaceholderHint => '小寫,無空格';
+
+  @override
+  String cwWordNumberLabel(int n) {
+    return '第 $n 個字';
+  }
+
+  @override
+  String get cwPasswordBody => '此密碼會在本機上加密你的錢包。每次解鎖都需要輸入。';
+
+  @override
+  String get cwPasswordMinLabel => '密碼(至少 8 個字元)';
+
+  @override
+  String get cwConfirmPasswordLabel => '確認密碼';
+
+  @override
+  String get cwPasswordTooShort => '密碼至少需 8 個字元。';
+
+  @override
+  String get cwPasswordsDontMatch => '兩次密碼不一致。';
+
+  @override
+  String get cwCreateWalletAction => '建立錢包';
+
+  @override
+  String get cwCopyPhrase => '複製助記詞';
+
+  @override
+  String get cwCopiedClipboardAutoClear => '已複製 — 剪貼簿 30 秒後自動清除';
+
+  @override
+  String get iwScreenTitle => '匯入錢包';
+
+  @override
+  String get iwIntro => '貼上你既有的 BIP39 助記詞(12 或 24 字)。格式與 vault-wallet 相同。';
+
+  @override
+  String get iwRecoveryPhraseLabel => '助記詞';
+
+  @override
+  String get iwPhraseHint => 'word1 word2 word3 ...';
+
+  @override
+  String get iwPassphraseOptionalLabel => 'BIP39 通行短語(第 25 個字)— 選填';
+
+  @override
+  String get iwPassphraseHintBlank => '若未設定請留空';
+
+  @override
+  String get iwPassphraseWarning =>
+      '若你曾在 vault-wallet(或其他錢包)中使用 BIP39 通行短語,必須在此輸入 — 否則匯入後的地址不會相符,餘額會顯示為零。';
+
+  @override
+  String get iwAppPasswordMinLabel => '應用程式密碼(至少 8 個字元)';
+
+  @override
+  String get iwConfirmAppPasswordLabel => '確認應用程式密碼';
+
+  @override
+  String get iwErrorBadWordCount => '請輸入 12 或 24 字的助記詞。';
+
+  @override
+  String get iwErrorBip39Checksum => '助記詞無效(BIP39 校驗失敗)。';
+
+  @override
+  String get iwErrorAppPasswordTooShort => '應用程式密碼至少需 8 個字元。';
+
+  @override
+  String get iwImportAction => '匯入錢包';
+
+  @override
+  String get xmrScreenUnlockTitle => '解鎖錢包';
+
+  @override
+  String get xmrScreenUnlockAction => '開啟';
+
+  @override
+  String get xmrScreenErrLocked => '錢包已鎖定';
+
+  @override
+  String xmrScreenErrAddressDerivation(String error) {
+    return '地址衍生失敗:$error';
+  }
+
+  @override
+  String get xmrScreenErrVaultLocked => '金庫已鎖定 — 無法取得錢包密碼';
+
+  @override
+  String get xmrScreenErrPasswordRequired => '需要密碼才能開啟此錢包';
+
+  @override
+  String xmrScreenErrCouldNotOpen(String error) {
+    return '無法開啟錢包:$error';
+  }
+
+  @override
+  String xmrScreenErrUnknownCoin(String coin) {
+    return '未知幣種:$coin';
+  }
+
+  @override
+  String xmrScreenBootStage(String stage) {
+    return '啟動:$stage';
+  }
+
+  @override
+  String get xmrScreenConnectingDaemon => '正在連線 daemon…';
+
+  @override
+  String xmrScreenSyncingPct(int pct) {
+    return '同步中 $pct%';
+  }
+
+  @override
+  String xmrScreenSyncedAtHeight(String h) {
+    return '已同步 · 高度 $h';
+  }
+
+  @override
+  String get xmrScreenSynced => '已同步';
+
+  @override
+  String xmrScreenDaemonError(String error) {
+    return 'Daemon:$error';
+  }
+
+  @override
+  String xmrScreenEngineError(String error) {
+    return '引擎:$error';
+  }
+
+  @override
+  String get xmrScreenBootingWallet => '正在啟動錢包…';
+
+  @override
+  String get xmrScreenResetTitle => '重置錢包檔案?';
+
+  @override
+  String get xmrScreenResetBody =>
+      '此操作會刪除磁碟上的錢包檔案,並由已儲存的種子重新建立。鏈上同步快取會遺失,因此錢包需要從你的還原高度重新掃描(可能需要一段時間)。種子不會更動 — 資金安全。\n\n若你持續遇到「密碼錯誤」錯誤,可使用此功能。';
+
+  @override
+  String get xmrScreenResetAction => '重置並重新掃描';
+
+  @override
+  String get xmrScreenResetAndRescanFromSeed => '由種子重置並重新掃描';
+
+  @override
+  String get xmrScreenActivity => '交易紀錄';
+
+  @override
+  String get xmrScreenWalletStillSyncing => '錢包仍在同步 — 新的交易會在追上鏈頂後出現。';
+
+  @override
+  String get xmrScreenAddressCopied => '地址已複製';
+
+  @override
+  String get xmrScreenCopyAddress => '複製地址';
+
+  @override
+  String get xmrScreenTxStatusFailed => '失敗';
+
+  @override
+  String get xmrScreenTxStatusPending => '待確認';
+
+  @override
+  String get xmrScreenTxStatusConfirmed => '已確認';
+
+  @override
+  String get xmrScreenDirIncoming => '收入';
+
+  @override
+  String get xmrScreenDirOutgoing => '支出';
+
+  @override
+  String get xmrScreenTxAmount => '金額';
+
+  @override
+  String get xmrScreenTxFee => '手續費';
+
+  @override
+  String get xmrScreenTxDate => '日期';
+
+  @override
+  String get xmrScreenTxBlockHeight => '區塊高度';
+
+  @override
+  String get xmrScreenTxConfirmations => '確認數';
+
+  @override
+  String get xmrScreenTxStatus => '狀態';
+
+  @override
+  String get xmrScreenTxPaymentId => 'Payment ID';
+
+  @override
+  String get xmrScreenTxNote => '備註';
+
+  @override
+  String get xmrScreenTxAdd => '新增';
+
+  @override
+  String get xmrScreenTxEdit => '編輯';
+
+  @override
+  String get xmrScreenTxId => '交易 ID';
+
+  @override
+  String get xmrScreenTxIdCopied => '交易 ID 已複製';
+
+  @override
+  String get xmrScreenCopy => '複製';
+
+  @override
+  String get xmrScreenExplorer => '瀏覽器';
+
+  @override
+  String get xmrScreenCouldNotOpenBrowser => '無法開啟瀏覽器';
+
+  @override
+  String get xmrScreenTxNoteTitle => '交易備註';
+
+  @override
+  String get xmrScreenTxNoteHint => '純文字 — 僅你看得到。';
+
+  @override
+  String get xmrScreenClear => '清除';
+
+  @override
+  String get xmrScreenNoteSaved => '備註已儲存';
+
+  @override
+  String get xmrScreenNoteCleared => '備註已清除';
+
+  @override
+  String xmrScreenCouldNotSaveNote(String error) {
+    return '無法儲存備註:$error';
+  }
+
+  @override
+  String get xmrScreenLabelPrimary => '主要';
+
+  @override
+  String xmrScreenLabelSubaddress(int index) {
+    return '標記子地址 #$index';
+  }
+
+  @override
+  String xmrScreenCouldNotSaveLabel(String error) {
+    return '無法儲存標籤:$error';
+  }
+
+  @override
+  String get xmrScreenReceiveTitle => '接收 XMR';
+
+  @override
+  String get xmrScreenSubaddrUnavailable => '子地址需待錢包啟動完成後才能使用。';
+
+  @override
+  String get xmrScreenSubaddrSectionTitle => '子地址';
+
+  @override
+  String get xmrScreenSubaddrNew => '新增';
+
+  @override
+  String get xmrScreenSubaddrBody =>
+      '為每位付款者產生新的地址,避免觀察者將兩筆款項連結至同一錢包。所有地址共用同一個餘額。';
+
+  @override
+  String get xmrScreenEditLabelTooltip => '編輯標籤';
+
+  @override
+  String get xmrScreenAppPasswordLabel => '應用程式密碼';
+
+  @override
+  String xmrScreenSyncingPctBehind(int pct, int behind) {
+    return '同步中 $pct% · 落後 $behind 個區塊';
+  }
+
+  @override
+  String xmrScreenConfirmationsShort(int n) {
+    return '$n 確認';
+  }
+
+  @override
+  String get xmrScreenNoNote => '— 無備註 —';
+
+  @override
+  String get xmrScreenSubaddrLabelHint => '例如「客戶款項」、「副業收入」';
+
+  @override
+  String get xmrScreenEngineLoaded => '✓ 原生 monero_c 引擎已載入';
+
+  @override
+  String xmrScreenEngineNotLoaded(String error) {
+    return '✗ 引擎未載入:$error';
+  }
 
   @override
   String get erc20EmptyHint =>

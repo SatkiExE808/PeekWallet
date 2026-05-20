@@ -45,6 +45,8 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
   DateTime? _balanceFromCacheAt;
   bool _refreshing = false;
 
+  String get _coinName => 'Bitcoin Cash';
+
   @override
   Duration get pollInterval => const Duration(seconds: 30);
 
@@ -202,7 +204,7 @@ class _BitcoinCashCoinScreenState extends State<BitcoinCashCoinScreen>
     final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bitcoin Cash'),
+        title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

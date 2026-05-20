@@ -1449,6 +1449,341 @@ class AppLocalizationsMs extends AppLocalizations {
       'Dompet di rantaian tidak terjejas — sesiapa dengan benih masih boleh memulihkannya kemudian. Hanya rekod di peranti ini dipadam.';
 
   @override
+  String get cwSeedTitle => 'Frasa pemulihan';
+
+  @override
+  String get cwConfirmTitle => 'Sahkan frasa';
+
+  @override
+  String get cwPasswordTitle => 'Tetapkan kata laluan';
+
+  @override
+  String get cwSeedWarning =>
+      'Tulis 12 perkataan ini di atas kertas dan simpan dengan selamat. Sesiapa yang memiliki frasa ini boleh mengambil dana anda. Jangan taipkannya di mana-mana laman web.';
+
+  @override
+  String get cwIveWrittenItDown => 'Saya telah menulisnya';
+
+  @override
+  String get cwConfirmBody =>
+      'Taipkan perkataan yang diminta untuk mengesahkan anda telah menyimpan frasa.';
+
+  @override
+  String get cwWordPlaceholderHint => 'Huruf kecil, tiada ruang';
+
+  @override
+  String cwWordNumberLabel(int n) {
+    return 'Perkataan #$n';
+  }
+
+  @override
+  String get cwPasswordBody =>
+      'Kata laluan ini menyulitkan dompet anda pada peranti ini. Anda perlu memasukkannya setiap kali membuka kunci.';
+
+  @override
+  String get cwPasswordMinLabel => 'Kata laluan (min 8 aksara)';
+
+  @override
+  String get cwConfirmPasswordLabel => 'Sahkan kata laluan';
+
+  @override
+  String get cwPasswordTooShort =>
+      'Kata laluan mestilah sekurang-kurangnya 8 aksara.';
+
+  @override
+  String get cwPasswordsDontMatch => 'Kata laluan tidak sepadan.';
+
+  @override
+  String get cwCreateWalletAction => 'Cipta dompet';
+
+  @override
+  String get cwCopyPhrase => 'Salin frasa';
+
+  @override
+  String get cwCopiedClipboardAutoClear =>
+      'Disalin — papan keratan kosong sendiri dalam 30 s';
+
+  @override
+  String get iwScreenTitle => 'Import dompet';
+
+  @override
+  String get iwIntro =>
+      'Tampal frasa pemulihan BIP39 sedia ada anda (12 atau 24 perkataan). Format sama seperti vault-wallet.';
+
+  @override
+  String get iwRecoveryPhraseLabel => 'Frasa pemulihan';
+
+  @override
+  String get iwPhraseHint => 'word1 word2 word3 ...';
+
+  @override
+  String get iwPassphraseOptionalLabel =>
+      'Frasa laluan BIP39 (perkataan ke-25) — pilihan';
+
+  @override
+  String get iwPassphraseHintBlank =>
+      'Biar kosong jika anda tidak menetapkannya';
+
+  @override
+  String get iwPassphraseWarning =>
+      'Jika anda menggunakan frasa laluan BIP39 dalam vault-wallet (atau dompet lain) anda MESTI memasukkannya di sini — tanpanya alamat yang diimport tidak akan sepadan dan baki akan muncul sebagai sifar.';
+
+  @override
+  String get iwAppPasswordMinLabel => 'Kata laluan aplikasi (min 8 aksara)';
+
+  @override
+  String get iwConfirmAppPasswordLabel => 'Sahkan kata laluan aplikasi';
+
+  @override
+  String get iwErrorBadWordCount =>
+      'Masukkan frasa pemulihan 12 atau 24 perkataan anda.';
+
+  @override
+  String get iwErrorBip39Checksum =>
+      'Frasa pemulihan tidak sah (gagal semakan BIP39).';
+
+  @override
+  String get iwErrorAppPasswordTooShort =>
+      'Kata laluan aplikasi mestilah sekurang-kurangnya 8 aksara.';
+
+  @override
+  String get iwImportAction => 'Import dompet';
+
+  @override
+  String get xmrScreenUnlockTitle => 'Buka kunci dompet';
+
+  @override
+  String get xmrScreenUnlockAction => 'Buka';
+
+  @override
+  String get xmrScreenErrLocked => 'Dompet berkunci';
+
+  @override
+  String xmrScreenErrAddressDerivation(String error) {
+    return 'Penerbitan alamat gagal: $error';
+  }
+
+  @override
+  String get xmrScreenErrVaultLocked =>
+      'Bilik kebal berkunci — kata laluan dompet tidak tersedia';
+
+  @override
+  String get xmrScreenErrPasswordRequired =>
+      'Kata laluan diperlukan untuk membuka dompet ini';
+
+  @override
+  String xmrScreenErrCouldNotOpen(String error) {
+    return 'Tidak dapat membuka dompet: $error';
+  }
+
+  @override
+  String xmrScreenErrUnknownCoin(String coin) {
+    return 'Syiling tidak dikenali: $coin';
+  }
+
+  @override
+  String xmrScreenBootStage(String stage) {
+    return 'But: $stage';
+  }
+
+  @override
+  String get xmrScreenConnectingDaemon => 'Menyambung ke daemon…';
+
+  @override
+  String xmrScreenSyncingPct(int pct) {
+    return 'Menyegerak $pct%';
+  }
+
+  @override
+  String xmrScreenSyncedAtHeight(String h) {
+    return 'Disegerakkan · tinggi $h';
+  }
+
+  @override
+  String get xmrScreenSynced => 'Disegerakkan';
+
+  @override
+  String xmrScreenDaemonError(String error) {
+    return 'Daemon: $error';
+  }
+
+  @override
+  String xmrScreenEngineError(String error) {
+    return 'Enjin: $error';
+  }
+
+  @override
+  String get xmrScreenBootingWallet => 'Mulakan dompet…';
+
+  @override
+  String get xmrScreenResetTitle => 'Tetapkan semula fail dompet?';
+
+  @override
+  String get xmrScreenResetBody =>
+      'Tindakan ini memadam fail dompet pada cakera dan menciptanya semula daripada benih yang disimpan. Cache penyegerakan rantai akan hilang jadi dompet perlu mengimbas semula dari tinggi pemulihan anda (mungkin mengambil masa). Benih anda TIDAK disentuh — dana selamat.\n\nGunakan ini jika anda terperangkap dengan ralat \"kata laluan tidak sah\" yang berterusan.';
+
+  @override
+  String get xmrScreenResetAction => 'Tetap semula & imbas semula';
+
+  @override
+  String get xmrScreenResetAndRescanFromSeed =>
+      'Tetap semula & imbas semula daripada benih';
+
+  @override
+  String get xmrScreenActivity => 'Aktiviti';
+
+  @override
+  String get xmrScreenWalletStillSyncing =>
+      'Dompet masih menyegerak — aktiviti lebih baharu akan muncul setelah kami menyusul puncak rantai.';
+
+  @override
+  String get xmrScreenAddressCopied => 'Alamat disalin';
+
+  @override
+  String get xmrScreenCopyAddress => 'Salin alamat';
+
+  @override
+  String get xmrScreenTxStatusFailed => 'Gagal';
+
+  @override
+  String get xmrScreenTxStatusPending => 'Belum selesai';
+
+  @override
+  String get xmrScreenTxStatusConfirmed => 'Disahkan';
+
+  @override
+  String get xmrScreenDirIncoming => 'Masuk';
+
+  @override
+  String get xmrScreenDirOutgoing => 'Keluar';
+
+  @override
+  String get xmrScreenTxAmount => 'Jumlah';
+
+  @override
+  String get xmrScreenTxFee => 'Yuran';
+
+  @override
+  String get xmrScreenTxDate => 'Tarikh';
+
+  @override
+  String get xmrScreenTxBlockHeight => 'Tinggi blok';
+
+  @override
+  String get xmrScreenTxConfirmations => 'Pengesahan';
+
+  @override
+  String get xmrScreenTxStatus => 'Status';
+
+  @override
+  String get xmrScreenTxPaymentId => 'Payment ID';
+
+  @override
+  String get xmrScreenTxNote => 'Nota';
+
+  @override
+  String get xmrScreenTxAdd => 'Tambah';
+
+  @override
+  String get xmrScreenTxEdit => 'Edit';
+
+  @override
+  String get xmrScreenTxId => 'TX ID';
+
+  @override
+  String get xmrScreenTxIdCopied => 'TX ID disalin';
+
+  @override
+  String get xmrScreenCopy => 'Salin';
+
+  @override
+  String get xmrScreenExplorer => 'Penjelajah';
+
+  @override
+  String get xmrScreenCouldNotOpenBrowser => 'Tidak dapat membuka pelayar';
+
+  @override
+  String get xmrScreenTxNoteTitle => 'Nota transaksi';
+
+  @override
+  String get xmrScreenTxNoteHint => 'Teks bebas — hanya anda boleh membacanya.';
+
+  @override
+  String get xmrScreenClear => 'Kosongkan';
+
+  @override
+  String get xmrScreenNoteSaved => 'Nota disimpan';
+
+  @override
+  String get xmrScreenNoteCleared => 'Nota dikosongkan';
+
+  @override
+  String xmrScreenCouldNotSaveNote(String error) {
+    return 'Tidak dapat menyimpan nota: $error';
+  }
+
+  @override
+  String get xmrScreenLabelPrimary => 'Utama';
+
+  @override
+  String xmrScreenLabelSubaddress(int index) {
+    return 'Label subaddress #$index';
+  }
+
+  @override
+  String xmrScreenCouldNotSaveLabel(String error) {
+    return 'Tidak dapat menyimpan label: $error';
+  }
+
+  @override
+  String get xmrScreenReceiveTitle => 'Terima XMR';
+
+  @override
+  String get xmrScreenSubaddrUnavailable =>
+      'Subaddress tidak tersedia sehingga dompet selesai dimulakan.';
+
+  @override
+  String get xmrScreenSubaddrSectionTitle => 'Subaddress';
+
+  @override
+  String get xmrScreenSubaddrNew => 'Baharu';
+
+  @override
+  String get xmrScreenSubaddrBody =>
+      'Jana alamat baharu bagi setiap pembayar supaya pemerhati tidak boleh menghubungkan dua pembayaran ke dompet yang sama. Semua menunjuk ke baki yang sama.';
+
+  @override
+  String get xmrScreenEditLabelTooltip => 'Edit label';
+
+  @override
+  String get xmrScreenAppPasswordLabel => 'Kata laluan aplikasi';
+
+  @override
+  String xmrScreenSyncingPctBehind(int pct, int behind) {
+    return 'Menyegerak $pct% · $behind blok di belakang';
+  }
+
+  @override
+  String xmrScreenConfirmationsShort(int n) {
+    return '$n konf';
+  }
+
+  @override
+  String get xmrScreenNoNote => '— Tiada nota —';
+
+  @override
+  String get xmrScreenSubaddrLabelHint =>
+      'cth. \"Bayaran pelanggan\", \"Kerja sampingan\"';
+
+  @override
+  String get xmrScreenEngineLoaded => '✓ Enjin monero_c asli dimuatkan';
+
+  @override
+  String xmrScreenEngineNotLoaded(String error) {
+    return '✗ Enjin tidak dimuatkan: $error';
+  }
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.';
 

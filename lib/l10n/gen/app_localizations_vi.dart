@@ -1435,6 +1435,336 @@ class AppLocalizationsVi extends AppLocalizations {
       'Ví trên chuỗi không bị ảnh hưởng — bất kỳ ai có seed vẫn có thể khôi phục về sau. Chỉ bản ghi trên thiết bị này bị xoá.';
 
   @override
+  String get cwSeedTitle => 'Cụm từ khôi phục';
+
+  @override
+  String get cwConfirmTitle => 'Xác nhận cụm từ';
+
+  @override
+  String get cwPasswordTitle => 'Đặt mật khẩu';
+
+  @override
+  String get cwSeedWarning =>
+      'Hãy ghi 12 từ này ra giấy và cất nơi an toàn. Bất kỳ ai có cụm từ này đều có thể lấy tiền của bạn. Đừng bao giờ nhập chúng trên một trang web.';
+
+  @override
+  String get cwIveWrittenItDown => 'Tôi đã ghi lại';
+
+  @override
+  String get cwConfirmBody =>
+      'Nhập các từ được yêu cầu để xác nhận bạn đã lưu cụm từ.';
+
+  @override
+  String get cwWordPlaceholderHint => 'Chữ thường, không khoảng trắng';
+
+  @override
+  String cwWordNumberLabel(int n) {
+    return 'Từ #$n';
+  }
+
+  @override
+  String get cwPasswordBody =>
+      'Mật khẩu này mã hoá ví của bạn trên thiết bị này. Bạn sẽ cần nhập mỗi khi mở khoá.';
+
+  @override
+  String get cwPasswordMinLabel => 'Mật khẩu (tối thiểu 8 ký tự)';
+
+  @override
+  String get cwConfirmPasswordLabel => 'Xác nhận mật khẩu';
+
+  @override
+  String get cwPasswordTooShort => 'Mật khẩu phải có ít nhất 8 ký tự.';
+
+  @override
+  String get cwPasswordsDontMatch => 'Mật khẩu không khớp.';
+
+  @override
+  String get cwCreateWalletAction => 'Tạo ví';
+
+  @override
+  String get cwCopyPhrase => 'Sao chép cụm từ';
+
+  @override
+  String get cwCopiedClipboardAutoClear =>
+      'Đã sao chép — bộ nhớ tạm tự xoá sau 30 giây';
+
+  @override
+  String get iwScreenTitle => 'Nhập ví';
+
+  @override
+  String get iwIntro =>
+      'Dán cụm từ khôi phục BIP39 hiện có (12 hoặc 24 từ). Cùng định dạng với vault-wallet.';
+
+  @override
+  String get iwRecoveryPhraseLabel => 'Cụm từ khôi phục';
+
+  @override
+  String get iwPhraseHint => 'word1 word2 word3 ...';
+
+  @override
+  String get iwPassphraseOptionalLabel =>
+      'Passphrase BIP39 (từ thứ 25) — tuỳ chọn';
+
+  @override
+  String get iwPassphraseHintBlank => 'Bỏ trống nếu bạn không đặt';
+
+  @override
+  String get iwPassphraseWarning =>
+      'Nếu bạn đã dùng passphrase BIP39 trong vault-wallet (hoặc ví khác) bạn PHẢI nhập tại đây — không có nó, các địa chỉ được nhập sẽ không khớp và số dư sẽ hiển thị bằng không.';
+
+  @override
+  String get iwAppPasswordMinLabel => 'Mật khẩu ứng dụng (tối thiểu 8 ký tự)';
+
+  @override
+  String get iwConfirmAppPasswordLabel => 'Xác nhận mật khẩu ứng dụng';
+
+  @override
+  String get iwErrorBadWordCount =>
+      'Nhập cụm từ khôi phục 12 hoặc 24 từ của bạn.';
+
+  @override
+  String get iwErrorBip39Checksum =>
+      'Cụm từ khôi phục không hợp lệ (BIP39 checksum thất bại).';
+
+  @override
+  String get iwErrorAppPasswordTooShort =>
+      'Mật khẩu ứng dụng phải có ít nhất 8 ký tự.';
+
+  @override
+  String get iwImportAction => 'Nhập ví';
+
+  @override
+  String get xmrScreenUnlockTitle => 'Mở khoá ví';
+
+  @override
+  String get xmrScreenUnlockAction => 'Mở';
+
+  @override
+  String get xmrScreenErrLocked => 'Ví đang khoá';
+
+  @override
+  String xmrScreenErrAddressDerivation(String error) {
+    return 'Dẫn xuất địa chỉ thất bại: $error';
+  }
+
+  @override
+  String get xmrScreenErrVaultLocked => 'Két đang khoá — không có mật khẩu ví';
+
+  @override
+  String get xmrScreenErrPasswordRequired => 'Cần mật khẩu để mở ví này';
+
+  @override
+  String xmrScreenErrCouldNotOpen(String error) {
+    return 'Không thể mở ví: $error';
+  }
+
+  @override
+  String xmrScreenErrUnknownCoin(String coin) {
+    return 'Đồng không xác định: $coin';
+  }
+
+  @override
+  String xmrScreenBootStage(String stage) {
+    return 'Khởi động: $stage';
+  }
+
+  @override
+  String get xmrScreenConnectingDaemon => 'Đang kết nối daemon…';
+
+  @override
+  String xmrScreenSyncingPct(int pct) {
+    return 'Đang đồng bộ $pct%';
+  }
+
+  @override
+  String xmrScreenSyncedAtHeight(String h) {
+    return 'Đã đồng bộ · chiều cao $h';
+  }
+
+  @override
+  String get xmrScreenSynced => 'Đã đồng bộ';
+
+  @override
+  String xmrScreenDaemonError(String error) {
+    return 'Daemon: $error';
+  }
+
+  @override
+  String xmrScreenEngineError(String error) {
+    return 'Engine: $error';
+  }
+
+  @override
+  String get xmrScreenBootingWallet => 'Đang khởi động ví…';
+
+  @override
+  String get xmrScreenResetTitle => 'Đặt lại tệp ví?';
+
+  @override
+  String get xmrScreenResetBody =>
+      'Thao tác này xoá tệp ví trên đĩa và tạo lại từ seed đã lưu. Bộ nhớ đệm đồng bộ chuỗi sẽ mất nên ví cần quét lại từ restore height của bạn (có thể mất một lúc). Seed KHÔNG bị động đến — tiền vẫn an toàn.\n\nDùng tính năng này nếu bạn kẹt với lỗi \"sai mật khẩu\" lặp đi lặp lại.';
+
+  @override
+  String get xmrScreenResetAction => 'Đặt lại & quét lại';
+
+  @override
+  String get xmrScreenResetAndRescanFromSeed => 'Đặt lại & quét lại từ seed';
+
+  @override
+  String get xmrScreenActivity => 'Hoạt động';
+
+  @override
+  String get xmrScreenWalletStillSyncing =>
+      'Ví vẫn đang đồng bộ — hoạt động mới sẽ xuất hiện khi đã theo kịp đỉnh chuỗi.';
+
+  @override
+  String get xmrScreenAddressCopied => 'Đã sao chép địa chỉ';
+
+  @override
+  String get xmrScreenCopyAddress => 'Sao chép địa chỉ';
+
+  @override
+  String get xmrScreenTxStatusFailed => 'Thất bại';
+
+  @override
+  String get xmrScreenTxStatusPending => 'Đang chờ';
+
+  @override
+  String get xmrScreenTxStatusConfirmed => 'Đã xác nhận';
+
+  @override
+  String get xmrScreenDirIncoming => 'Nhận vào';
+
+  @override
+  String get xmrScreenDirOutgoing => 'Gửi đi';
+
+  @override
+  String get xmrScreenTxAmount => 'Số tiền';
+
+  @override
+  String get xmrScreenTxFee => 'Phí';
+
+  @override
+  String get xmrScreenTxDate => 'Ngày';
+
+  @override
+  String get xmrScreenTxBlockHeight => 'Chiều cao khối';
+
+  @override
+  String get xmrScreenTxConfirmations => 'Số xác nhận';
+
+  @override
+  String get xmrScreenTxStatus => 'Trạng thái';
+
+  @override
+  String get xmrScreenTxPaymentId => 'Payment ID';
+
+  @override
+  String get xmrScreenTxNote => 'Ghi chú';
+
+  @override
+  String get xmrScreenTxAdd => 'Thêm';
+
+  @override
+  String get xmrScreenTxEdit => 'Sửa';
+
+  @override
+  String get xmrScreenTxId => 'TX ID';
+
+  @override
+  String get xmrScreenTxIdCopied => 'Đã sao chép TX ID';
+
+  @override
+  String get xmrScreenCopy => 'Sao chép';
+
+  @override
+  String get xmrScreenExplorer => 'Trình duyệt';
+
+  @override
+  String get xmrScreenCouldNotOpenBrowser => 'Không thể mở trình duyệt';
+
+  @override
+  String get xmrScreenTxNoteTitle => 'Ghi chú giao dịch';
+
+  @override
+  String get xmrScreenTxNoteHint => 'Văn bản tự do — chỉ bạn đọc được.';
+
+  @override
+  String get xmrScreenClear => 'Xoá';
+
+  @override
+  String get xmrScreenNoteSaved => 'Đã lưu ghi chú';
+
+  @override
+  String get xmrScreenNoteCleared => 'Đã xoá ghi chú';
+
+  @override
+  String xmrScreenCouldNotSaveNote(String error) {
+    return 'Không thể lưu ghi chú: $error';
+  }
+
+  @override
+  String get xmrScreenLabelPrimary => 'Chính';
+
+  @override
+  String xmrScreenLabelSubaddress(int index) {
+    return 'Gán nhãn subaddress #$index';
+  }
+
+  @override
+  String xmrScreenCouldNotSaveLabel(String error) {
+    return 'Không thể lưu nhãn: $error';
+  }
+
+  @override
+  String get xmrScreenReceiveTitle => 'Nhận XMR';
+
+  @override
+  String get xmrScreenSubaddrUnavailable =>
+      'Subaddress không khả dụng cho đến khi ví hoàn tất khởi động.';
+
+  @override
+  String get xmrScreenSubaddrSectionTitle => 'Subaddress';
+
+  @override
+  String get xmrScreenSubaddrNew => 'Mới';
+
+  @override
+  String get xmrScreenSubaddrBody =>
+      'Sinh một địa chỉ mới cho mỗi người trả tiền để người quan sát không thể liên kết hai khoản thanh toán với cùng một ví. Tất cả đều trỏ về cùng số dư.';
+
+  @override
+  String get xmrScreenEditLabelTooltip => 'Sửa nhãn';
+
+  @override
+  String get xmrScreenAppPasswordLabel => 'Mật khẩu ứng dụng';
+
+  @override
+  String xmrScreenSyncingPctBehind(int pct, int behind) {
+    return 'Đang đồng bộ $pct% · còn $behind khối';
+  }
+
+  @override
+  String xmrScreenConfirmationsShort(int n) {
+    return '$n xác nhận';
+  }
+
+  @override
+  String get xmrScreenNoNote => '— Không có ghi chú —';
+
+  @override
+  String get xmrScreenSubaddrLabelHint =>
+      'ví dụ \"Thanh toán khách hàng\", \"Việc tay trái\"';
+
+  @override
+  String get xmrScreenEngineLoaded => '✓ Đã tải engine monero_c gốc';
+
+  @override
+  String xmrScreenEngineNotLoaded(String error) {
+    return '✗ Engine chưa tải: $error';
+  }
+
+  @override
   String get erc20EmptyHint =>
       'Chưa có token — nhận USDT/USDC/DAI vào địa chỉ này hoặc nhấn \"Thêm token\" để theo dõi ERC-20 khác qua địa chỉ hợp đồng.';
 

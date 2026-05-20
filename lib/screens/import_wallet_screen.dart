@@ -1,6 +1,7 @@
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../vault/vault_state.dart';
 
@@ -11,12 +12,15 @@ class ImportWalletScreen extends StatefulWidget {
   State<ImportWalletScreen> createState() => _ImportWalletScreenState();
 }
 
+enum _ImpErrKind { none, badWordCount, badChecksum, pwTooShort, pwMismatch, other }
+
 class _ImportWalletScreenState extends State<ImportWalletScreen> {
   final _phrase = TextEditingController();
   final _passphrase = TextEditingController();
   final _p1 = TextEditingController();
   final _p2 = TextEditingController();
-  String? _err;
+  _ImpErrKind _errKind = _ImpErrKind.none;
+  String? _errOther;
   bool _busy = false;
 
   @override
@@ -29,24 +33,27 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
   }
 
   Future<void> _import() async {
-    setState(() => _err = null);
+    setState(() {
+      _errKind = _ImpErrKind.none;
+      _errOther = null;
+    });
     final raw = _phrase.text.trim().toLowerCase();
     final words = raw.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     if (words.length != 12 && words.length != 24) {
-      setState(() => _err = 'Enter your 12 or 24-word recovery phrase.');
+      setState(() => _errKind = _ImpErrKind.badWordCount);
       return;
     }
     final normalized = words.join(' ');
     if (!bip39.validateMnemonic(normalized)) {
-      setState(() => _err = 'Invalid recovery phrase (BIP39 checksum failed).');
+      setState(() => _errKind = _ImpErrKind.badChecksum);
       return;
     }
     if (_p1.text.length < 8) {
-      setState(() => _err = 'App password must be at least 8 characters.');
+      setState(() => _errKind = _ImpErrKind.pwTooShort);
       return;
     }
     if (_p1.text != _p2.text) {
-      setState(() => _err = "Passwords don't match.");
+      setState(() => _errKind = _ImpErrKind.pwMismatch);
       return;
     }
     setState(() => _busy = true);
@@ -60,25 +67,37 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
       Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (e) {
       setState(() {
-        _err = e.toString();
+        _errKind = _ImpErrKind.other;
+        _errOther = e.toString();
         _busy = false;
       });
     }
   }
 
+  String? _errText(AppLocalizations l) => switch (_errKind) {
+        _ImpErrKind.none => null,
+        _ImpErrKind.badWordCount => l.iwErrorBadWordCount,
+        _ImpErrKind.badChecksum => l.iwErrorBip39Checksum,
+        _ImpErrKind.pwTooShort => l.iwErrorAppPasswordTooShort,
+        _ImpErrKind.pwMismatch => l.cwPasswordsDontMatch,
+        _ImpErrKind.other => _errOther,
+      };
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final err = _errText(l);
     return Scaffold(
-      appBar: AppBar(title: const Text('Import wallet')),
+      appBar: AppBar(title: Text(l.iwScreenTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Paste your existing BIP39 recovery phrase (12 or 24 words). Same format as vault-wallet.',
-                style: TextStyle(color: PeekColors.text2, fontSize: 13),
+              Text(
+                l.iwIntro,
+                style: const TextStyle(color: PeekColors.text2, fontSize: 13),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -87,9 +106,9 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
                 maxLines: 5,
                 autocorrect: false,
                 textCapitalization: TextCapitalization.none,
-                decoration: const InputDecoration(
-                  labelText: 'Recovery phrase',
-                  hintText: 'word1 word2 word3 ...',
+                decoration: InputDecoration(
+                  labelText: l.iwRecoveryPhraseLabel,
+                  hintText: l.iwPhraseHint,
                 ),
               ),
               const SizedBox(height: 16),
@@ -98,31 +117,31 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
                 obscureText: true,
                 autocorrect: false,
                 textCapitalization: TextCapitalization.none,
-                decoration: const InputDecoration(
-                  labelText: 'BIP39 passphrase (25th word) — optional',
-                  hintText: 'Leave blank if you did not set one',
+                decoration: InputDecoration(
+                  labelText: l.iwPassphraseOptionalLabel,
+                  hintText: l.iwPassphraseHintBlank,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'If you used a BIP39 passphrase in vault-wallet (or another wallet) you MUST enter it here — without it the imported addresses won\'t match and balances appear as zero.',
-                style: TextStyle(color: PeekColors.text3, fontSize: 11),
+              Text(
+                l.iwPassphraseWarning,
+                style: const TextStyle(color: PeekColors.text3, fontSize: 11),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _p1,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'App password (min 8 characters)'),
+                decoration: InputDecoration(labelText: l.iwAppPasswordMinLabel),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _p2,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Confirm app password'),
+                decoration: InputDecoration(labelText: l.iwConfirmAppPasswordLabel),
               ),
-              if (_err != null) ...[
+              if (err != null) ...[
                 const SizedBox(height: 10),
-                Text(_err!, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
+                Text(err, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
               ],
               const SizedBox(height: 20),
               ElevatedButton(
@@ -132,7 +151,7 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
                         width: 18, height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Import wallet'),
+                    : Text(l.iwImportAction),
               ),
             ],
           ),

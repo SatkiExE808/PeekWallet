@@ -52,6 +52,8 @@ class _TronCoinScreenState extends State<TronCoinScreen>
   List<Trc20Transfer> _tokenTxes = const [];
   bool _refreshing = false;
 
+  String get _coinName => 'Tron';
+
   @override
   Duration get pollInterval => const Duration(seconds: 30);
 
@@ -259,7 +261,7 @@ class _TronCoinScreenState extends State<TronCoinScreen>
     final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tron'),
+        title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

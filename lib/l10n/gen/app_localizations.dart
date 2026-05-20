@@ -2607,6 +2607,576 @@ abstract class AppLocalizations {
   /// **'The on-chain wallet is not affected — anyone with the seed can still restore it later. Only this device\'s record is removed.'**
   String get walletMenuDeleteBody;
 
+  /// No description provided for @cwSeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase'**
+  String get cwSeedTitle;
+
+  /// No description provided for @cwConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm phrase'**
+  String get cwConfirmTitle;
+
+  /// No description provided for @cwPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set password'**
+  String get cwPasswordTitle;
+
+  /// No description provided for @cwSeedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Write these 12 words down on paper and store them safely. Anyone with the phrase can take your funds. Never type it on a website.'**
+  String get cwSeedWarning;
+
+  /// No description provided for @cwIveWrittenItDown.
+  ///
+  /// In en, this message translates to:
+  /// **'I have written it down'**
+  String get cwIveWrittenItDown;
+
+  /// No description provided for @cwConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the requested words to confirm you saved the phrase.'**
+  String get cwConfirmBody;
+
+  /// No description provided for @cwWordPlaceholderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowercase, no spaces'**
+  String get cwWordPlaceholderHint;
+
+  /// No description provided for @cwWordNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Word #{n}'**
+  String cwWordNumberLabel(int n);
+
+  /// No description provided for @cwPasswordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This password encrypts your wallet on this device. You will need it every time you unlock.'**
+  String get cwPasswordBody;
+
+  /// No description provided for @cwPasswordMinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password (min 8 characters)'**
+  String get cwPasswordMinLabel;
+
+  /// No description provided for @cwConfirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get cwConfirmPasswordLabel;
+
+  /// No description provided for @cwPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters.'**
+  String get cwPasswordTooShort;
+
+  /// No description provided for @cwPasswordsDontMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match.'**
+  String get cwPasswordsDontMatch;
+
+  /// No description provided for @cwCreateWalletAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create wallet'**
+  String get cwCreateWalletAction;
+
+  /// No description provided for @cwCopyPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy phrase'**
+  String get cwCopyPhrase;
+
+  /// No description provided for @cwCopiedClipboardAutoClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied — clipboard auto-clears in 30 s'**
+  String get cwCopiedClipboardAutoClear;
+
+  /// No description provided for @iwScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import wallet'**
+  String get iwScreenTitle;
+
+  /// No description provided for @iwIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste your existing BIP39 recovery phrase (12 or 24 words). Same format as vault-wallet.'**
+  String get iwIntro;
+
+  /// No description provided for @iwRecoveryPhraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase'**
+  String get iwRecoveryPhraseLabel;
+
+  /// No description provided for @iwPhraseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'word1 word2 word3 ...'**
+  String get iwPhraseHint;
+
+  /// No description provided for @iwPassphraseOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BIP39 passphrase (25th word) — optional'**
+  String get iwPassphraseOptionalLabel;
+
+  /// No description provided for @iwPassphraseHintBlank.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank if you did not set one'**
+  String get iwPassphraseHintBlank;
+
+  /// No description provided for @iwPassphraseWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'If you used a BIP39 passphrase in vault-wallet (or another wallet) you MUST enter it here — without it the imported addresses won\'t match and balances appear as zero.'**
+  String get iwPassphraseWarning;
+
+  /// No description provided for @iwAppPasswordMinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App password (min 8 characters)'**
+  String get iwAppPasswordMinLabel;
+
+  /// No description provided for @iwConfirmAppPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm app password'**
+  String get iwConfirmAppPasswordLabel;
+
+  /// No description provided for @iwErrorBadWordCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your 12 or 24-word recovery phrase.'**
+  String get iwErrorBadWordCount;
+
+  /// No description provided for @iwErrorBip39Checksum.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid recovery phrase (BIP39 checksum failed).'**
+  String get iwErrorBip39Checksum;
+
+  /// No description provided for @iwErrorAppPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'App password must be at least 8 characters.'**
+  String get iwErrorAppPasswordTooShort;
+
+  /// No description provided for @iwImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import wallet'**
+  String get iwImportAction;
+
+  /// No description provided for @xmrScreenUnlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock wallet'**
+  String get xmrScreenUnlockTitle;
+
+  /// No description provided for @xmrScreenUnlockAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get xmrScreenUnlockAction;
+
+  /// No description provided for @xmrScreenErrLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet is locked'**
+  String get xmrScreenErrLocked;
+
+  /// No description provided for @xmrScreenErrAddressDerivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Address derivation failed: {error}'**
+  String xmrScreenErrAddressDerivation(String error);
+
+  /// No description provided for @xmrScreenErrVaultLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault locked — wallet password unavailable'**
+  String get xmrScreenErrVaultLocked;
+
+  /// No description provided for @xmrScreenErrPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password required to open this wallet'**
+  String get xmrScreenErrPasswordRequired;
+
+  /// No description provided for @xmrScreenErrCouldNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open wallet: {error}'**
+  String xmrScreenErrCouldNotOpen(String error);
+
+  /// No description provided for @xmrScreenErrUnknownCoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown coin: {coin}'**
+  String xmrScreenErrUnknownCoin(String coin);
+
+  /// No description provided for @xmrScreenBootStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Boot: {stage}'**
+  String xmrScreenBootStage(String stage);
+
+  /// No description provided for @xmrScreenConnectingDaemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to daemon…'**
+  String get xmrScreenConnectingDaemon;
+
+  /// No description provided for @xmrScreenSyncingPct.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing {pct}%'**
+  String xmrScreenSyncingPct(int pct);
+
+  /// No description provided for @xmrScreenSyncedAtHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced · height {h}'**
+  String xmrScreenSyncedAtHeight(String h);
+
+  /// No description provided for @xmrScreenSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced'**
+  String get xmrScreenSynced;
+
+  /// No description provided for @xmrScreenDaemonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon: {error}'**
+  String xmrScreenDaemonError(String error);
+
+  /// No description provided for @xmrScreenEngineError.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine: {error}'**
+  String xmrScreenEngineError(String error);
+
+  /// No description provided for @xmrScreenBootingWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Booting wallet…'**
+  String get xmrScreenBootingWallet;
+
+  /// No description provided for @xmrScreenResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset wallet file?'**
+  String get xmrScreenResetTitle;
+
+  /// No description provided for @xmrScreenResetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes the on-disk wallet file and recreates it from your stored seed. The chain-sync cache is lost so the wallet will need to rescan from your restore height (could take a while). Your seed is NOT touched — funds are safe.\n\nUse this if you\'re stuck with a persistent \"invalid password\" error.'**
+  String get xmrScreenResetBody;
+
+  /// No description provided for @xmrScreenResetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset & rescan'**
+  String get xmrScreenResetAction;
+
+  /// No description provided for @xmrScreenResetAndRescanFromSeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset & rescan from seed'**
+  String get xmrScreenResetAndRescanFromSeed;
+
+  /// No description provided for @xmrScreenActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get xmrScreenActivity;
+
+  /// No description provided for @xmrScreenWalletStillSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet is still syncing — newer activity will appear once we catch up to the chain tip.'**
+  String get xmrScreenWalletStillSyncing;
+
+  /// No description provided for @xmrScreenAddressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied'**
+  String get xmrScreenAddressCopied;
+
+  /// No description provided for @xmrScreenCopyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy address'**
+  String get xmrScreenCopyAddress;
+
+  /// No description provided for @xmrScreenTxStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get xmrScreenTxStatusFailed;
+
+  /// No description provided for @xmrScreenTxStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get xmrScreenTxStatusPending;
+
+  /// No description provided for @xmrScreenTxStatusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get xmrScreenTxStatusConfirmed;
+
+  /// No description provided for @xmrScreenDirIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get xmrScreenDirIncoming;
+
+  /// No description provided for @xmrScreenDirOutgoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing'**
+  String get xmrScreenDirOutgoing;
+
+  /// No description provided for @xmrScreenTxAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get xmrScreenTxAmount;
+
+  /// No description provided for @xmrScreenTxFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee'**
+  String get xmrScreenTxFee;
+
+  /// No description provided for @xmrScreenTxDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get xmrScreenTxDate;
+
+  /// No description provided for @xmrScreenTxBlockHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Block height'**
+  String get xmrScreenTxBlockHeight;
+
+  /// No description provided for @xmrScreenTxConfirmations.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmations'**
+  String get xmrScreenTxConfirmations;
+
+  /// No description provided for @xmrScreenTxStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get xmrScreenTxStatus;
+
+  /// No description provided for @xmrScreenTxPaymentId.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment ID'**
+  String get xmrScreenTxPaymentId;
+
+  /// No description provided for @xmrScreenTxNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get xmrScreenTxNote;
+
+  /// No description provided for @xmrScreenTxAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get xmrScreenTxAdd;
+
+  /// No description provided for @xmrScreenTxEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get xmrScreenTxEdit;
+
+  /// No description provided for @xmrScreenTxId.
+  ///
+  /// In en, this message translates to:
+  /// **'TX ID'**
+  String get xmrScreenTxId;
+
+  /// No description provided for @xmrScreenTxIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'TX ID copied'**
+  String get xmrScreenTxIdCopied;
+
+  /// No description provided for @xmrScreenCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get xmrScreenCopy;
+
+  /// No description provided for @xmrScreenExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Explorer'**
+  String get xmrScreenExplorer;
+
+  /// No description provided for @xmrScreenCouldNotOpenBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open browser'**
+  String get xmrScreenCouldNotOpenBrowser;
+
+  /// No description provided for @xmrScreenTxNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction note'**
+  String get xmrScreenTxNoteTitle;
+
+  /// No description provided for @xmrScreenTxNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Free-text — only you can read this.'**
+  String get xmrScreenTxNoteHint;
+
+  /// No description provided for @xmrScreenClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get xmrScreenClear;
+
+  /// No description provided for @xmrScreenNoteSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Note saved'**
+  String get xmrScreenNoteSaved;
+
+  /// No description provided for @xmrScreenNoteCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Note cleared'**
+  String get xmrScreenNoteCleared;
+
+  /// No description provided for @xmrScreenCouldNotSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save note: {error}'**
+  String xmrScreenCouldNotSaveNote(String error);
+
+  /// No description provided for @xmrScreenLabelPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get xmrScreenLabelPrimary;
+
+  /// No description provided for @xmrScreenLabelSubaddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Label subaddress #{index}'**
+  String xmrScreenLabelSubaddress(int index);
+
+  /// No description provided for @xmrScreenCouldNotSaveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save label: {error}'**
+  String xmrScreenCouldNotSaveLabel(String error);
+
+  /// No description provided for @xmrScreenReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive XMR'**
+  String get xmrScreenReceiveTitle;
+
+  /// No description provided for @xmrScreenSubaddrUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Subaddresses unavailable until the wallet finishes booting.'**
+  String get xmrScreenSubaddrUnavailable;
+
+  /// No description provided for @xmrScreenSubaddrSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subaddresses'**
+  String get xmrScreenSubaddrSectionTitle;
+
+  /// No description provided for @xmrScreenSubaddrNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get xmrScreenSubaddrNew;
+
+  /// No description provided for @xmrScreenSubaddrBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a fresh address per payer so observers can\'t link two payments to the same wallet. All point to the same balance.'**
+  String get xmrScreenSubaddrBody;
+
+  /// No description provided for @xmrScreenEditLabelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit label'**
+  String get xmrScreenEditLabelTooltip;
+
+  /// No description provided for @xmrScreenAppPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App password'**
+  String get xmrScreenAppPasswordLabel;
+
+  /// No description provided for @xmrScreenSyncingPctBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing {pct}% · {behind} blocks behind'**
+  String xmrScreenSyncingPctBehind(int pct, int behind);
+
+  /// No description provided for @xmrScreenConfirmationsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} conf'**
+  String xmrScreenConfirmationsShort(int n);
+
+  /// No description provided for @xmrScreenNoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'— No note —'**
+  String get xmrScreenNoNote;
+
+  /// No description provided for @xmrScreenSubaddrLabelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. \"Customer payments\", \"Side gig\"'**
+  String get xmrScreenSubaddrLabelHint;
+
+  /// No description provided for @xmrScreenEngineLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Native monero_c engine loaded'**
+  String get xmrScreenEngineLoaded;
+
+  /// No description provided for @xmrScreenEngineNotLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'✗ Engine not loaded: {error}'**
+  String xmrScreenEngineNotLoaded(String error);
+
   /// No description provided for @erc20EmptyHint.
   ///
   /// In en, this message translates to:

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
@@ -25,6 +26,7 @@ class _CreateWalletScreenState extends State<CreateWalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     // Steps 0 (show seed) and 1 (confirm — user types words from
     // memory while screen still shows the input fields) are both
     // sensitive enough to warrant FLAG_SECURE. Step 2 (set password)
@@ -48,16 +50,16 @@ class _CreateWalletScreenState extends State<CreateWalletScreen> {
       ),
     );
     final scaffold = Scaffold(
-      appBar: AppBar(title: Text(_titleFor(_step))),
+      appBar: AppBar(title: Text(_titleFor(_step, l))),
       body: body,
     );
     return _step <= 1 ? ScreenshotGuard(child: scaffold) : scaffold;
   }
 
-  String _titleFor(int s) => switch (s) {
-        0 => 'Recovery phrase',
-        1 => 'Confirm phrase',
-        _ => 'Set password',
+  String _titleFor(int s, AppLocalizations l) => switch (s) {
+        0 => l.cwSeedTitle,
+        1 => l.cwConfirmTitle,
+        _ => l.cwPasswordTitle,
       };
 }
 
@@ -68,6 +70,7 @@ class _SeedDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final words = mnemonic.split(' ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,12 +97,10 @@ class _SeedDisplay extends StatelessWidget {
                     color: PeekColors.red, size: 18),
               ),
               const SizedBox(width: PeekDesign.sp3),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Write these 12 words down on paper and store them safely. '
-                  'Anyone with the phrase can take your funds. Never type it '
-                  'on a website.',
-                  style: TextStyle(
+                  l.cwSeedWarning,
+                  style: const TextStyle(
                       color: PeekColors.text, fontSize: 12, height: 1.4),
                 ),
               ),
@@ -147,16 +148,16 @@ class _SeedDisplay extends StatelessWidget {
             await SensitiveClipboard.copy(mnemonic, label: 'mnemonic');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Copied — clipboard auto-clears in 30 s')),
+              SnackBar(content: Text(l.cwCopiedClipboardAutoClear)),
             );
           },
           icon: const Icon(Icons.copy, size: 16),
-          label: const Text('Copy phrase'),
+          label: Text(l.cwCopyPhrase),
         ),
         const SizedBox(height: 8),
         ElevatedButton(
           onPressed: onContinue,
-          child: const Text('I have written it down'),
+          child: Text(l.cwIveWrittenItDown),
         ),
       ],
     );
@@ -197,13 +198,14 @@ class _ConfirmStepState extends State<_ConfirmStep> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final allCorrect = _quizIndices.every((i) => _answers[i]?.trim() == _words[i]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Type the requested words to confirm you saved the phrase.',
-          style: TextStyle(color: PeekColors.text2, fontSize: 13),
+          l.cwConfirmBody,
+          style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: 20),
         for (final i in _quizIndices)
@@ -211,8 +213,8 @@ class _ConfirmStepState extends State<_ConfirmStep> {
             padding: const EdgeInsets.only(bottom: 14),
             child: TextField(
               decoration: InputDecoration(
-                labelText: 'Word #${i + 1}',
-                hintText: 'Lowercase, no spaces',
+                labelText: l.cwWordNumberLabel(i + 1),
+                hintText: l.cwWordPlaceholderHint,
               ),
               autocorrect: false,
               textCapitalization: TextCapitalization.none,
@@ -225,14 +227,14 @@ class _ConfirmStepState extends State<_ConfirmStep> {
             Expanded(
               child: OutlinedButton(
                 onPressed: widget.onBack,
-                child: const Text('Back'),
+                child: Text(l.actionBack),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
                 onPressed: allCorrect ? widget.onConfirmed : null,
-                child: const Text('Continue'),
+                child: Text(l.actionContinue),
               ),
             ),
           ],
@@ -250,10 +252,13 @@ class _PasswordStep extends StatefulWidget {
   State<_PasswordStep> createState() => _PasswordStepState();
 }
 
+enum _PwErrKind { none, tooShort, dontMatch, other }
+
 class _PasswordStepState extends State<_PasswordStep> {
   final _p1 = TextEditingController();
   final _p2 = TextEditingController();
-  String? _err;
+  _PwErrKind _errKind = _PwErrKind.none;
+  String? _errOther;
   bool _busy = false;
 
   @override
@@ -264,14 +269,17 @@ class _PasswordStepState extends State<_PasswordStep> {
   }
 
   Future<void> _save() async {
-    setState(() => _err = null);
+    setState(() {
+      _errKind = _PwErrKind.none;
+      _errOther = null;
+    });
     final p = _p1.text;
     if (p.length < 8) {
-      setState(() => _err = 'Password must be at least 8 characters.');
+      setState(() => _errKind = _PwErrKind.tooShort);
       return;
     }
     if (p != _p2.text) {
-      setState(() => _err = "Passwords don't match.");
+      setState(() => _errKind = _PwErrKind.dontMatch);
       return;
     }
     setState(() => _busy = true);
@@ -283,36 +291,46 @@ class _PasswordStepState extends State<_PasswordStep> {
       Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (e) {
       setState(() {
-        _err = e.toString();
+        _errKind = _PwErrKind.other;
+        _errOther = e.toString();
         _busy = false;
       });
     }
   }
 
+  String? _errText(AppLocalizations l) => switch (_errKind) {
+        _PwErrKind.none => null,
+        _PwErrKind.tooShort => l.cwPasswordTooShort,
+        _PwErrKind.dontMatch => l.cwPasswordsDontMatch,
+        _PwErrKind.other => _errOther,
+      };
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final err = _errText(l);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'This password encrypts your wallet on this device. You will need it every time you unlock.',
-          style: TextStyle(color: PeekColors.text2, fontSize: 13),
+        Text(
+          l.cwPasswordBody,
+          style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _p1,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Password (min 8 characters)'),
+          decoration: InputDecoration(labelText: l.cwPasswordMinLabel),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _p2,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Confirm password'),
+          decoration: InputDecoration(labelText: l.cwConfirmPasswordLabel),
         ),
-        if (_err != null) ...[
+        if (err != null) ...[
           const SizedBox(height: 8),
-          Text(_err!, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
+          Text(err, style: const TextStyle(color: PeekColors.red, fontSize: 13)),
         ],
         const Spacer(),
         ElevatedButton(
@@ -322,7 +340,7 @@ class _PasswordStepState extends State<_PasswordStep> {
                   width: 18, height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Create wallet'),
+              : Text(l.cwCreateWalletAction),
         ),
       ],
     );

@@ -53,6 +53,8 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen>
   List<SolanaTokenTx> _tokenTxes = const [];
   bool _refreshing = false;
 
+  String get _coinName => 'Solana';
+
   @override
   Duration get pollInterval => const Duration(seconds: 30);
 
@@ -270,7 +272,7 @@ class _SolanaCoinScreenState extends State<SolanaCoinScreen>
     final displayErr = setupErrText ?? _err;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Solana'),
+        title: Text(_coinName),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

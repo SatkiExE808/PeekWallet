@@ -1447,6 +1447,337 @@ class AppLocalizationsEn extends AppLocalizations {
       'The on-chain wallet is not affected — anyone with the seed can still restore it later. Only this device\'s record is removed.';
 
   @override
+  String get cwSeedTitle => 'Recovery phrase';
+
+  @override
+  String get cwConfirmTitle => 'Confirm phrase';
+
+  @override
+  String get cwPasswordTitle => 'Set password';
+
+  @override
+  String get cwSeedWarning =>
+      'Write these 12 words down on paper and store them safely. Anyone with the phrase can take your funds. Never type it on a website.';
+
+  @override
+  String get cwIveWrittenItDown => 'I have written it down';
+
+  @override
+  String get cwConfirmBody =>
+      'Type the requested words to confirm you saved the phrase.';
+
+  @override
+  String get cwWordPlaceholderHint => 'Lowercase, no spaces';
+
+  @override
+  String cwWordNumberLabel(int n) {
+    return 'Word #$n';
+  }
+
+  @override
+  String get cwPasswordBody =>
+      'This password encrypts your wallet on this device. You will need it every time you unlock.';
+
+  @override
+  String get cwPasswordMinLabel => 'Password (min 8 characters)';
+
+  @override
+  String get cwConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get cwPasswordTooShort => 'Password must be at least 8 characters.';
+
+  @override
+  String get cwPasswordsDontMatch => 'Passwords don\'t match.';
+
+  @override
+  String get cwCreateWalletAction => 'Create wallet';
+
+  @override
+  String get cwCopyPhrase => 'Copy phrase';
+
+  @override
+  String get cwCopiedClipboardAutoClear =>
+      'Copied — clipboard auto-clears in 30 s';
+
+  @override
+  String get iwScreenTitle => 'Import wallet';
+
+  @override
+  String get iwIntro =>
+      'Paste your existing BIP39 recovery phrase (12 or 24 words). Same format as vault-wallet.';
+
+  @override
+  String get iwRecoveryPhraseLabel => 'Recovery phrase';
+
+  @override
+  String get iwPhraseHint => 'word1 word2 word3 ...';
+
+  @override
+  String get iwPassphraseOptionalLabel =>
+      'BIP39 passphrase (25th word) — optional';
+
+  @override
+  String get iwPassphraseHintBlank => 'Leave blank if you did not set one';
+
+  @override
+  String get iwPassphraseWarning =>
+      'If you used a BIP39 passphrase in vault-wallet (or another wallet) you MUST enter it here — without it the imported addresses won\'t match and balances appear as zero.';
+
+  @override
+  String get iwAppPasswordMinLabel => 'App password (min 8 characters)';
+
+  @override
+  String get iwConfirmAppPasswordLabel => 'Confirm app password';
+
+  @override
+  String get iwErrorBadWordCount => 'Enter your 12 or 24-word recovery phrase.';
+
+  @override
+  String get iwErrorBip39Checksum =>
+      'Invalid recovery phrase (BIP39 checksum failed).';
+
+  @override
+  String get iwErrorAppPasswordTooShort =>
+      'App password must be at least 8 characters.';
+
+  @override
+  String get iwImportAction => 'Import wallet';
+
+  @override
+  String get xmrScreenUnlockTitle => 'Unlock wallet';
+
+  @override
+  String get xmrScreenUnlockAction => 'Open';
+
+  @override
+  String get xmrScreenErrLocked => 'Wallet is locked';
+
+  @override
+  String xmrScreenErrAddressDerivation(String error) {
+    return 'Address derivation failed: $error';
+  }
+
+  @override
+  String get xmrScreenErrVaultLocked =>
+      'Vault locked — wallet password unavailable';
+
+  @override
+  String get xmrScreenErrPasswordRequired =>
+      'Password required to open this wallet';
+
+  @override
+  String xmrScreenErrCouldNotOpen(String error) {
+    return 'Could not open wallet: $error';
+  }
+
+  @override
+  String xmrScreenErrUnknownCoin(String coin) {
+    return 'Unknown coin: $coin';
+  }
+
+  @override
+  String xmrScreenBootStage(String stage) {
+    return 'Boot: $stage';
+  }
+
+  @override
+  String get xmrScreenConnectingDaemon => 'Connecting to daemon…';
+
+  @override
+  String xmrScreenSyncingPct(int pct) {
+    return 'Syncing $pct%';
+  }
+
+  @override
+  String xmrScreenSyncedAtHeight(String h) {
+    return 'Synced · height $h';
+  }
+
+  @override
+  String get xmrScreenSynced => 'Synced';
+
+  @override
+  String xmrScreenDaemonError(String error) {
+    return 'Daemon: $error';
+  }
+
+  @override
+  String xmrScreenEngineError(String error) {
+    return 'Engine: $error';
+  }
+
+  @override
+  String get xmrScreenBootingWallet => 'Booting wallet…';
+
+  @override
+  String get xmrScreenResetTitle => 'Reset wallet file?';
+
+  @override
+  String get xmrScreenResetBody =>
+      'This deletes the on-disk wallet file and recreates it from your stored seed. The chain-sync cache is lost so the wallet will need to rescan from your restore height (could take a while). Your seed is NOT touched — funds are safe.\n\nUse this if you\'re stuck with a persistent \"invalid password\" error.';
+
+  @override
+  String get xmrScreenResetAction => 'Reset & rescan';
+
+  @override
+  String get xmrScreenResetAndRescanFromSeed => 'Reset & rescan from seed';
+
+  @override
+  String get xmrScreenActivity => 'Activity';
+
+  @override
+  String get xmrScreenWalletStillSyncing =>
+      'Wallet is still syncing — newer activity will appear once we catch up to the chain tip.';
+
+  @override
+  String get xmrScreenAddressCopied => 'Address copied';
+
+  @override
+  String get xmrScreenCopyAddress => 'Copy address';
+
+  @override
+  String get xmrScreenTxStatusFailed => 'Failed';
+
+  @override
+  String get xmrScreenTxStatusPending => 'Pending';
+
+  @override
+  String get xmrScreenTxStatusConfirmed => 'Confirmed';
+
+  @override
+  String get xmrScreenDirIncoming => 'Incoming';
+
+  @override
+  String get xmrScreenDirOutgoing => 'Outgoing';
+
+  @override
+  String get xmrScreenTxAmount => 'Amount';
+
+  @override
+  String get xmrScreenTxFee => 'Fee';
+
+  @override
+  String get xmrScreenTxDate => 'Date';
+
+  @override
+  String get xmrScreenTxBlockHeight => 'Block height';
+
+  @override
+  String get xmrScreenTxConfirmations => 'Confirmations';
+
+  @override
+  String get xmrScreenTxStatus => 'Status';
+
+  @override
+  String get xmrScreenTxPaymentId => 'Payment ID';
+
+  @override
+  String get xmrScreenTxNote => 'Note';
+
+  @override
+  String get xmrScreenTxAdd => 'Add';
+
+  @override
+  String get xmrScreenTxEdit => 'Edit';
+
+  @override
+  String get xmrScreenTxId => 'TX ID';
+
+  @override
+  String get xmrScreenTxIdCopied => 'TX ID copied';
+
+  @override
+  String get xmrScreenCopy => 'Copy';
+
+  @override
+  String get xmrScreenExplorer => 'Explorer';
+
+  @override
+  String get xmrScreenCouldNotOpenBrowser => 'Could not open browser';
+
+  @override
+  String get xmrScreenTxNoteTitle => 'Transaction note';
+
+  @override
+  String get xmrScreenTxNoteHint => 'Free-text — only you can read this.';
+
+  @override
+  String get xmrScreenClear => 'Clear';
+
+  @override
+  String get xmrScreenNoteSaved => 'Note saved';
+
+  @override
+  String get xmrScreenNoteCleared => 'Note cleared';
+
+  @override
+  String xmrScreenCouldNotSaveNote(String error) {
+    return 'Could not save note: $error';
+  }
+
+  @override
+  String get xmrScreenLabelPrimary => 'Primary';
+
+  @override
+  String xmrScreenLabelSubaddress(int index) {
+    return 'Label subaddress #$index';
+  }
+
+  @override
+  String xmrScreenCouldNotSaveLabel(String error) {
+    return 'Could not save label: $error';
+  }
+
+  @override
+  String get xmrScreenReceiveTitle => 'Receive XMR';
+
+  @override
+  String get xmrScreenSubaddrUnavailable =>
+      'Subaddresses unavailable until the wallet finishes booting.';
+
+  @override
+  String get xmrScreenSubaddrSectionTitle => 'Subaddresses';
+
+  @override
+  String get xmrScreenSubaddrNew => 'New';
+
+  @override
+  String get xmrScreenSubaddrBody =>
+      'Generate a fresh address per payer so observers can\'t link two payments to the same wallet. All point to the same balance.';
+
+  @override
+  String get xmrScreenEditLabelTooltip => 'Edit label';
+
+  @override
+  String get xmrScreenAppPasswordLabel => 'App password';
+
+  @override
+  String xmrScreenSyncingPctBehind(int pct, int behind) {
+    return 'Syncing $pct% · $behind blocks behind';
+  }
+
+  @override
+  String xmrScreenConfirmationsShort(int n) {
+    return '$n conf';
+  }
+
+  @override
+  String get xmrScreenNoNote => '— No note —';
+
+  @override
+  String get xmrScreenSubaddrLabelHint =>
+      'e.g. \"Customer payments\", \"Side gig\"';
+
+  @override
+  String get xmrScreenEngineLoaded => '✓ Native monero_c engine loaded';
+
+  @override
+  String xmrScreenEngineNotLoaded(String error) {
+    return '✗ Engine not loaded: $error';
+  }
+
+  @override
   String get erc20EmptyHint =>
       'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
 

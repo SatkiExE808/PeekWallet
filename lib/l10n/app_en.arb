@@ -709,6 +709,180 @@
   },
   "walletMenuDeleteBody": "The on-chain wallet is not affected — anyone with the seed can still restore it later. Only this device's record is removed.",
 
+  "cwSeedTitle": "Recovery phrase",
+  "cwConfirmTitle": "Confirm phrase",
+  "cwPasswordTitle": "Set password",
+  "cwSeedWarning": "Write these 12 words down on paper and store them safely. Anyone with the phrase can take your funds. Never type it on a website.",
+  "cwIveWrittenItDown": "I have written it down",
+  "cwConfirmBody": "Type the requested words to confirm you saved the phrase.",
+  "cwWordPlaceholderHint": "Lowercase, no spaces",
+  "cwWordNumberLabel": "Word #{n}",
+  "@cwWordNumberLabel": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "cwPasswordBody": "This password encrypts your wallet on this device. You will need it every time you unlock.",
+  "cwPasswordMinLabel": "Password (min 8 characters)",
+  "cwConfirmPasswordLabel": "Confirm password",
+  "cwPasswordTooShort": "Password must be at least 8 characters.",
+  "cwPasswordsDontMatch": "Passwords don't match.",
+  "cwCreateWalletAction": "Create wallet",
+  "cwCopyPhrase": "Copy phrase",
+  "cwCopiedClipboardAutoClear": "Copied — clipboard auto-clears in 30 s",
+
+  "iwScreenTitle": "Import wallet",
+  "iwIntro": "Paste your existing BIP39 recovery phrase (12 or 24 words). Same format as vault-wallet.",
+  "iwRecoveryPhraseLabel": "Recovery phrase",
+  "iwPhraseHint": "word1 word2 word3 ...",
+  "iwPassphraseOptionalLabel": "BIP39 passphrase (25th word) — optional",
+  "iwPassphraseHintBlank": "Leave blank if you did not set one",
+  "iwPassphraseWarning": "If you used a BIP39 passphrase in vault-wallet (or another wallet) you MUST enter it here — without it the imported addresses won't match and balances appear as zero.",
+  "iwAppPasswordMinLabel": "App password (min 8 characters)",
+  "iwConfirmAppPasswordLabel": "Confirm app password",
+  "iwErrorBadWordCount": "Enter your 12 or 24-word recovery phrase.",
+  "iwErrorBip39Checksum": "Invalid recovery phrase (BIP39 checksum failed).",
+  "iwErrorAppPasswordTooShort": "App password must be at least 8 characters.",
+  "iwImportAction": "Import wallet",
+
+  "xmrScreenUnlockTitle": "Unlock wallet",
+  "xmrScreenUnlockAction": "Open",
+  "xmrScreenErrLocked": "Wallet is locked",
+  "xmrScreenErrAddressDerivation": "Address derivation failed: {error}",
+  "@xmrScreenErrAddressDerivation": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "xmrScreenErrVaultLocked": "Vault locked — wallet password unavailable",
+  "xmrScreenErrPasswordRequired": "Password required to open this wallet",
+  "xmrScreenErrCouldNotOpen": "Could not open wallet: {error}",
+  "@xmrScreenErrCouldNotOpen": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "xmrScreenErrUnknownCoin": "Unknown coin: {coin}",
+  "@xmrScreenErrUnknownCoin": {
+    "placeholders": {
+      "coin": {"type": "String"}
+    }
+  },
+  "xmrScreenBootStage": "Boot: {stage}",
+  "@xmrScreenBootStage": {
+    "placeholders": {
+      "stage": {"type": "String"}
+    }
+  },
+  "xmrScreenConnectingDaemon": "Connecting to daemon…",
+  "xmrScreenSyncingPct": "Syncing {pct}%",
+  "@xmrScreenSyncingPct": {
+    "placeholders": {
+      "pct": {"type": "int"}
+    }
+  },
+  "xmrScreenSyncedAtHeight": "Synced · height {h}",
+  "@xmrScreenSyncedAtHeight": {
+    "placeholders": {
+      "h": {"type": "String"}
+    }
+  },
+  "xmrScreenSynced": "Synced",
+  "xmrScreenDaemonError": "Daemon: {error}",
+  "@xmrScreenDaemonError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "xmrScreenEngineError": "Engine: {error}",
+  "@xmrScreenEngineError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "xmrScreenBootingWallet": "Booting wallet…",
+  "xmrScreenResetTitle": "Reset wallet file?",
+  "xmrScreenResetBody": "This deletes the on-disk wallet file and recreates it from your stored seed. The chain-sync cache is lost so the wallet will need to rescan from your restore height (could take a while). Your seed is NOT touched — funds are safe.\n\nUse this if you're stuck with a persistent \"invalid password\" error.",
+  "xmrScreenResetAction": "Reset & rescan",
+  "xmrScreenResetAndRescanFromSeed": "Reset & rescan from seed",
+  "xmrScreenActivity": "Activity",
+  "xmrScreenWalletStillSyncing": "Wallet is still syncing — newer activity will appear once we catch up to the chain tip.",
+  "xmrScreenAddressCopied": "Address copied",
+  "xmrScreenCopyAddress": "Copy address",
+  "xmrScreenTxStatusFailed": "Failed",
+  "xmrScreenTxStatusPending": "Pending",
+  "xmrScreenTxStatusConfirmed": "Confirmed",
+  "xmrScreenDirIncoming": "Incoming",
+  "xmrScreenDirOutgoing": "Outgoing",
+  "xmrScreenTxAmount": "Amount",
+  "xmrScreenTxFee": "Fee",
+  "xmrScreenTxDate": "Date",
+  "xmrScreenTxBlockHeight": "Block height",
+  "xmrScreenTxConfirmations": "Confirmations",
+  "xmrScreenTxStatus": "Status",
+  "xmrScreenTxPaymentId": "Payment ID",
+  "xmrScreenTxNote": "Note",
+  "xmrScreenTxAdd": "Add",
+  "xmrScreenTxEdit": "Edit",
+  "xmrScreenTxId": "TX ID",
+  "xmrScreenTxIdCopied": "TX ID copied",
+  "xmrScreenCopy": "Copy",
+  "xmrScreenExplorer": "Explorer",
+  "xmrScreenCouldNotOpenBrowser": "Could not open browser",
+  "xmrScreenTxNoteTitle": "Transaction note",
+  "xmrScreenTxNoteHint": "Free-text — only you can read this.",
+  "xmrScreenClear": "Clear",
+  "xmrScreenNoteSaved": "Note saved",
+  "xmrScreenNoteCleared": "Note cleared",
+  "xmrScreenCouldNotSaveNote": "Could not save note: {error}",
+  "@xmrScreenCouldNotSaveNote": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "xmrScreenLabelPrimary": "Primary",
+  "xmrScreenLabelSubaddress": "Label subaddress #{index}",
+  "@xmrScreenLabelSubaddress": {
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "xmrScreenCouldNotSaveLabel": "Could not save label: {error}",
+  "@xmrScreenCouldNotSaveLabel": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "xmrScreenReceiveTitle": "Receive XMR",
+  "xmrScreenSubaddrUnavailable": "Subaddresses unavailable until the wallet finishes booting.",
+  "xmrScreenSubaddrSectionTitle": "Subaddresses",
+  "xmrScreenSubaddrNew": "New",
+  "xmrScreenSubaddrBody": "Generate a fresh address per payer so observers can't link two payments to the same wallet. All point to the same balance.",
+  "xmrScreenEditLabelTooltip": "Edit label",
+  "xmrScreenAppPasswordLabel": "App password",
+  "xmrScreenSyncingPctBehind": "Syncing {pct}% · {behind} blocks behind",
+  "@xmrScreenSyncingPctBehind": {
+    "placeholders": {
+      "pct": {"type": "int"},
+      "behind": {"type": "int"}
+    }
+  },
+  "xmrScreenConfirmationsShort": "{n} conf",
+  "@xmrScreenConfirmationsShort": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "xmrScreenNoNote": "— No note —",
+  "xmrScreenSubaddrLabelHint": "e.g. \"Customer payments\", \"Side gig\"",
+  "xmrScreenEngineLoaded": "✓ Native monero_c engine loaded",
+  "xmrScreenEngineNotLoaded": "✗ Engine not loaded: {error}",
+  "@xmrScreenEngineNotLoaded": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
   "erc20EmptyHint": "No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.",
   "ercAddCustomTitle": "Add custom ERC-20 token",
   "ercAddCustomBody": "Paste the token's contract address. We'll fetch its symbol and decimals from the chain.",

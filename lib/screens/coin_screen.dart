@@ -10,6 +10,7 @@ import '../coins/coin.dart';
 import '../coins/module_registry.dart';
 import '../coins/monero/monero_engine.dart';
 import '../coins/monero/monero_wallet.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prefs/prefs.dart';
 import '../prices/price_feed.dart';
 import '../util/explorer_links.dart';
@@ -22,6 +23,21 @@ import '../wallets/wallet_meta.dart';
 import '../wallets/wallet_store.dart';
 import '../widgets/coin_screen_widgets.dart';
 import 'send_xmr_screen.dart';
+
+/// Kinds of one-shot errors we surface in the red banner near the top.
+enum _XmrLoadError { none, locked, addressDerivation }
+
+/// Kinds of engine/daemon errors shown as `Engine: …` status pills.
+/// `raw` carries through native engine messages (engine.error,
+/// MoneroSession.lastError) which we don't translate.
+enum _XmrEngineError {
+  none,
+  vaultLocked,
+  passwordRequired,
+  couldNotOpen,
+  unknownCoin,
+  raw,
+}
 
 /// Coin detail page. For Monero, shows the live native-engine balance
 /// + sync progress; other coins still show placeholder text until
@@ -48,7 +64,8 @@ class CoinScreen extends StatefulWidget {
 
 class _CoinScreenState extends State<CoinScreen> {
   String? _address;
-  String? _error;
+  _XmrLoadError _loadErr = _XmrLoadError.none;
+  String? _loadErrDetail;
 
   /// 1s poll of MoneroSession for balance + sync %. Cheap enough — the
   /// FFI calls are non-blocking reads of cached native state.
@@ -60,9 +77,28 @@ class _CoinScreenState extends State<CoinScreen> {
   bool _daemonConnected = false;
   bool _isSynced = false;
   String? _daemonError;
-  String? _engineError;
+  _XmrEngineError _engineErr = _XmrEngineError.none;
+  String? _engineErrDetail;
   List<MoneroTx> _transactions = const [];
   MoneroWallet? _moneroWallet;
+
+  String? _engineErrText(AppLocalizations l) => switch (_engineErr) {
+        _XmrEngineError.none => null,
+        _XmrEngineError.vaultLocked => l.xmrScreenErrVaultLocked,
+        _XmrEngineError.passwordRequired => l.xmrScreenErrPasswordRequired,
+        _XmrEngineError.couldNotOpen =>
+          l.xmrScreenErrCouldNotOpen(_engineErrDetail ?? ''),
+        _XmrEngineError.unknownCoin =>
+          l.xmrScreenErrUnknownCoin(_engineErrDetail ?? ''),
+        _XmrEngineError.raw => _engineErrDetail,
+      };
+
+  String? _loadErrText(AppLocalizations l) => switch (_loadErr) {
+        _XmrLoadError.none => null,
+        _XmrLoadError.locked => l.xmrScreenErrLocked,
+        _XmrLoadError.addressDerivation =>
+          l.xmrScreenErrAddressDerivation(_loadErrDetail ?? ''),
+      };
 
   /// Subscription on VaultState — bails out of any in-flight poll if
   /// the wallet locks while this screen is alive (IndexedStack keeps
@@ -117,7 +153,10 @@ class _CoinScreenState extends State<CoinScreen> {
       if (widget.walletMeta!.coinId == 'XMR' && moneroNativeAvailable()) {
         final engine = MoneroEngine.I.status();
         if (!engine.loaded) {
-          setState(() => _engineError = engine.error);
+          setState(() {
+            _engineErr = _XmrEngineError.raw;
+            _engineErrDetail = engine.error;
+          });
           return;
         }
         await _bootMoneroFromMeta(widget.walletMeta!);
@@ -128,20 +167,26 @@ class _CoinScreenState extends State<CoinScreen> {
     // Legacy single-wallet mode (vault-wallet-style unified seed).
     final mn = VaultState.I.mnemonic;
     if (mn == null) {
-      setState(() => _error = 'Wallet is locked');
+      setState(() => _loadErr = _XmrLoadError.locked);
       return;
     }
     try {
       final a = await widget.coin.deriveAddress(mn);
       setState(() => _address = a);
     } catch (e) {
-      setState(() => _error = 'Address derivation failed: $e');
+      setState(() {
+        _loadErr = _XmrLoadError.addressDerivation;
+        _loadErrDetail = e.toString();
+      });
     }
 
     if (widget.coin.id == 'XMR' && moneroNativeAvailable()) {
       final engine = MoneroEngine.I.status();
       if (!engine.loaded) {
-        setState(() => _engineError = engine.error);
+        setState(() {
+          _engineErr = _XmrEngineError.raw;
+          _engineErrDetail = engine.error;
+        });
         return;
       }
       await _bootMonero(mn);
@@ -157,7 +202,7 @@ class _CoinScreenState extends State<CoinScreen> {
     final walletFilePassword = VaultState.I.walletFilePassword;
     if (walletFilePassword == null) {
       stageTicker.cancel();
-      setState(() => _engineError = 'Vault locked — wallet password unavailable');
+      setState(() => _engineErr = _XmrEngineError.vaultLocked);
       return;
     }
 
@@ -171,7 +216,7 @@ class _CoinScreenState extends State<CoinScreen> {
       password = await _promptPasswordOnce(context);
       if (password == null) {
         stageTicker.cancel();
-        setState(() => _engineError = 'Password required to open this wallet');
+        setState(() => _engineErr = _XmrEngineError.passwordRequired);
         return;
       }
     }
@@ -184,14 +229,20 @@ class _CoinScreenState extends State<CoinScreen> {
       );
     } catch (e) {
       stageTicker.cancel();
-      setState(() => _engineError = 'Could not open wallet: $e');
+      setState(() {
+        _engineErr = _XmrEngineError.couldNotOpen;
+        _engineErrDetail = e.toString();
+      });
       return;
     }
 
     final coin = coinModuleFor(meta.coinId);
     if (coin == null) {
       stageTicker.cancel();
-      setState(() => _engineError = 'Unknown coin: ${meta.coinId}');
+      setState(() {
+        _engineErr = _XmrEngineError.unknownCoin;
+        _engineErrDetail = meta.coinId;
+      });
       return;
     }
 
@@ -214,8 +265,10 @@ class _CoinScreenState extends State<CoinScreen> {
     );
     stageTicker.cancel();
     if (w == null) {
-      setState(() =>
-          _engineError = MoneroSession.I.lastErrorFor(meta.id) ?? 'unknown');
+      setState(() {
+        _engineErr = _XmrEngineError.raw;
+        _engineErrDetail = MoneroSession.I.lastErrorFor(meta.id) ?? 'unknown';
+      });
       return;
     }
     _moneroWallet = w;
@@ -247,25 +300,26 @@ class _CoinScreenState extends State<CoinScreen> {
   }
 
   Future<String?> _promptPasswordOnce(BuildContext context) async {
+    final l = AppLocalizations.of(context);
     final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Unlock wallet'),
+        title: Text(l.xmrScreenUnlockTitle),
         content: TextField(
           controller: controller,
           obscureText: true,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'App password'),
+          decoration: InputDecoration(labelText: l.xmrScreenAppPasswordLabel),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: const Text('Open'),
+            child: Text(l.xmrScreenUnlockAction),
           ),
         ],
       ),
@@ -295,7 +349,7 @@ class _CoinScreenState extends State<CoinScreen> {
       // before bailing or it keeps repainting forever (battery +
       // mutates state on a disposed screen).
       stageTicker.cancel();
-      setState(() => _engineError = 'Vault locked — wallet password unavailable');
+      setState(() => _engineErr = _XmrEngineError.vaultLocked);
       return;
     }
     final daemonUri =
@@ -309,7 +363,10 @@ class _CoinScreenState extends State<CoinScreen> {
     );
     stageTicker.cancel();
     if (w == null) {
-      setState(() => _engineError = MoneroSession.I.lastError ?? 'unknown');
+      setState(() {
+        _engineErr = _XmrEngineError.raw;
+        _engineErrDetail = MoneroSession.I.lastError ?? 'unknown';
+      });
       return;
     }
     _moneroWallet = w;
@@ -379,19 +436,19 @@ class _CoinScreenState extends State<CoinScreen> {
     ));
   }
 
-  String _balanceText() {
+  String _balanceText(AppLocalizations l) {
     if (widget.coin.id != 'XMR') return '… ${widget.coin.symbol}';
-    if (_engineError != null) return '… ${widget.coin.symbol}';
+    if (_engineErr != _XmrEngineError.none) return '… ${widget.coin.symbol}';
     if (_balanceXmr == null) {
       final s = MoneroSession.I.stage;
-      return s == null ? '… ${widget.coin.symbol}' : 'Boot: $s';
+      return s == null ? '… ${widget.coin.symbol}' : l.xmrScreenBootStage(s);
     }
-    if (!_daemonConnected) return 'Connecting to daemon…';
+    if (!_daemonConnected) return l.xmrScreenConnectingDaemon;
     // monero_c's Wallet_synchronized is the authoritative "done" flag.
     // We can't rely on syncProgressPct alone — the daemon's tip keeps
     // advancing while we scan, so the ratio asymptotes at 99-something
     // forever. isSynced flips once the wallet decides it's caught up.
-    if (!_isSynced) return 'Syncing ${_syncPct ?? 0}%';
+    if (!_isSynced) return l.xmrScreenSyncingPct(_syncPct ?? 0);
     return '${_balanceXmr!.toStringAsFixed(9)} ${widget.coin.symbol}';
   }
 
@@ -403,22 +460,16 @@ class _CoinScreenState extends State<CoinScreen> {
   Future<void> _resetWalletAndRetry() async {
     final meta = widget.walletMeta;
     if (meta == null) return;
+    final l = AppLocalizations.of(context);
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reset wallet file?'),
-        content: const Text(
-          'This deletes the on-disk wallet file and recreates it from '
-          'your stored seed. The chain-sync cache is lost so the wallet '
-          'will need to rescan from your restore height (could take a '
-          'while). Your seed is NOT touched — funds are safe.\n\n'
-          'Use this if you\'re stuck with a persistent "invalid '
-          'password" error.',
-        ),
+        title: Text(l.xmrScreenResetTitle),
+        content: Text(l.xmrScreenResetBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -426,7 +477,7 @@ class _CoinScreenState extends State<CoinScreen> {
               backgroundColor: PeekColors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reset & rescan'),
+            child: Text(l.xmrScreenResetAction),
           ),
         ],
       ),
@@ -450,7 +501,8 @@ class _CoinScreenState extends State<CoinScreen> {
     // Reset state + re-run the open flow. The opener will now go
     // through the seed-based re-create path because no file exists.
     setState(() {
-      _engineError = null;
+      _engineErr = _XmrEngineError.none;
+      _engineErrDetail = null;
       _moneroWallet = null;
       _balanceXmr = null;
       _syncPct = null;
@@ -478,6 +530,9 @@ class _CoinScreenState extends State<CoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final loadErrText = _loadErrText(l);
+    final engineErrText = _engineErrText(l);
     return Scaffold(
       appBar: AppBar(title: Text(widget.coin.name)),
       body: SafeArea(
@@ -520,7 +575,7 @@ class _CoinScreenState extends State<CoinScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '${widget.coin.symbol} balance',
+                                  l.coinScreenBalanceLabel(widget.coin.symbol),
                                   style: const TextStyle(
                                       color: PeekColors.text3,
                                       fontSize: 11,
@@ -533,7 +588,7 @@ class _CoinScreenState extends State<CoinScreen> {
                       ),
                       const SizedBox(height: PeekDesign.sp5),
                       Text(
-                        _balanceText(),
+                        _balanceText(l),
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
@@ -577,19 +632,19 @@ class _CoinScreenState extends State<CoinScreen> {
                         ),
                       ],
                       if (widget.coin.id == 'XMR' &&
-                          _engineError == null &&
+                          _engineErr == _XmrEngineError.none &&
                           _daemonError != null) ...[
                         const SizedBox(height: PeekDesign.sp2),
                         StatusPill(
-                          text: 'Daemon: $_daemonError',
+                          text: l.xmrScreenDaemonError(_daemonError!),
                           color: PeekColors.red,
                           icon: Icons.cloud_off_rounded,
                         ),
                       ],
-                      if (_engineError != null) ...[
+                      if (engineErrText != null) ...[
                         const SizedBox(height: PeekDesign.sp2),
                         StatusPill(
-                          text: 'Engine: $_engineError',
+                          text: l.xmrScreenEngineError(engineErrText),
                           color: PeekColors.red,
                           icon: Icons.error_outline_rounded,
                         ),
@@ -600,7 +655,7 @@ class _CoinScreenState extends State<CoinScreen> {
                             onPressed: _resetWalletAndRetry,
                             icon:
                                 const Icon(Icons.restart_alt_rounded, size: 16),
-                            label: const Text('Reset & rescan from seed'),
+                            label: Text(l.xmrScreenResetAndRescanFromSeed),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: PeekColors.red,
                               side: const BorderSide(color: PeekColors.red),
@@ -613,7 +668,7 @@ class _CoinScreenState extends State<CoinScreen> {
                 ),
                 if (widget.coin.id == 'XMR') const _EngineStatusBanner(),
                 const SizedBox(height: PeekDesign.sp4),
-              if (_error != null)
+              if (loadErrText != null)
                 Container(
                   padding: const EdgeInsets.all(PeekDesign.sp3),
                   decoration: BoxDecoration(
@@ -629,7 +684,7 @@ class _CoinScreenState extends State<CoinScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _error!,
+                          loadErrText,
                           style: const TextStyle(
                               color: PeekColors.red,
                               fontSize: 12,
@@ -653,7 +708,7 @@ class _CoinScreenState extends State<CoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.qr_code_rounded,
-                          label: 'Receive',
+                          label: l.actionReceive,
                           primary: false,
                           onTap: _showReceiveSheet,
                         ),
@@ -662,7 +717,7 @@ class _CoinScreenState extends State<CoinScreen> {
                       Expanded(
                         child: ActionButton(
                           icon: Icons.arrow_upward_rounded,
-                          label: 'Send',
+                          label: l.actionSend,
                           primary: true,
                           // Older confirmed outputs (10+ blocks deep)
                           // are spendable mid-sync — Cake does the same.
@@ -693,16 +748,14 @@ class _CoinScreenState extends State<CoinScreen> {
                         border: Border.all(color: PeekColors.hairline),
                       ),
                       child: Row(
-                        children: const [
-                          Icon(Icons.info_outline_rounded,
+                        children: [
+                          const Icon(Icons.info_outline_rounded,
                               size: 14, color: PeekColors.text3),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Wallet is still syncing — newer activity '
-                              'may be missing. Older confirmed outputs '
-                              'are still spendable.',
-                              style: TextStyle(
+                              l.xmrScreenWalletStillSyncing,
+                              style: const TextStyle(
                                   color: PeekColors.text3,
                                   fontSize: 11,
                                   height: 1.4),
@@ -716,8 +769,8 @@ class _CoinScreenState extends State<CoinScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text('Activity',
-                          style: TextStyle(
+                      Text(l.xmrScreenActivity,
+                          style: const TextStyle(
                               color: PeekColors.text,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
@@ -799,11 +852,11 @@ class _CoinScreenState extends State<CoinScreen> {
                       await Clipboard.setData(ClipboardData(text: _address!));
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Address copied')),
+                        SnackBar(content: Text(l.xmrScreenAddressCopied)),
                       );
                     },
                     icon: const Icon(Icons.copy, size: 16),
-                    label: const Text('Copy address'),
+                    label: Text(l.xmrScreenCopyAddress),
                   ),
                 ],
               ],
@@ -841,16 +894,17 @@ class _XmrSyncPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (!balanceLoaded) {
       return StatusPill(
-        text: 'Booting wallet…',
+        text: l.xmrScreenBootingWallet,
         color: PeekColors.accent,
         icon: Icons.hourglass_top_rounded,
       );
     }
     if (!daemonConnected) {
       return StatusPill(
-        text: 'Connecting to daemon…',
+        text: l.xmrScreenConnectingDaemon,
         color: PeekColors.accent,
         icon: Icons.cloud_sync_rounded,
       );
@@ -858,19 +912,19 @@ class _XmrSyncPill extends StatelessWidget {
     if (!isSynced) {
       final behind = tipHeight - currentHeight;
       final pct = syncPct ?? 0;
-      final tail = tipHeight > 0 && behind > 0
-          ? ' · $behind blocks behind'
-          : '';
+      final text = tipHeight > 0 && behind > 0
+          ? l.xmrScreenSyncingPctBehind(pct, behind)
+          : l.xmrScreenSyncingPct(pct);
       return StatusPill(
-        text: 'Syncing $pct%$tail',
+        text: text,
         color: PeekColors.accent,
         icon: Icons.sync_rounded,
       );
     }
     return StatusPill(
       text: tipHeight > 0
-          ? 'Synced · height ${_fmt(tipHeight)}'
-          : 'Synced',
+          ? l.xmrScreenSyncedAtHeight(_fmt(tipHeight))
+          : l.xmrScreenSynced,
       color: PeekColors.green,
       icon: Icons.check_circle_rounded,
     );
@@ -902,6 +956,7 @@ class _TxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final color = tx.isFailed
         ? PeekColors.red
         : (tx.isIncoming ? PeekColors.green : PeekColors.text);
@@ -910,12 +965,12 @@ class _TxRow extends StatelessWidget {
     final dt = tx.timestamp.toLocal();
     final dateLabel = _fmtDate(dt);
     final subtitle = tx.isFailed
-        ? 'Failed'
+        ? l.xmrScreenTxStatusFailed
         : tx.isPending
-            ? 'Pending'
+            ? l.xmrScreenTxStatusPending
             : tx.confirmations < 10
-                ? '${tx.confirmations} conf'
-                : 'Confirmed';
+                ? l.xmrScreenConfirmationsShort(tx.confirmations)
+                : l.xmrScreenTxStatusConfirmed;
 
     return InkWell(
       onTap: () => _showDetails(context, tx),
@@ -971,6 +1026,7 @@ class _TxRow extends StatelessWidget {
   }
 
   void _showDetails(BuildContext context, MoneroTx tx) {
+    final l = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: PeekColors.bg2,
@@ -995,20 +1051,28 @@ class _TxRow extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              tx.isIncoming ? 'Incoming' : 'Outgoing',
+              tx.isIncoming ? l.xmrScreenDirIncoming : l.xmrScreenDirOutgoing,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            _kv('Amount', '${tx.amountXmr.toStringAsFixed(9)} XMR'),
+            _kv(l.xmrScreenTxAmount, '${tx.amountXmr.toStringAsFixed(9)} XMR'),
             if (!tx.isIncoming)
-              _kv('Fee', '${tx.feeXmr.toStringAsFixed(9)} XMR'),
-            _kv('Date', _fmtDate(tx.timestamp.toLocal())),
-            _kv('Block height', tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
-            _kv('Confirmations', tx.confirmations.toString()),
-            _kv('Status', tx.isFailed ? 'Failed' : (tx.isPending ? 'Pending' : 'Confirmed')),
+              _kv(l.xmrScreenTxFee, '${tx.feeXmr.toStringAsFixed(9)} XMR'),
+            _kv(l.xmrScreenTxDate, _fmtDate(tx.timestamp.toLocal())),
+            _kv(l.xmrScreenTxBlockHeight,
+                tx.blockHeight == 0 ? '—' : tx.blockHeight.toString()),
+            _kv(l.xmrScreenTxConfirmations, tx.confirmations.toString()),
+            _kv(
+              l.xmrScreenTxStatus,
+              tx.isFailed
+                  ? l.xmrScreenTxStatusFailed
+                  : (tx.isPending
+                      ? l.xmrScreenTxStatusPending
+                      : l.xmrScreenTxStatusConfirmed),
+            ),
             if (tx.paymentId.isNotEmpty)
-              _kv('Payment ID', tx.paymentId),
+              _kv(l.xmrScreenTxPaymentId, tx.paymentId),
             const SizedBox(height: 12),
             // Note section — editable if a wallet handle was provided.
             // Empty notes show an "Add" prompt; non-empty show the
@@ -1016,10 +1080,10 @@ class _TxRow extends StatelessWidget {
             // Wallet_setUserNote.
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Note',
-                    style: TextStyle(color: PeekColors.text2, fontSize: 12),
+                    l.xmrScreenTxNote,
+                    style: const TextStyle(color: PeekColors.text2, fontSize: 12),
                   ),
                 ),
                 if (wallet != null)
@@ -1027,7 +1091,7 @@ class _TxRow extends StatelessWidget {
                     onPressed: () => _editNote(ctx),
                     icon: const Icon(Icons.edit, size: 14),
                     label: Text(
-                      tx.note.isEmpty ? 'Add' : 'Edit',
+                      tx.note.isEmpty ? l.xmrScreenTxAdd : l.xmrScreenTxEdit,
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -1042,7 +1106,7 @@ class _TxRow extends StatelessWidget {
                 border: Border.all(color: PeekColors.border),
               ),
               child: Text(
-                tx.note.isEmpty ? '— No note —' : tx.note,
+                tx.note.isEmpty ? l.xmrScreenNoNote : tx.note,
                 style: TextStyle(
                   color: tx.note.isEmpty ? PeekColors.text3 : PeekColors.text,
                   fontSize: 13,
@@ -1051,9 +1115,9 @@ class _TxRow extends StatelessWidget {
               ),
             ),
             const SizedBox(height: PeekDesign.sp3),
-            const Text(
-              'TX ID',
-              style: TextStyle(
+            Text(
+              l.xmrScreenTxId,
+              style: const TextStyle(
                   color: PeekColors.text3,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
@@ -1082,11 +1146,11 @@ class _TxRow extends StatelessWidget {
                       await Clipboard.setData(ClipboardData(text: tx.hash));
                       if (!ctx.mounted) return;
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('TX ID copied')),
+                        SnackBar(content: Text(l.xmrScreenTxIdCopied)),
                       );
                     },
                     icon: const Icon(Icons.copy, size: 16),
-                    label: const Text('Copy'),
+                    label: Text(l.xmrScreenCopy),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1099,12 +1163,12 @@ class _TxRow extends StatelessWidget {
                       final ok = await openExplorerUrl(url);
                       if (!ok && ctx.mounted) {
                         ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(
-                                content: Text('Could not open browser')));
+                            SnackBar(
+                                content: Text(l.xmrScreenCouldNotOpenBrowser)));
                       }
                     },
                     icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text('Explorer'),
+                    label: Text(l.xmrScreenExplorer),
                   ),
                 ),
               ],
@@ -1139,34 +1203,35 @@ class _TxRow extends StatelessWidget {
   Future<void> _editNote(BuildContext ctx) async {
     final w = wallet;
     if (w == null) return;
+    final l = AppLocalizations.of(ctx);
     final controller = TextEditingController(text: tx.note);
     final updated = await showDialog<String>(
       context: ctx,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Transaction note'),
+        title: Text(l.xmrScreenTxNoteTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLines: 4,
           minLines: 2,
           maxLength: 200,
-          decoration: const InputDecoration(
-            hintText: 'Free-text — only you can read this.',
+          decoration: InputDecoration(
+            hintText: l.xmrScreenTxNoteHint,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           if (tx.note.isNotEmpty)
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(''),
-              child: const Text('Clear'),
+              child: Text(l.xmrScreenClear),
             ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogCtx).pop(controller.text),
-            child: const Text('Save'),
+            child: Text(l.actionSave),
           ),
         ],
       ),
@@ -1183,13 +1248,14 @@ class _TxRow extends StatelessWidget {
       Navigator.of(ctx).pop();
       ScaffoldMessenger.of(ctx).showSnackBar(
         SnackBar(
-          content: Text(updated.isEmpty ? 'Note cleared' : 'Note saved'),
+          content: Text(
+              updated.isEmpty ? l.xmrScreenNoteCleared : l.xmrScreenNoteSaved),
         ),
       );
     } catch (e) {
       if (!ctx.mounted) return;
       ScaffoldMessenger.of(ctx).showSnackBar(
-        SnackBar(content: Text('Could not save note: $e')),
+        SnackBar(content: Text(l.xmrScreenCouldNotSaveNote(e.toString()))),
       );
     }
   }
@@ -1228,6 +1294,8 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
 
   void _reload() {
     final w = widget.wallet;
+    final primaryLabel =
+        AppLocalizations.of(context).xmrScreenLabelPrimary;
     if (w == null) {
       // No live engine — only the primary address from pure-Dart
       // derivation is available. Still useful for receive.
@@ -1235,7 +1303,7 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
         _SubaddrRow(
           index: 0,
           address: widget.primaryAddress,
-          label: 'Primary',
+          label: primaryLabel,
         ),
       ];
       _selectedIndex = 0;
@@ -1248,10 +1316,10 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
         index: i,
         address: w.subaddress(i),
         label: i == 0
-            ? 'Primary'
+            ? primaryLabel
             : (() {
-                final l = w.subaddressLabel(i);
-                return l.isEmpty ? '' : l;
+                final lbl = w.subaddressLabel(i);
+                return lbl.isEmpty ? '' : lbl;
               })(),
       ));
     }
@@ -1287,32 +1355,33 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
   Future<void> _editLabel(_SubaddrRow row) async {
     final w = widget.wallet;
     if (w == null) return;
+    final l = AppLocalizations.of(context);
     final controller = TextEditingController(text: row.label);
     final newLabel = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Label subaddress #${row.index}'),
+        title: Text(l.xmrScreenLabelSubaddress(row.index)),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLength: 50,
-          decoration: const InputDecoration(
-            hintText: 'e.g. "Customer payments", "Side gig"',
+          decoration: InputDecoration(
+            hintText: l.xmrScreenSubaddrLabelHint,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           if (row.label.isNotEmpty)
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(''),
-              child: const Text('Clear'),
+              child: Text(l.xmrScreenClear),
             ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: const Text('Save'),
+            child: Text(l.actionSave),
           ),
         ],
       ),
@@ -1323,12 +1392,13 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
       w.setSubaddressLabel(index: row.index, label: newLabel);
       _reload();
     } catch (e) {
-      setState(() => _genError = 'Could not save label: $e');
+      setState(() => _genError = l.xmrScreenCouldNotSaveLabel(e.toString()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final selected = _rows.isEmpty
         ? widget.primaryAddress
@@ -1353,10 +1423,10 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Receive XMR',
+              Text(
+                l.xmrScreenReceiveTitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 14),
               Center(
@@ -1389,26 +1459,26 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: selected));
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Address copied')),
+                    SnackBar(content: Text(l.xmrScreenAddressCopied)),
                   );
                 },
                 icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy address'),
+                label: Text(l.xmrScreenCopyAddress),
               ),
               if (!live) ...[
                 const SizedBox(height: 12),
-                const Text(
-                  'Subaddresses unavailable until the wallet finishes booting.',
-                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                Text(
+                  l.xmrScreenSubaddrUnavailable,
+                  style: const TextStyle(color: PeekColors.text3, fontSize: 11),
                 ),
               ] else ...[
                 const SizedBox(height: 22),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Subaddresses',
-                        style: TextStyle(color: PeekColors.text2, fontSize: 12),
+                        l.xmrScreenSubaddrSectionTitle,
+                        style: const TextStyle(color: PeekColors.text2, fontSize: 12),
                       ),
                     ),
                     OutlinedButton.icon(
@@ -1419,14 +1489,14 @@ class _ReceiveSheetState extends State<_ReceiveSheet> {
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: PeekColors.accent))
                           : const Icon(Icons.add, size: 16),
-                      label: const Text('New'),
+                      label: Text(l.xmrScreenSubaddrNew),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Generate a fresh address per payer so observers can\'t link two payments to the same wallet. All point to the same balance.',
-                  style: TextStyle(color: PeekColors.text3, fontSize: 11),
+                Text(
+                  l.xmrScreenSubaddrBody,
+                  style: const TextStyle(color: PeekColors.text3, fontSize: 11),
                 ),
                 const SizedBox(height: 8),
                 if (_genError != null)
@@ -1549,7 +1619,7 @@ class _SubaddrTile extends StatelessWidget {
                 icon: const Icon(Icons.edit, size: 16),
                 color: PeekColors.text3,
                 visualDensity: VisualDensity.compact,
-                tooltip: 'Edit label',
+                tooltip: AppLocalizations.of(context).xmrScreenEditLabelTooltip,
                 onPressed: onLabelEdit,
               ),
             Icon(
@@ -1571,11 +1641,12 @@ class _EngineStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final s = MoneroEngine.I.status();
     final color = s.loaded ? PeekColors.green : PeekColors.red;
     final label = s.loaded
-        ? '✓ Native monero_c engine loaded'
-        : '✗ Engine not loaded: ${s.error}';
+        ? l.xmrScreenEngineLoaded
+        : l.xmrScreenEngineNotLoaded(s.error ?? '');
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 6),
       child: Text(
