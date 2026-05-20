@@ -419,7 +419,17 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
               const Divider(height: 18, color: PeekColors.hairline),
               _kvRow(l.sendBtcFeeRateLabel, '$feeRate sat/vB'),
               const Divider(height: 18, color: PeekColors.hairline),
+              // Available was previously the pre-send balance, which
+              // misled the user into thinking the send had no impact.
+              // Show pre-send + a derived "Remaining (approx)" line —
+              // exact change can only be known after coin selection
+              // runs in sendBitcoin() but a "amount + 1×fee-rate band"
+              // estimate is good enough for a sanity check.
               _kvRow(l.sendFormAvailableLabel, '$_availableSat sat'),
+              const Divider(height: 18, color: PeekColors.hairline),
+              _kvRow(
+                  'Remaining ≈',
+                  '${(_availableSat - amount - feeRate * 200).clamp(0, _availableSat)} sat'),
             ],
           ),
         ),

@@ -138,8 +138,6 @@ String? _coingeckoUrlFor(String coinId) {
       return 'https://assets.coingecko.com/coins/images/6319/large/USDC.png';
     case 'DAI':
       return 'https://assets.coingecko.com/coins/images/9956/large/Badge_Dai.png';
-    case 'BUSD':
-      return 'https://assets.coingecko.com/coins/images/9576/large/BUSDLOGO.jpg';
     // Wrapped majors
     case 'WETH':
       return 'https://assets.coingecko.com/coins/images/2518/large/weth.png';
@@ -147,8 +145,6 @@ String? _coingeckoUrlFor(String coinId) {
       return 'https://assets.coingecko.com/coins/images/7598/large/WBTCLOGO.png';
     case 'WMATIC':
       return 'https://assets.coingecko.com/coins/images/14073/large/matic.png';
-    case 'WSOL':
-      return 'https://assets.coingecko.com/coins/images/4128/large/solana.png';
     // DeFi blue chips that show up in default token lists
     case 'LINK':
       return 'https://assets.coingecko.com/coins/images/877/large/Chainlink_Logo_500.png';
@@ -158,10 +154,11 @@ String? _coingeckoUrlFor(String coinId) {
       return 'https://assets.coingecko.com/coins/images/12504/large/uniswap-logo.png';
     case 'CRV':
       return 'https://assets.coingecko.com/coins/images/12124/large/Curve.png';
-    case 'BONK':
-      return 'https://assets.coingecko.com/coins/images/28600/large/bonk.jpg';
-    case 'JUP':
-      return 'https://assets.coingecko.com/coins/images/34188/large/jup.png';
+    // Audit-6: BUSD (deprecated by Paxos 2024), WSOL (only used in
+    // DEX trade legs, never user-held), BONK + JUP (Solana memecoins
+    // never in our default SPL list) — none of these ever show up
+    // in user wallets, so cache misses against them just burned
+    // network on every cold open. Removed.
     default:
       return null;
   }

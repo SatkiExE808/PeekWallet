@@ -113,13 +113,27 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     final raw = _amountCtrl.text.trim();
     if (raw.isEmpty) return (lamports: null, tokenRaw: null);
 
+    // SPL token amounts (and SOL lamports) both pack into a u64 on
+    // the wire — anything beyond that overflows the protocol field
+    // silently and broadcasts a different amount than the user
+    // typed. Cap every parse path at uint64-max as a single
+    // backstop so a fat-finger paste can't bypass the input check.
+    final uint64Max = BigInt.parse('ffffffffffffffff', radix: 16);
+
     if (widget.token != null) {
       final decimals = widget.token!.decimals;
+      final BigInt? tokenRaw;
       if (raw.contains('.')) {
-        final tokenRaw = _decimalToRaw(raw, decimals);
-        return (lamports: null, tokenRaw: tokenRaw);
+        tokenRaw = _decimalToRaw(raw, decimals);
+      } else {
+        tokenRaw = BigInt.tryParse(raw);
       }
-      return (lamports: null, tokenRaw: BigInt.tryParse(raw));
+      if (tokenRaw == null ||
+          tokenRaw < BigInt.zero ||
+          tokenRaw > uint64Max) {
+        return (lamports: null, tokenRaw: null);
+      }
+      return (lamports: null, tokenRaw: tokenRaw);
     }
 
     if (raw.contains('.')) {
@@ -133,7 +147,11 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
       }
       return (lamports: asBig.toInt(), tokenRaw: null);
     }
-    return (lamports: int.tryParse(raw), tokenRaw: null);
+    final asInt = int.tryParse(raw);
+    if (asInt == null || asInt < 0) {
+      return (lamports: null, tokenRaw: null);
+    }
+    return (lamports: asInt, tokenRaw: null);
   }
 
   BigInt? _decimalToRaw(String dec, int decimals) {

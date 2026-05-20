@@ -5,6 +5,7 @@ import '../coins/monero/monero_wallet.dart';
 import '../coins/monero/monero_keys.dart';
 import '../util/peek_logger.dart';
 import '../util/sensitive_clipboard.dart';
+import '../wallets/balance_cache.dart';
 import '../wallets/seed_format.dart';
 import '../wallets/wallet_store.dart';
 import 'biometric_auth.dart';
@@ -230,13 +231,19 @@ class VaultState extends ChangeNotifier {
   }
 
   /// Permanently removes the encrypted seed AND every adjacent
-  /// per-user store (biometric stash, address book). On a true reset
-  /// nothing the user added should persist.
+  /// per-user store (biometric stash, address book, balance cache).
+  /// On a true reset nothing the user added should persist.
+  ///
+  /// Audit-6 fix: balance cache was being left on disk so the next
+  /// install/sign-in flashed stale-but-readable-looking balances
+  /// from the previous wallet before the new wallets-list refresh
+  /// landed — that's both a privacy + UX foot-gun.
   Future<void> wipe() async {
     MoneroSession.I.stop();
     SensitiveClipboard.cancelAll();
     await _storage.wipe();
     await AddressBook.I.wipe();
+    await BalanceCache.I.wipe();
     _mnemonic = null;
     _passphrase = '';
     _walletFilePassword = null;

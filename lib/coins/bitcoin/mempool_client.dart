@@ -79,8 +79,28 @@ class MempoolClient implements BitcoinExplorer {
     if (addresses.isEmpty) {
       return MultiAddressBalance(perAddress: const {}, totalSat: 0);
     }
+    // Audit-6: per-address fan-out used to share one Future.wait — a
+    // single timeout / 429 on address N aborted every other address's
+    // result with it. Wrap each call so failures yield a zero-balance
+    // sentinel; the surviving addresses still contribute to the total
+    // and the gap-limit window stays scanned. The user sees the same
+    // "Cached" pill on the next refresh that already covers stale-
+    // network states, instead of a hard error wiping the screen.
     final entries = await Future.wait(
-      addresses.map((a) async => MapEntry(a, await balance(a))),
+      addresses.map((a) async {
+        try {
+          return MapEntry(a, await balance(a));
+        } catch (_) {
+          return MapEntry(
+              a,
+              const AddressBalance(
+                confirmedReceivedSat: 0,
+                confirmedSpentSat: 0,
+                mempoolReceivedSat: 0,
+                mempoolSpentSat: 0,
+              ));
+        }
+      }),
     );
     final map = Map<String, AddressBalance>.fromEntries(entries);
     final total = map.values
@@ -111,7 +131,15 @@ class MempoolClient implements BitcoinExplorer {
   @override
   Future<List<BitcoinTx>> multiHistory(List<String> addresses) async {
     if (addresses.isEmpty) return const [];
-    final per = await Future.wait(addresses.map(transactions));
+    // Same fail-isolation as multiBalance: a single address's tx
+    // history failing must not zero the entire history list.
+    final per = await Future.wait(addresses.map((a) async {
+      try {
+        return await transactions(a);
+      } catch (_) {
+        return const <BitcoinTx>[];
+      }
+    }));
     final seen = <String>{};
     final all = <BitcoinTx>[];
     for (final list in per) {
@@ -157,7 +185,16 @@ class MempoolClient implements BitcoinExplorer {
   @override
   Future<List<Utxo>> multiUtxos(List<String> addresses) async {
     if (addresses.isEmpty) return const [];
-    final per = await Future.wait(addresses.map(utxos));
+    // Same fail-isolation as multiBalance / multiHistory — a UTXO
+    // probe that 429s on one of the 20 gap-limit addresses must not
+    // poison the send flow's coin selection across the rest.
+    final per = await Future.wait(addresses.map((a) async {
+      try {
+        return await utxos(a);
+      } catch (_) {
+        return const <Utxo>[];
+      }
+    }));
     final all = <Utxo>[];
     for (final list in per) {
       all.addAll(list);
