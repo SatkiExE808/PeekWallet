@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show compute;
+
 import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
 import 'bitcoin_explorer.dart';
@@ -68,15 +70,46 @@ class BitcoinWallet {
     int gapLimit = 20,
     BitcoinChainParams params = kBtcMainnet,
   }) {
-    final addrs = <BitcoinAddressDerivation>[];
-    for (var i = 0; i < gapLimit; i++) {
-      addrs.add(deriveBitcoinAddress(
+    // Synchronous path — kept for tests + any caller that doesn't
+    // have an Isolate context. Uses the batched derivation helper
+    // so the seed + BIP32 root are computed ONCE and reused for all
+    // gap-limit indices (saves ~19 PBKDF2-HMAC-SHA512 rounds vs. the
+    // old per-index loop).
+    final addrs = deriveBitcoinReceiveAddresses(
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      count: gapLimit,
+      params: params,
+    );
+    return BitcoinWallet._(
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      gapLimit: gapLimit,
+      addresses: addrs,
+      params: params,
+    );
+  }
+
+  /// Same as [BitcoinWallet.open] but ships the BIP39 → BIP32 →
+  /// gap-limit derivation to a background [compute] isolate. The
+  /// main isolate keeps rendering while ~200 ms of crypto work
+  /// happens off-thread. Returned wallet is identical to the sync
+  /// version — same addresses, same params.
+  static Future<BitcoinWallet> openAsync({
+    required String mnemonic,
+    String passphrase = '',
+    int gapLimit = 20,
+    BitcoinChainParams params = kBtcMainnet,
+  }) async {
+    final addrs = await compute(
+      _deriveAddressesInIsolate,
+      _DeriveBitcoinArgs(
         mnemonic: mnemonic,
         passphrase: passphrase,
-        addressIndex: i,
+        gapLimit: gapLimit,
         params: params,
-      ));
-    }
+      ),
+    );
     return BitcoinWallet._(
       mnemonic: mnemonic,
       passphrase: passphrase,
@@ -350,4 +383,33 @@ class BitcoinWallet {
     _closed = true;
     _client.close();
   }
+}
+
+/// Args for [_deriveAddressesInIsolate]. Plain data so it transits
+/// the SendPort cleanly — [BitcoinChainParams] is itself a const
+/// value class with only int/String/`List<String>` fields.
+class _DeriveBitcoinArgs {
+  const _DeriveBitcoinArgs({
+    required this.mnemonic,
+    required this.passphrase,
+    required this.gapLimit,
+    required this.params,
+  });
+  final String mnemonic;
+  final String passphrase;
+  final int gapLimit;
+  final BitcoinChainParams params;
+}
+
+/// Top-level entry point shipped to [compute]. Runs the batched
+/// derivation in a background isolate so the UI thread doesn't
+/// stall during the ~150-200ms PBKDF2 + 20× secp256k1 child derive.
+List<BitcoinAddressDerivation> _deriveAddressesInIsolate(
+    _DeriveBitcoinArgs args) {
+  return deriveBitcoinReceiveAddresses(
+    mnemonic: args.mnemonic,
+    passphrase: args.passphrase,
+    count: args.gapLimit,
+    params: args.params,
+  );
 }

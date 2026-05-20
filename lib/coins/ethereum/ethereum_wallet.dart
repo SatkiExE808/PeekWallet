@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:bip32/bip32.dart' as bip32;
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:flutter/foundation.dart' show compute;
 
 import '../../prefs/rpc_overrides.dart';
 import '../../util/peek_logger.dart';
@@ -70,6 +71,27 @@ class EthereumWallet {
     final addr = deriveEthereumAddress(
       mnemonic: mnemonic,
       passphrase: passphrase,
+    );
+    return EthereumWallet._(
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      address: addr,
+      network: network,
+    );
+  }
+
+  /// Same as [EthereumWallet.open] but ships the BIP39 → BIP32 →
+  /// keccak derivation to a background isolate via [compute]. Keeps
+  /// the UI responsive during the ~150-200ms of crypto on wallet
+  /// open; behaviour-identical to the sync factory.
+  static Future<EthereumWallet> openAsync({
+    required String mnemonic,
+    String passphrase = '',
+    EthereumNetwork network = kEthMainnet,
+  }) async {
+    final addr = await compute(
+      _deriveEthAddressInIsolate,
+      _DeriveEthArgs(mnemonic: mnemonic, passphrase: passphrase),
     );
     return EthereumWallet._(
       mnemonic: mnemonic,
@@ -390,4 +412,25 @@ List<int> _hexToBytes(String hex) {
     out[i] = int.parse(clean.substring(2 * i, 2 * i + 2), radix: 16);
   }
   return out;
+}
+
+/// Args for [_deriveEthAddressInIsolate]. Plain data so SendPort
+/// can serialise it without custom encoders.
+class _DeriveEthArgs {
+  const _DeriveEthArgs({
+    required this.mnemonic,
+    required this.passphrase,
+  });
+  final String mnemonic;
+  final String passphrase;
+}
+
+/// Top-level entry point shipped to [compute]. Runs the BIP39 →
+/// BIP32 → keccak derivation in a background isolate so unlock +
+/// coin-screen open don't stall the UI thread.
+EthereumAddressDerivation _deriveEthAddressInIsolate(_DeriveEthArgs args) {
+  return deriveEthereumAddress(
+    mnemonic: args.mnemonic,
+    passphrase: args.passphrase,
+  );
 }

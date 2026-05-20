@@ -150,10 +150,14 @@ class _WalletsScreenState extends State<WalletsScreen> {
       // Fan out — most chains are independent HTTP. We don't try
       // to limit concurrency because the user has at most a few
       // wallets per chain and the public endpoints handle it fine.
-      await Future.wait(targets.map((m) =>
-          _probeBalance(m, password).catchError((Object e) {
-        // Log probe failures so a quietly-broken module is visible
-        // in `flutter logs` instead of silently never updating.
+      //
+      // Hard 8-second timeout per probe so one slow / dead RPC (e.g.
+      // a user-pinned override that's down) can't freeze the whole
+      // wallets list. On timeout the row keeps showing its cached
+      // value and the next auto-refresh tries again.
+      await Future.wait(targets.map((m) => _probeBalance(m, password)
+          .timeout(const Duration(seconds: 8))
+          .catchError((Object e) {
         PeekLogger.I.log(m.coinId.toLowerCase(),
             'balance probe (${m.id}) failed: $e');
       })));

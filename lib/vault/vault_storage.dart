@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Persists the wallet seed encrypted with a password-derived key.
@@ -190,15 +191,21 @@ class VaultStorage {
   }
 
   Future<SecretKey> _deriveKey(String password, List<int> salt) async {
-    final pbkdf2 = Pbkdf2(
-      macAlgorithm: Hmac.sha256(),
-      iterations: _iterations,
-      bits: _keyLen * 8,
+    // PBKDF2 with 200k iterations takes ~1-3 seconds on a mid-range
+    // Android device. Running it on the UI isolate freezes the unlock
+    // button. compute() ships the work to a background isolate so
+    // the UI keeps responding (the lock screen can show a spinner
+    // and animate it smoothly while the key derives).
+    final bytes = await compute(
+      _pbkdf2InIsolate,
+      _Pbkdf2Args(
+        password: utf8.encode(password),
+        salt: salt,
+        iterations: _iterations,
+        bits: _keyLen * 8,
+      ),
     );
-    return pbkdf2.deriveKey(
-      secretKey: SecretKey(utf8.encode(password)),
-      nonce: salt,
-    );
+    return SecretKey(bytes);
   }
 
   /// Derive the password used to encrypt per-coin wallet files (e.g.
@@ -213,16 +220,18 @@ class VaultStorage {
   Future<String> _deriveWalletFilePassword(
       String password, List<int> salt) async {
     const ctxLabel = '|peek.wallet-file.v1';
-    final pbkdf2 = Pbkdf2(
-      macAlgorithm: Hmac.sha256(),
-      iterations: 10000,
-      bits: 32 * 8,
+    // Wallet-file PBKDF2 is a 10k-iter inner derivation. Lighter than
+    // the master key but still ~150ms on Android; isolate it for
+    // the same reason — avoid a second UI-thread stall on unlock.
+    final bytes = await compute(
+      _pbkdf2InIsolate,
+      _Pbkdf2Args(
+        password: utf8.encode('$password$ctxLabel'),
+        salt: salt,
+        iterations: 10000,
+        bits: 32 * 8,
+      ),
     );
-    final key = await pbkdf2.deriveKey(
-      secretKey: SecretKey(utf8.encode(password + ctxLabel)),
-      nonce: salt,
-    );
-    final bytes = await key.extractBytes();
     return base64Encode(bytes);
   }
 
@@ -265,4 +274,36 @@ class DecryptedSeed {
   final String mnemonic;
   final String passphrase;
   final String walletFilePassword;
+}
+
+/// Args struct sent across the isolate boundary by [compute] in
+/// [VaultStorage._deriveKey]. Plain int/bytes only so it serializes
+/// cleanly via the default SendPort encoder.
+class _Pbkdf2Args {
+  const _Pbkdf2Args({
+    required this.password,
+    required this.salt,
+    required this.iterations,
+    required this.bits,
+  });
+  final List<int> password;
+  final List<int> salt;
+  final int iterations;
+  final int bits;
+}
+
+/// Top-level entry point for [compute] — must not be a method, so it
+/// can be shipped to a background isolate. Returns the raw derived
+/// key bytes; caller wraps them in a [SecretKey] on the main side.
+Future<List<int>> _pbkdf2InIsolate(_Pbkdf2Args args) async {
+  final pbkdf2 = Pbkdf2(
+    macAlgorithm: Hmac.sha256(),
+    iterations: args.iterations,
+    bits: args.bits,
+  );
+  final key = await pbkdf2.deriveKey(
+    secretKey: SecretKey(args.password),
+    nonce: args.salt,
+  );
+  return key.extractBytes();
 }

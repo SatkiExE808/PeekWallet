@@ -99,6 +99,42 @@ BitcoinAddressDerivation deriveBitcoinAddress({
   );
 }
 
+/// Batch-derive `count` addresses starting at index 0 on the external
+/// (receive) chain for `account` 0. Computes the BIP39 seed + BIP32
+/// root **once** and reuses them across all derivations — orders of
+/// magnitude faster than calling [deriveBitcoinAddress] in a loop,
+/// which re-runs PBKDF2-HMAC-SHA512 (2048 iterations) on every call.
+///
+/// Plain data in / plain data out, safe to ship across a [compute]
+/// isolate. The [BitcoinChainParams] constants are also plain values
+/// (no functions or closures), so they serialize cleanly.
+List<BitcoinAddressDerivation> deriveBitcoinReceiveAddresses({
+  required String mnemonic,
+  required int count,
+  String passphrase = '',
+  BitcoinChainParams params = kBtcMainnet,
+}) {
+  final seed = bip39.mnemonicToSeed(mnemonic, passphrase: passphrase);
+  final root = bip32.BIP32.fromSeed(Uint8List.fromList(seed));
+  // BIP84: m/84'/{coinType}'/0'/0/{i}. Pre-derive the parent so the
+  // per-index leg is a single child step instead of walking five
+  // hardened levels each time.
+  final parent = root.derivePath("m/84'/${params.coinType}'/0'/0");
+  final out = <BitcoinAddressDerivation>[];
+  for (var i = 0; i < count; i++) {
+    final child = parent.derive(i);
+    final pubKey = Uint8List.fromList(child.publicKey);
+    final h160 = _hash160(pubKey);
+    final addr = segwit.encode(Segwit(params.bech32Hrp, 0, Uint8List.fromList(h160)));
+    out.add(BitcoinAddressDerivation(
+      address: addr,
+      path: "m/84'/${params.coinType}'/0'/0/$i",
+      publicKey: pubKey,
+    ));
+  }
+  return out;
+}
+
 /// Like [deriveBitcoinAddress] but ALSO holds the BIP32 node so the
 /// caller can sign with it. Returns null if the mnemonic is invalid.
 /// Used exclusively by the send path — receive flows stay on the

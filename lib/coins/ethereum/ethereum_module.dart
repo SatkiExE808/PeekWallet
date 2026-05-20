@@ -136,7 +136,7 @@ class EvmCoinModule implements CoinModule {
     void Function(String stage)? onStage,
   }) async {
     onStage?.call('deriving BIP44 address');
-    final w = EthereumWallet.open(
+    final w = await EthereumWallet.openAsync(
       mnemonic:
           extractBip39Mnemonic(seedMaterial, coinSymbol: network.symbol),
       passphrase: (seedMaterial['passphrase'] as String?) ?? '',

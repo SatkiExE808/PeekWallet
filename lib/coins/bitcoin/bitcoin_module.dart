@@ -142,7 +142,7 @@ class UtxoCoinModule implements CoinModule {
     void Function(String stage)? onStage,
   }) async {
     onStage?.call('deriving BIP84 addresses');
-    final w = BitcoinWallet.open(
+    final w = await BitcoinWallet.openAsync(
       mnemonic: extractBip39Mnemonic(seedMaterial, coinSymbol: params.symbol),
       passphrase: (seedMaterial['passphrase'] as String?) ?? '',
       params: params,

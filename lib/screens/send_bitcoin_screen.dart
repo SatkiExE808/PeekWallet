@@ -69,14 +69,18 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 
   Future<void> _loadInitial() async {
-    try {
-      final fees = await widget.wallet.feeRates();
+    // Fire both calls in parallel so the send screen lands in
+    // ~max(feeRates, utxos) instead of feeRates + utxos. Each call
+    // has its own try/catch so a feerate failure doesn't poison the
+    // UTXO result (and vice versa) — mempool.space sometimes serves
+    // /fees/recommended while /address/.../utxo is rate-limited, and
+    // we want the form to be usable in that case.
+    final feesFut = widget.wallet.feeRates().then((fees) {
       if (mounted) setState(() => _fees = fees);
-    } catch (e) {
+    }).catchError((Object e) {
       if (mounted) setState(() => _feesError = '$e');
-    }
-    try {
-      final utxos = await widget.wallet.utxos();
+    });
+    final utxosFut = widget.wallet.utxos().then((utxos) {
       final sum = utxos
           .where((u) => u.confirmed)
           .fold<int>(0, (a, u) => a + u.valueSat);
@@ -86,14 +90,15 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
           _utxosLoading = false;
         });
       }
-    } catch (e) {
+    }).catchError((Object e) {
       if (mounted) {
         setState(() {
           _utxosError = '$e';
           _utxosLoading = false;
         });
       }
-    }
+    });
+    await Future.wait([feesFut, utxosFut]);
   }
 
   int get _selectedFeeRate {
