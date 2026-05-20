@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 
 /// Full-screen QR scanner. Returns the first decoded payload as the
@@ -99,6 +100,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: PeekColors.bg,
       appBar: AppBar(
@@ -114,7 +116,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
               ),
             ),
             onPressed: () => _controller.toggleTorch(),
-            tooltip: 'Torch',
+            tooltip: l.qrScanTorchTooltip,
           ),
         ],
       ),
@@ -131,7 +133,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'Camera error: ${err.errorCode.name}',
+                          l.qrScanCameraError(err.errorCode.name),
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: PeekColors.red),
                         ),
@@ -189,6 +191,7 @@ class _PermissionDenied extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -197,24 +200,25 @@ class _PermissionDenied extends StatelessWidget {
           children: [
             const Icon(Icons.no_photography, size: 56, color: PeekColors.text3),
             const SizedBox(height: 16),
-            const Text(
-              'Camera permission denied',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              l.qrScanPermissionDenied,
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'PeekWallet needs camera access to scan QR codes. The camera is '
-              'only used while this screen is open and no photos or videos '
-              'are saved.',
+            Text(
+              l.qrScanPermissionBody,
               textAlign: TextAlign.center,
-              style: TextStyle(color: PeekColors.text2, fontSize: 13),
+              style: const TextStyle(
+                  color: PeekColors.text2, fontSize: 13),
             ),
             const SizedBox(height: 20),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
+            OutlinedButton(
+                onPressed: onRetry, child: Text(l.qrScanTryAgain)),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => openAppSettings(),
-              child: const Text('Open app settings'),
+              child: Text(l.qrScanOpenSettings),
             ),
           ],
         ),
@@ -302,6 +306,7 @@ class _ScanHelperText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -309,9 +314,9 @@ class _ScanHelperText extends StatelessWidget {
           color: Colors.black.withAlpha(140),
           borderRadius: PeekDesign.brPill,
         ),
-        child: const Text(
-          'Center the QR code in the frame',
-          style: TextStyle(
+        child: Text(
+          l.qrScanCenterHint,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 12,
             fontWeight: FontWeight.w500,

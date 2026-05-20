@@ -1209,6 +1209,224 @@ class AppLocalizationsMs extends AppLocalizations {
   String get aboutUrlCopiedToast => 'URL disalin — buka di pelayar anda';
 
   @override
+  String get addressBookTitle => 'Buku alamat';
+
+  @override
+  String get addressBookPickerTitle => 'Pilih penerima';
+
+  @override
+  String get addressBookAddTooltip => 'Tambah entri';
+
+  @override
+  String get addressBookEmptyTitle => 'Belum ada alamat tersimpan';
+
+  @override
+  String get addressBookEmptyBodyPicker =>
+      'Simpan penerima yang akan anda hantar.';
+
+  @override
+  String get addressBookEmptyBody =>
+      'Simpan alamat orang yang anda hantar dengan kerap supaya tidak perlu tampal setiap kali.';
+
+  @override
+  String get addressBookAddAction => 'Tambah entri';
+
+  @override
+  String get addressBookErrorLabelEmpty => 'Label tidak boleh kosong.';
+
+  @override
+  String get addressBookErrorAddressEmpty => 'Alamat tidak boleh kosong.';
+
+  @override
+  String get addressBookDeleteTitle => 'Padam entri?';
+
+  @override
+  String get addressBookDeleteBody =>
+      'Alamat tidak terjejas — hanya label / nota tersimpan ini yang dibuang.';
+
+  @override
+  String get addressBookDeleteAction => 'Padam';
+
+  @override
+  String get addressBookEditTitle => 'Edit alamat';
+
+  @override
+  String get addressBookAddTitle => 'Tambah alamat';
+
+  @override
+  String get addressBookDeleteTooltip => 'Padam';
+
+  @override
+  String get addressBookLabelField => 'Label';
+
+  @override
+  String get addressBookAddressField => 'Alamat';
+
+  @override
+  String get addressBookAddressLocked =>
+      'Alamat tidak boleh disunting — padam dan tambah semula untuk mengubah.';
+
+  @override
+  String get addressBookScanTooltip => 'Imbas';
+
+  @override
+  String get addressBookPasteTooltip => 'Tampal';
+
+  @override
+  String get addressBookNotesField => 'Nota (pilihan)';
+
+  @override
+  String get addressBookNotesHint =>
+      'Teks bebas — disimpan secara tempatan sahaja.';
+
+  @override
+  String get addressBookSaveChanges => 'Simpan perubahan';
+
+  @override
+  String get addressBookAddToBook => 'Tambah ke buku';
+
+  @override
+  String get qrScanTitle => 'Imbas QR';
+
+  @override
+  String get qrScanTorchTooltip => 'Lampu suluh';
+
+  @override
+  String qrScanCameraError(String code) {
+    return 'Ralat kamera: $code';
+  }
+
+  @override
+  String get qrScanPermissionDenied => 'Kebenaran kamera ditolak';
+
+  @override
+  String get qrScanPermissionBody =>
+      'PeekWallet memerlukan akses kamera untuk mengimbas kod QR. Kamera hanya digunakan semasa skrin ini terbuka dan hanya membaca muatan QR.';
+
+  @override
+  String get qrScanTryAgain => 'Cuba lagi';
+
+  @override
+  String get qrScanOpenSettings => 'Buka tetapan aplikasi';
+
+  @override
+  String get qrScanCenterHint => 'Tengahkan kod QR dalam bingkai';
+
+  @override
+  String get rpcResetTitle => 'Tetapkan semula semua override?';
+
+  @override
+  String get rpcResetBody =>
+      'Setiap rantaian akan kembali ke titik akhir lalai awam. Anda boleh menambah override semula bila-bila masa.';
+
+  @override
+  String get rpcResetAction => 'Tetap semula';
+
+  @override
+  String get rpcScreenTitle => 'Titik akhir RPC tersuai';
+
+  @override
+  String get rpcResetAllTooltip => 'Tetap semula semua';
+
+  @override
+  String get rpcIntroBody =>
+      'Tunjukkan setiap rantaian ke nod anda sendiri dan bukan lalai awam. Membiar medan kosong mengekalkan lalai semasa.';
+
+  @override
+  String rpcDefaultHint(String hint) {
+    return 'Lalai: $hint';
+  }
+
+  @override
+  String get rpcSaveAction => 'Simpan';
+
+  @override
+  String get rpcPrivacyNotesBody =>
+      'Nota privasi:\n• Lalai awam melihat alamat IP anda dan alamat yang anda tanyakan. Jalankan nod sendiri atau proksi melalui VPN / LAN melalui Tailscale.\n• Titik akhir RPC tersuai yang dihantar di sini terus ke URL yang anda masukkan — rangkaian anda melihat destinasi. Pilih penyedia yang anda percaya.';
+
+  @override
+  String get restoreAllTitle => 'Pulihkan semua syiling dari bilik kebal';
+
+  @override
+  String get restoreAllIntro =>
+      'Menambah dompet untuk setiap syiling yang disokong, diterbitkan daripada benih bilik kebal 12/24-perkataan sedia ada anda.';
+
+  @override
+  String get restoreAllNote =>
+      'Dompet sedia ada dilangkau (tiada pendua). Monero dikecualikan — ia mempunyai format benih berasingan dan dipulihkan dari persediaannya sendiri.';
+
+  @override
+  String get restoreAllAction => 'Pulihkan semua dari benih bilik kebal';
+
+  @override
+  String get restoreAllVaultLocked =>
+      'Bilik kebal berkunci. Buka kunci dan cuba lagi.';
+
+  @override
+  String restoreAllHasWallet(String symbol) {
+    return 'Sudah ada dompet $symbol — langkau';
+  }
+
+  @override
+  String get restoreAllWillDerive =>
+      'Akan diterbitkan daripada benih BIP39 bilik kebal';
+
+  @override
+  String showSeedTitle(String name) {
+    return 'Frasa pemulihan · $name';
+  }
+
+  @override
+  String get showSeedPasswordPrompt =>
+      'Masukkan kata laluan aplikasi untuk melihat frasa pemulihan dompet ini.';
+
+  @override
+  String get showSeedPasswordLabel => 'Kata laluan aplikasi';
+
+  @override
+  String get showSeedRevealAction => 'Dedahkan';
+
+  @override
+  String get showSeedRecoveryPhrase => 'Frasa pemulihan';
+
+  @override
+  String get showSeedCopyPhrase => 'Salin frasa';
+
+  @override
+  String get showSeedCopyClipboardClears =>
+      'Disalin — papan keratan dikosongkan auto dalam 30s';
+
+  @override
+  String get showSeedPassphraseSection => 'Frasa laluan (perkataan ke-25)';
+
+  @override
+  String get showSeedSeedOffsetSection => 'Offset benih';
+
+  @override
+  String get showSeedAddressLabel => 'Alamat';
+
+  @override
+  String get showSeedViewKeyLabel => 'Kunci lihat';
+
+  @override
+  String get showSeedSpendKeyLabel => 'Kunci belanja';
+
+  @override
+  String get showSeedCopySpendKey => 'Salin kunci belanja';
+
+  @override
+  String showSeedStorageFooter(String format, String coin) {
+    return 'Simpanan: $format. Syiling: $coin.';
+  }
+
+  @override
+  String get showSeedWriteDownWarning =>
+      'Tuliskan di atas kertas dan simpan di tempat selamat. Sesiapa dengan frasa ini mempunyai kawalan penuh ke atas dompet. Jangan ambil tangkapan skrin — FLAG_SECURE menyekatnya juga.';
+
+  @override
+  String get showSeedKeysOnlyDisplay => 'Kunci sahaja';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.';
 

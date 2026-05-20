@@ -1199,6 +1199,220 @@ class AppLocalizationsVi extends AppLocalizations {
       'URL đã sao chép — mở trên trình duyệt của bạn';
 
   @override
+  String get addressBookTitle => 'Sổ địa chỉ';
+
+  @override
+  String get addressBookPickerTitle => 'Chọn người nhận';
+
+  @override
+  String get addressBookAddTooltip => 'Thêm mục';
+
+  @override
+  String get addressBookEmptyTitle => 'Chưa có địa chỉ đã lưu';
+
+  @override
+  String get addressBookEmptyBodyPicker => 'Lưu người nhận bạn sắp gửi.';
+
+  @override
+  String get addressBookEmptyBody =>
+      'Lưu địa chỉ của những người bạn hay gửi để không phải dán lại mỗi lần.';
+
+  @override
+  String get addressBookAddAction => 'Thêm mục';
+
+  @override
+  String get addressBookErrorLabelEmpty => 'Nhãn không được trống.';
+
+  @override
+  String get addressBookErrorAddressEmpty => 'Địa chỉ không được trống.';
+
+  @override
+  String get addressBookDeleteTitle => 'Xoá mục?';
+
+  @override
+  String get addressBookDeleteBody =>
+      'Địa chỉ không bị ảnh hưởng — chỉ nhãn / ghi chú đã lưu này bị xoá.';
+
+  @override
+  String get addressBookDeleteAction => 'Xoá';
+
+  @override
+  String get addressBookEditTitle => 'Sửa địa chỉ';
+
+  @override
+  String get addressBookAddTitle => 'Thêm địa chỉ';
+
+  @override
+  String get addressBookDeleteTooltip => 'Xoá';
+
+  @override
+  String get addressBookLabelField => 'Nhãn';
+
+  @override
+  String get addressBookAddressField => 'Địa chỉ';
+
+  @override
+  String get addressBookAddressLocked =>
+      'Địa chỉ không sửa được — xoá rồi thêm lại để đổi.';
+
+  @override
+  String get addressBookScanTooltip => 'Quét';
+
+  @override
+  String get addressBookPasteTooltip => 'Dán';
+
+  @override
+  String get addressBookNotesField => 'Ghi chú (tuỳ chọn)';
+
+  @override
+  String get addressBookNotesHint => 'Văn bản tự do — chỉ lưu cục bộ.';
+
+  @override
+  String get addressBookSaveChanges => 'Lưu thay đổi';
+
+  @override
+  String get addressBookAddToBook => 'Thêm vào sổ';
+
+  @override
+  String get qrScanTitle => 'Quét QR';
+
+  @override
+  String get qrScanTorchTooltip => 'Đèn pin';
+
+  @override
+  String qrScanCameraError(String code) {
+    return 'Lỗi camera: $code';
+  }
+
+  @override
+  String get qrScanPermissionDenied => 'Bị từ chối quyền camera';
+
+  @override
+  String get qrScanPermissionBody =>
+      'PeekWallet cần quyền camera để quét mã QR. Camera chỉ dùng khi màn hình này mở và chỉ đọc payload QR.';
+
+  @override
+  String get qrScanTryAgain => 'Thử lại';
+
+  @override
+  String get qrScanOpenSettings => 'Mở cài đặt ứng dụng';
+
+  @override
+  String get qrScanCenterHint => 'Đặt mã QR vào giữa khung';
+
+  @override
+  String get rpcResetTitle => 'Đặt lại tất cả override?';
+
+  @override
+  String get rpcResetBody =>
+      'Mỗi chuỗi sẽ về endpoint mặc định công khai. Bạn có thể thêm override lại bất cứ lúc nào.';
+
+  @override
+  String get rpcResetAction => 'Đặt lại';
+
+  @override
+  String get rpcScreenTitle => 'Endpoint RPC tuỳ chỉnh';
+
+  @override
+  String get rpcResetAllTooltip => 'Đặt lại tất cả';
+
+  @override
+  String get rpcIntroBody =>
+      'Trỏ mỗi chuỗi tới nút riêng của bạn thay vì mặc định công khai. Để trống thì giữ mặc định.';
+
+  @override
+  String rpcDefaultHint(String hint) {
+    return 'Mặc định: $hint';
+  }
+
+  @override
+  String get rpcSaveAction => 'Lưu';
+
+  @override
+  String get rpcPrivacyNotesBody =>
+      'Lưu ý quyền riêng tư:\n• Mặc định công khai nhìn thấy địa chỉ IP của bạn và những địa chỉ bạn hỏi. Chạy nút riêng hoặc proxy qua VPN / LAN qua Tailscale.\n• Endpoint RPC tuỳ chỉnh sẽ đi thẳng tới URL bạn nhập — mạng của bạn thấy đích đến. Chọn nhà cung cấp đáng tin cậy.';
+
+  @override
+  String get restoreAllTitle => 'Khôi phục mọi đồng từ kho';
+
+  @override
+  String get restoreAllIntro =>
+      'Thêm ví cho từng đồng được hỗ trợ, dẫn xuất từ seed 12/24-từ kho hiện có của bạn.';
+
+  @override
+  String get restoreAllNote =>
+      'Ví đã có sẽ bỏ qua (không trùng). Monero không bao gồm — nó có định dạng seed riêng và được khôi phục qua thiết lập riêng.';
+
+  @override
+  String get restoreAllAction => 'Khôi phục tất cả từ seed kho';
+
+  @override
+  String get restoreAllVaultLocked => 'Két đang khoá. Mở khoá và thử lại.';
+
+  @override
+  String restoreAllHasWallet(String symbol) {
+    return 'Đã có ví $symbol — bỏ qua';
+  }
+
+  @override
+  String get restoreAllWillDerive => 'Sẽ dẫn xuất từ seed BIP39 của kho';
+
+  @override
+  String showSeedTitle(String name) {
+    return 'Cụm từ khôi phục · $name';
+  }
+
+  @override
+  String get showSeedPasswordPrompt =>
+      'Nhập mật khẩu ứng dụng để xem cụm từ khôi phục của ví này.';
+
+  @override
+  String get showSeedPasswordLabel => 'Mật khẩu ứng dụng';
+
+  @override
+  String get showSeedRevealAction => 'Hiển thị';
+
+  @override
+  String get showSeedRecoveryPhrase => 'Cụm từ khôi phục';
+
+  @override
+  String get showSeedCopyPhrase => 'Sao chép cụm từ';
+
+  @override
+  String get showSeedCopyClipboardClears =>
+      'Đã sao chép — bộ nhớ tạm tự xoá sau 30s';
+
+  @override
+  String get showSeedPassphraseSection => 'Passphrase (từ 25)';
+
+  @override
+  String get showSeedSeedOffsetSection => 'Seed offset';
+
+  @override
+  String get showSeedAddressLabel => 'Địa chỉ';
+
+  @override
+  String get showSeedViewKeyLabel => 'Khoá xem';
+
+  @override
+  String get showSeedSpendKeyLabel => 'Khoá chi tiêu';
+
+  @override
+  String get showSeedCopySpendKey => 'Sao chép khoá chi tiêu';
+
+  @override
+  String showSeedStorageFooter(String format, String coin) {
+    return 'Lưu trữ: $format. Đồng: $coin.';
+  }
+
+  @override
+  String get showSeedWriteDownWarning =>
+      'Ghi ra giấy và cất nơi an toàn. Bất cứ ai có cụm từ này đều kiểm soát toàn bộ ví. Đừng chụp màn hình — FLAG_SECURE cũng chặn nó.';
+
+  @override
+  String get showSeedKeysOnlyDisplay => 'Chỉ khoá';
+
+  @override
   String get erc20EmptyHint =>
       'Chưa có token — nhận USDT/USDC/DAI vào địa chỉ này hoặc nhấn \"Thêm token\" để theo dõi ERC-20 khác qua địa chỉ hợp đồng.';
 

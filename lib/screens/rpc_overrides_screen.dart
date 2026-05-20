@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../prefs/rpc_overrides.dart';
 import '../theme.dart';
 
@@ -116,22 +117,20 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
   }
 
   Future<void> _resetAll() async {
+    final l = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reset all overrides?'),
-        content: const Text(
-          'Every chain will go back to its public default endpoint. '
-          'You can re-add overrides at any time.',
-        ),
+        title: Text(l.rpcResetTitle),
+        content: Text(l.rpcResetBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Reset'),
+            child: Text(l.rpcResetAction),
           ),
         ],
       ),
@@ -148,13 +147,14 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Custom RPC endpoints'),
+        title: Text(l.rpcScreenTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.restart_alt),
-            tooltip: 'Reset all',
+            tooltip: l.rpcResetAllTooltip,
             onPressed: _resetAll,
           ),
         ],
@@ -188,12 +188,10 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
                           size: 18, color: PeekColors.accent),
                     ),
                     const SizedBox(width: PeekDesign.sp3),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Point each chain at your own node instead of the '
-                        'public default. Takes effect the next time you '
-                        'open the affected wallet.',
-                        style: TextStyle(
+                        l.rpcIntroBody,
+                        style: const TextStyle(
                             color: PeekColors.text2,
                             fontSize: 12,
                             height: 1.4),
@@ -224,7 +222,7 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Default: ${e.hint}',
+                        l.rpcDefaultHint(e.hint),
                         style: const TextStyle(
                             color: PeekColors.text3, fontSize: 11),
                       ),
@@ -238,8 +236,8 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
                         tapTargetSize:
                             MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text('Save',
-                          style: TextStyle(fontSize: 13)),
+                      child: Text(l.rpcSaveAction,
+                          style: const TextStyle(fontSize: 13)),
                     ),
                   ],
                 ),
@@ -252,15 +250,9 @@ class _RpcOverridesScreenState extends State<RpcOverridesScreen> {
                   borderRadius: PeekDesign.brSmall,
                   border: Border.all(color: PeekColors.hairline),
                 ),
-                child: const Text(
-                  'Privacy notes:\n'
-                  '• Monero is configured separately on the Settings → Monero node screen.\n'
-                  '• Each request still goes over plain HTTPS — to also hide your IP, '
-                  'set up Tor / a VPN on your device or run the endpoint on your '
-                  'LAN over Tailscale.\n'
-                  '• The wallet doesn\'t validate that the endpoint is honest. '
-                  'Pick providers you trust.',
-                  style: TextStyle(
+                child: Text(
+                  l.rpcPrivacyNotesBody,
+                  style: const TextStyle(
                       color: PeekColors.text3,
                       fontSize: 11,
                       height: 1.5),

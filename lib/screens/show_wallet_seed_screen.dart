@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../util/sensitive_clipboard.dart';
@@ -76,10 +77,11 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ScreenshotGuard(
       child: Scaffold(
         appBar: AppBar(
-            title: Text('Recovery phrase · ${widget.walletMeta.name}')),
+            title: Text(l.showSeedTitle(widget.walletMeta.name))),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -91,22 +93,20 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
   }
 
   Widget _passwordForm() {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Enter your app password to see this wallet\'s recovery '
-          'phrase. This is what you write down to restore the wallet '
-          'on a different device — the vault\'s seed alone is NOT '
-          'enough.',
-          style: TextStyle(color: PeekColors.text2, fontSize: 13),
+        Text(
+          l.showSeedPasswordPrompt,
+          style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _pwd,
           obscureText: true,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'App password'),
+          decoration: InputDecoration(labelText: l.showSeedPasswordLabel),
           onSubmitted: (_) => _reveal(),
         ),
         if (_err != null) ...[
@@ -123,25 +123,21 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
                   height: 18,
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white))
-              : const Text('Reveal'),
+              : Text(l.showSeedRevealAction),
         ),
       ],
     );
   }
 
   Widget _seedView() {
+    final l = AppLocalizations.of(context);
     final material = _material!;
-    // Pull the seed string out of whatever shape the coin module
-    // stored. seedMaterial is a free-form Map — we just look for
-    // the known key names.
     final String seed = (material['seed'] ??
             material['mnemonic'] ??
             '(no seed — keys-only wallet)') as String;
     final String? passphrase = material['passphrase'] as String?;
     final String? seedOffset = material['seedOffset'] as String?;
 
-    // Keys-only Monero wallets store address + spendKey + viewKey
-    // instead of a mnemonic. Surface those separately.
     final String? address = material['address'] as String?;
     final String? spendKey = material['spendKey'] as String?;
     final String? viewKey = material['viewKey'] as String?;
@@ -153,8 +149,9 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
         _formatBadge(),
         const SizedBox(height: 12),
         if (seed != '(no seed — keys-only wallet)') ...[
-          const Text('Recovery phrase',
-              style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+          Text(l.showSeedRecoveryPhrase,
+              style: const TextStyle(
+                  color: PeekColors.text2, fontSize: 12)),
           const SizedBox(height: 6),
           _seedBox(seed),
           const SizedBox(height: 12),
@@ -163,15 +160,15 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.copy, size: 16),
-                  label: const Text('Copy phrase'),
+                  label: Text(l.showSeedCopyPhrase),
                   onPressed: () async {
                     await SensitiveClipboard.copy(seed,
                         label: 'wallet seed');
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Copied — clipboard auto-clears in 30s')),
+                      SnackBar(
+                          content:
+                              Text(l.showSeedCopyClipboardClears)),
                     );
                   },
                 ),
@@ -180,27 +177,29 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
           ),
           if (passphrase != null && passphrase.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text('Passphrase (25th word)',
-                style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+            Text(l.showSeedPassphraseSection,
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 12)),
             const SizedBox(height: 6),
             _seedBox(passphrase),
           ],
           if (seedOffset != null && seedOffset.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text('Seed offset',
-                style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+            Text(l.showSeedSeedOffsetSection,
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 12)),
             const SizedBox(height: 6),
             _seedBox(seedOffset),
           ],
         ],
         if (address != null) ...[
-          _kv('Address', address),
-          if (viewKey != null) _kv('View key', viewKey),
-          if (spendKey != null) _kv('Spend key', spendKey),
+          _kv(l.showSeedAddressLabel, address),
+          if (viewKey != null) _kv(l.showSeedViewKeyLabel, viewKey),
+          if (spendKey != null) _kv(l.showSeedSpendKeyLabel, spendKey),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             icon: const Icon(Icons.copy, size: 16),
-            label: const Text('Copy spend key'),
+            label: Text(l.showSeedCopySpendKey),
             onPressed: spendKey == null
                 ? null
                 : () => SensitiveClipboard.copy(spendKey,
@@ -209,8 +208,9 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
         ],
         const SizedBox(height: 24),
         Text(
-          'Storage: ${widget.walletMeta.format.displayName}. '
-          'Coin: ${widget.walletMeta.coinId}.',
+          l.showSeedStorageFooter(
+              widget.walletMeta.format.displayName,
+              widget.walletMeta.coinId),
           style:
               const TextStyle(color: PeekColors.text3, fontSize: 11),
         ),
@@ -219,6 +219,7 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
   }
 
   Widget _warningBanner() {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(PeekDesign.sp4),
       decoration: BoxDecoration(
@@ -241,12 +242,10 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
                 color: PeekColors.red, size: 18),
           ),
           const SizedBox(width: PeekDesign.sp3),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Write this down on paper and store it somewhere safe. '
-              'Anyone with this phrase has full control of the wallet. '
-              "Don't take a screenshot — FLAG_SECURE blocks it anyway.",
-              style: TextStyle(
+              l.showSeedWriteDownWarning,
+              style: const TextStyle(
                   color: PeekColors.text, fontSize: 12, height: 1.4),
             ),
           ),
@@ -256,13 +255,19 @@ class _ShowWalletSeedScreenState extends State<ShowWalletSeedScreen> {
   }
 
   Widget _formatBadge() {
+    final l = AppLocalizations.of(context);
     final f = widget.walletMeta.format;
+    // Format labels mix technical naming conventions (BIP39 / Polyseed
+    // / Monero) that map 1:1 to terms developers + other wallets use
+    // — keeping the technical names recognisable across languages
+    // beats translating them. Only the "Keys only" case (which isn't
+    // a standard term) gets localized.
     final label = switch (f) {
       SeedFormat.bip39_12 => '12-word BIP39',
       SeedFormat.bip39_24 => '24-word BIP39',
       SeedFormat.monero25 => '25-word Monero',
       SeedFormat.moneroPolyseed => '14-word Polyseed',
-      SeedFormat.keysOnly => 'Keys only',
+      SeedFormat.keysOnly => l.showSeedKeysOnlyDisplay,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),

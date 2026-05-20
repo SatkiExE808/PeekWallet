@@ -1206,6 +1206,222 @@ class AppLocalizationsId extends AppLocalizations {
   String get aboutUrlCopiedToast => 'URL disalin — buka di browser Anda';
 
   @override
+  String get addressBookTitle => 'Buku alamat';
+
+  @override
+  String get addressBookPickerTitle => 'Pilih penerima';
+
+  @override
+  String get addressBookAddTooltip => 'Tambah entri';
+
+  @override
+  String get addressBookEmptyTitle => 'Belum ada alamat tersimpan';
+
+  @override
+  String get addressBookEmptyBodyPicker =>
+      'Simpan penerima yang akan Anda kirim.';
+
+  @override
+  String get addressBookEmptyBody =>
+      'Simpan alamat orang yang sering Anda kirim agar tidak perlu menempel tiap kali.';
+
+  @override
+  String get addressBookAddAction => 'Tambah entri';
+
+  @override
+  String get addressBookErrorLabelEmpty => 'Label tidak boleh kosong.';
+
+  @override
+  String get addressBookErrorAddressEmpty => 'Alamat tidak boleh kosong.';
+
+  @override
+  String get addressBookDeleteTitle => 'Hapus entri?';
+
+  @override
+  String get addressBookDeleteBody =>
+      'Alamat tidak terpengaruh — hanya label / catatan tersimpan ini yang dihapus.';
+
+  @override
+  String get addressBookDeleteAction => 'Hapus';
+
+  @override
+  String get addressBookEditTitle => 'Sunting alamat';
+
+  @override
+  String get addressBookAddTitle => 'Tambah alamat';
+
+  @override
+  String get addressBookDeleteTooltip => 'Hapus';
+
+  @override
+  String get addressBookLabelField => 'Label';
+
+  @override
+  String get addressBookAddressField => 'Alamat';
+
+  @override
+  String get addressBookAddressLocked =>
+      'Alamat tidak bisa diedit — hapus dan tambah ulang untuk mengubah.';
+
+  @override
+  String get addressBookScanTooltip => 'Pindai';
+
+  @override
+  String get addressBookPasteTooltip => 'Tempel';
+
+  @override
+  String get addressBookNotesField => 'Catatan (opsional)';
+
+  @override
+  String get addressBookNotesHint => 'Teks bebas — hanya disimpan lokal.';
+
+  @override
+  String get addressBookSaveChanges => 'Simpan perubahan';
+
+  @override
+  String get addressBookAddToBook => 'Tambah ke buku';
+
+  @override
+  String get qrScanTitle => 'Pindai QR';
+
+  @override
+  String get qrScanTorchTooltip => 'Senter';
+
+  @override
+  String qrScanCameraError(String code) {
+    return 'Galat kamera: $code';
+  }
+
+  @override
+  String get qrScanPermissionDenied => 'Izin kamera ditolak';
+
+  @override
+  String get qrScanPermissionBody =>
+      'PeekWallet butuh akses kamera untuk memindai kode QR. Kamera hanya dipakai saat layar ini terbuka dan hanya membaca payload QR.';
+
+  @override
+  String get qrScanTryAgain => 'Coba lagi';
+
+  @override
+  String get qrScanOpenSettings => 'Buka pengaturan aplikasi';
+
+  @override
+  String get qrScanCenterHint => 'Tempatkan kode QR di tengah bingkai';
+
+  @override
+  String get rpcResetTitle => 'Reset semua override?';
+
+  @override
+  String get rpcResetBody =>
+      'Setiap rantai akan kembali ke endpoint default publik. Anda bisa menambah override lagi kapan saja.';
+
+  @override
+  String get rpcResetAction => 'Reset';
+
+  @override
+  String get rpcScreenTitle => 'Endpoint RPC kustom';
+
+  @override
+  String get rpcResetAllTooltip => 'Reset semua';
+
+  @override
+  String get rpcIntroBody =>
+      'Arahkan tiap rantai ke node Anda sendiri, bukan default publik. Bidang kosong tetap pakai default.';
+
+  @override
+  String rpcDefaultHint(String hint) {
+    return 'Default: $hint';
+  }
+
+  @override
+  String get rpcSaveAction => 'Simpan';
+
+  @override
+  String get rpcPrivacyNotesBody =>
+      'Catatan privasi:\n• Default publik melihat alamat IP Anda dan alamat yang Anda kueri. Jalankan node sendiri atau proxy lewat VPN / LAN via Tailscale.\n• Endpoint RPC kustom langsung ke URL yang Anda masukkan — jaringan Anda melihat tujuan. Pilih provider yang Anda percaya.';
+
+  @override
+  String get restoreAllTitle => 'Pulihkan semua koin dari brankas';
+
+  @override
+  String get restoreAllIntro =>
+      'Menambah dompet untuk setiap koin yang didukung, diturunkan dari seed brankas 12/24-kata yang sudah ada.';
+
+  @override
+  String get restoreAllNote =>
+      'Dompet yang sudah ada dilewati (tidak duplikat). Monero dikecualikan — format seed-nya terpisah dan dipulihkan dari setup-nya sendiri.';
+
+  @override
+  String get restoreAllAction => 'Pulihkan semua dari seed brankas';
+
+  @override
+  String get restoreAllVaultLocked =>
+      'Brankas terkunci. Buka kunci dan coba lagi.';
+
+  @override
+  String restoreAllHasWallet(String symbol) {
+    return 'Sudah punya dompet $symbol — lewati';
+  }
+
+  @override
+  String get restoreAllWillDerive => 'Akan diturunkan dari seed BIP39 brankas';
+
+  @override
+  String showSeedTitle(String name) {
+    return 'Frasa pemulihan · $name';
+  }
+
+  @override
+  String get showSeedPasswordPrompt =>
+      'Masukkan kata sandi aplikasi untuk melihat frasa pemulihan dompet ini.';
+
+  @override
+  String get showSeedPasswordLabel => 'Kata sandi aplikasi';
+
+  @override
+  String get showSeedRevealAction => 'Tampilkan';
+
+  @override
+  String get showSeedRecoveryPhrase => 'Frasa pemulihan';
+
+  @override
+  String get showSeedCopyPhrase => 'Salin frasa';
+
+  @override
+  String get showSeedCopyClipboardClears =>
+      'Disalin — papan klip otomatis kosong dalam 30d';
+
+  @override
+  String get showSeedPassphraseSection => 'Passphrase (kata ke-25)';
+
+  @override
+  String get showSeedSeedOffsetSection => 'Seed offset';
+
+  @override
+  String get showSeedAddressLabel => 'Alamat';
+
+  @override
+  String get showSeedViewKeyLabel => 'Kunci lihat';
+
+  @override
+  String get showSeedSpendKeyLabel => 'Kunci belanja';
+
+  @override
+  String get showSeedCopySpendKey => 'Salin kunci belanja';
+
+  @override
+  String showSeedStorageFooter(String format, String coin) {
+    return 'Penyimpanan: $format. Koin: $coin.';
+  }
+
+  @override
+  String get showSeedWriteDownWarning =>
+      'Tulis di kertas dan simpan di tempat aman. Siapa pun dengan frasa ini punya kendali penuh dompet. Jangan tangkap layar — FLAG_SECURE memblokirnya.';
+
+  @override
+  String get showSeedKeysOnlyDisplay => 'Hanya kunci';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketuk \"Tambah token\" untuk melacak ERC-20 lain via alamat kontrak.';
 

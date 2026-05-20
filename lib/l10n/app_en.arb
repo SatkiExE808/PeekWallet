@@ -596,6 +596,101 @@
   "aboutSecurityModelLink": "Security model",
   "aboutFreeSoftwareBody": "PeekWallet is free, open-source software. Anyone can read the source, build it themselves, and verify the binary on /releases matches the public code (reproducibility tracked in the roadmap).",
   "aboutUrlCopiedToast": "URL copied — open in your browser",
+
+  "addressBookTitle": "Address book",
+  "addressBookPickerTitle": "Pick recipient",
+  "addressBookAddTooltip": "Add entry",
+  "addressBookEmptyTitle": "No saved addresses yet",
+  "addressBookEmptyBodyPicker": "Save the recipient you're about to send to.",
+  "addressBookEmptyBody": "Save the addresses of people you send to often so you don't have to paste each time.",
+  "addressBookAddAction": "Add entry",
+  "addressBookErrorLabelEmpty": "Label cannot be empty.",
+  "addressBookErrorAddressEmpty": "Address cannot be empty.",
+  "addressBookDeleteTitle": "Delete entry?",
+  "addressBookDeleteBody": "The address is not affected — only this saved label / note is removed.",
+  "addressBookDeleteAction": "Delete",
+  "addressBookEditTitle": "Edit address",
+  "addressBookAddTitle": "Add address",
+  "addressBookDeleteTooltip": "Delete",
+  "addressBookLabelField": "Label",
+  "addressBookAddressField": "Address",
+  "addressBookAddressLocked": "Addresses can't be edited — delete and re-add to change.",
+  "addressBookScanTooltip": "Scan",
+  "addressBookPasteTooltip": "Paste",
+  "addressBookNotesField": "Notes (optional)",
+  "addressBookNotesHint": "Free-text — only stored locally.",
+  "addressBookSaveChanges": "Save changes",
+  "addressBookAddToBook": "Add to book",
+
+  "qrScanTitle": "Scan QR",
+  "qrScanTorchTooltip": "Torch",
+  "qrScanCameraError": "Camera error: {code}",
+  "@qrScanCameraError": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "qrScanPermissionDenied": "Camera permission denied",
+  "qrScanPermissionBody": "PeekWallet needs camera access to scan QR codes. The camera is only used while this screen is open and only reads the QR payload.",
+  "qrScanTryAgain": "Try again",
+  "qrScanOpenSettings": "Open app settings",
+  "qrScanCenterHint": "Center the QR code in the frame",
+
+  "rpcResetTitle": "Reset all overrides?",
+  "rpcResetBody": "Every chain will go back to its public default endpoint. You can re-add overrides at any time.",
+  "rpcResetAction": "Reset",
+  "rpcScreenTitle": "Custom RPC endpoints",
+  "rpcResetAllTooltip": "Reset all",
+  "rpcIntroBody": "Point each chain at your own node instead of the public default. Leaving a field blank keeps the current default.",
+  "rpcDefaultHint": "Default: {hint}",
+  "@rpcDefaultHint": {
+    "placeholders": {
+      "hint": {"type": "String"}
+    }
+  },
+  "rpcSaveAction": "Save",
+  "rpcPrivacyNotesBody": "Privacy notes:\n• Public defaults see your IP address and which addresses you query. Run your own node or proxy through a VPN / LAN over Tailscale.\n• Custom RPC endpoints sent here go straight to whatever URL you enter — your network sees the destination. Pick providers you trust.",
+
+  "restoreAllTitle": "Restore all coins from vault",
+  "restoreAllIntro": "Adds a wallet for every supported coin, derived from your existing 12/24-word vault seed.",
+  "restoreAllNote": "Existing wallets are skipped (no duplicates). Monero is excluded — it has a separate seed format and is restored from its own setup.",
+  "restoreAllAction": "Restore all from vault seed",
+  "restoreAllVaultLocked": "Vault is locked. Unlock and try again.",
+  "restoreAllHasWallet": "Already have a {symbol} wallet — skip",
+  "@restoreAllHasWallet": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "restoreAllWillDerive": "Will derive from BIP39 vault seed",
+
+  "showSeedTitle": "Recovery phrase · {name}",
+  "@showSeedTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "showSeedPasswordPrompt": "Enter your app password to see this wallet's recovery phrase.",
+  "showSeedPasswordLabel": "App password",
+  "showSeedRevealAction": "Reveal",
+  "showSeedRecoveryPhrase": "Recovery phrase",
+  "showSeedCopyPhrase": "Copy phrase",
+  "showSeedCopyClipboardClears": "Copied — clipboard auto-clears in 30s",
+  "showSeedPassphraseSection": "Passphrase (25th word)",
+  "showSeedSeedOffsetSection": "Seed offset",
+  "showSeedAddressLabel": "Address",
+  "showSeedViewKeyLabel": "View key",
+  "showSeedSpendKeyLabel": "Spend key",
+  "showSeedCopySpendKey": "Copy spend key",
+  "showSeedStorageFooter": "Storage: {format}. Coin: {coin}.",
+  "@showSeedStorageFooter": {
+    "placeholders": {
+      "format": {"type": "String"},
+      "coin": {"type": "String"}
+    }
+  },
+  "showSeedWriteDownWarning": "Write this down on paper and store it somewhere safe. Anyone with this phrase has full control of the wallet. Don't take a screenshot — FLAG_SECURE blocks it anyway.",
+  "showSeedKeysOnlyDisplay": "Keys only",
   "@sendSolFinalFeeHintNewAta": {
     "placeholders": {
       "symbol": {"type": "String"}

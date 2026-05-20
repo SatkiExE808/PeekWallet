@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../coins/coin_module.dart';
 import '../coins/module_registry.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
 import '../vault/vault_state.dart';
@@ -63,11 +64,11 @@ class _RestoreAllFromVaultScreenState
       .toList();
 
   Future<void> _run() async {
+    final l = AppLocalizations.of(context);
     final mnemonic = VaultState.I.mnemonic;
     final cachedPwd = VaultState.I.cachedPassword;
     if (mnemonic == null || cachedPwd == null) {
-      setState(() => _err =
-          'Vault is locked. Unlock and try again.');
+      setState(() => _err = l.restoreAllVaultLocked);
       return;
     }
 
@@ -133,8 +134,9 @@ class _RestoreAllFromVaultScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Restore all coins from vault')),
+      appBar: AppBar(title: Text(l.restoreAllTitle)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(PeekDesign.sp4,
@@ -164,13 +166,10 @@ class _RestoreAllFromVaultScreenState
                           size: 18, color: PeekColors.accent),
                     ),
                     const SizedBox(width: PeekDesign.sp3),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Adds a wallet for every supported coin, derived '
-                        'from your vault\'s recovery phrase. Same seed → '
-                        'same addresses every time, so your vault seed '
-                        'becomes the single backup for all of them.',
-                        style: TextStyle(
+                        l.restoreAllIntro,
+                        style: const TextStyle(
                             color: PeekColors.text2,
                             fontSize: 12,
                             height: 1.4),
@@ -187,11 +186,9 @@ class _RestoreAllFromVaultScreenState
                   borderRadius: PeekDesign.brSmall,
                   border: Border.all(color: PeekColors.hairline),
                 ),
-                child: const Text(
-                  'Existing wallets are skipped (no duplicates). Monero '
-                  'is handled separately via the legacy single-wallet '
-                  'flow from the same seed.',
-                  style: TextStyle(
+                child: Text(
+                  l.restoreAllNote,
+                  style: const TextStyle(
                       color: PeekColors.text3,
                       fontSize: 11,
                       height: 1.4),
@@ -222,7 +219,7 @@ class _RestoreAllFromVaultScreenState
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Restore all from vault seed'),
+                    : Text(l.restoreAllAction),
               ),
             ],
           ),
@@ -232,6 +229,7 @@ class _RestoreAllFromVaultScreenState
   }
 
   Widget _coinRow(CoinModule coin) {
+    final l = AppLocalizations.of(context);
     final status =
         _status[coin.id] ?? _CoinStatus.idle;
     final existing = _existingCoinIds.contains(coin.id);
@@ -252,8 +250,8 @@ class _RestoreAllFromVaultScreenState
                         fontWeight: FontWeight.w600)),
                 Text(
                   existing
-                      ? 'Already have a ${coin.symbol} wallet — skip'
-                      : 'Will derive from BIP39 vault seed',
+                      ? l.restoreAllHasWallet(coin.symbol)
+                      : l.restoreAllWillDerive,
                   style: const TextStyle(
                       color: PeekColors.text3, fontSize: 11),
                 ),

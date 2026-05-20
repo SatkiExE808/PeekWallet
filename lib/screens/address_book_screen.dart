@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../address_book/address_book.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
 import 'qr_scan_screen.dart';
@@ -51,14 +52,15 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isPicker = widget.pickForCoin != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(isPicker ? 'Pick recipient' : 'Address book'),
+        title: Text(isPicker ? l.addressBookPickerTitle : l.addressBookTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Add entry',
+            tooltip: l.addressBookAddTooltip,
             onPressed: _add,
           ),
         ],
@@ -205,6 +207,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -236,9 +239,9 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: PeekDesign.sp5),
-            const Text(
-              'No saved addresses yet',
-              style: TextStyle(
+            Text(
+              l.addressBookEmptyTitle,
+              style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3),
@@ -246,8 +249,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: PeekDesign.sp2),
             Text(
               isPicker
-                  ? 'Save the recipient you\'re about to send to.'
-                  : 'Save the addresses of people you send to often so you don\'t have to paste each time.',
+                  ? l.addressBookEmptyBodyPicker
+                  : l.addressBookEmptyBody,
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: PeekColors.text2, fontSize: 13, height: 1.4),
@@ -258,7 +261,7 @@ class _EmptyState extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onAdd,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add entry'),
+                label: Text(l.addressBookAddAction),
               ),
             ),
           ],
@@ -313,6 +316,7 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
   }
 
   Future<void> _save() async {
+    final l = AppLocalizations.of(context);
     setState(() {
       _err = null;
       _busy = true;
@@ -321,14 +325,14 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
     final address = _address.text.trim();
     if (label.isEmpty) {
       setState(() {
-        _err = 'Label cannot be empty.';
+        _err = l.addressBookErrorLabelEmpty;
         _busy = false;
       });
       return;
     }
     if (address.isEmpty) {
       setState(() {
-        _err = 'Address cannot be empty.';
+        _err = l.addressBookErrorAddressEmpty;
         _busy = false;
       });
       return;
@@ -359,20 +363,20 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
   }
 
   Future<void> _delete() async {
+    final l = AppLocalizations.of(context);
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text(
-            'The address is not affected — only this saved label / note is removed.'),
+        title: Text(l.addressBookDeleteTitle),
+        content: Text(l.addressBookDeleteBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(l.addressBookDeleteAction),
           ),
         ],
       ),
@@ -384,8 +388,10 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
   }
 
   Future<void> _scan() async {
+    final l = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const QrScanScreen(title: 'Scan address')),
+      MaterialPageRoute(
+          builder: (_) => QrScanScreen(title: l.addressBookScanTooltip)),
     );
     if (scanned != null && scanned.isNotEmpty) {
       _address.text = scanned;
@@ -394,16 +400,17 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isEdit = widget.existing != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdit ? 'Edit address' : 'Add address'),
+        title: Text(isEdit ? l.addressBookEditTitle : l.addressBookAddTitle),
         actions: [
           if (isEdit)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _delete,
-              tooltip: 'Delete',
+              tooltip: l.addressBookDeleteTooltip,
             ),
         ],
       ),
@@ -416,8 +423,8 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
               TextField(
                 controller: _label,
                 autofocus: !isEdit,
-                decoration: const InputDecoration(
-                  labelText: 'Label',
+                decoration: InputDecoration(
+                  labelText: l.addressBookLabelField,
                   hintText: 'e.g. Alice — Cake wallet',
                 ),
               ),
@@ -429,10 +436,10 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
                 readOnly: isEdit, // can't change address — delete + re-add
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                 decoration: InputDecoration(
-                  labelText: 'Address',
+                  labelText: l.addressBookAddressField,
                   hintText: '4… or 8…',
                   helperText: isEdit
-                      ? 'Addresses can\'t be edited — delete and re-add to change.'
+                      ? l.addressBookAddressLocked
                       : null,
                   suffixIcon: isEdit
                       ? null
@@ -442,7 +449,7 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
                             IconButton(
                               icon: const Icon(Icons.qr_code_scanner, size: 18),
                               onPressed: _scan,
-                              tooltip: 'Scan',
+                              tooltip: l.addressBookScanTooltip,
                             ),
                             IconButton(
                               icon: const Icon(Icons.content_paste, size: 18),
@@ -452,7 +459,7 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
                                   _address.text = data!.text!.trim();
                                 }
                               },
-                              tooltip: 'Paste',
+                              tooltip: l.addressBookPasteTooltip,
                             ),
                           ],
                         ),
@@ -463,9 +470,9 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
                 controller: _notes,
                 maxLines: 3,
                 minLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  hintText: 'Free-text — only stored locally.',
+                decoration: InputDecoration(
+                  labelText: l.addressBookNotesField,
+                  hintText: l.addressBookNotesHint,
                 ),
               ),
               if (_err != null) ...[
@@ -505,7 +512,9 @@ class _AddressBookEditScreenState extends State<AddressBookEditScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : Text(isEdit ? 'Save changes' : 'Add to book'),
+                    : Text(isEdit
+                        ? l.addressBookSaveChanges
+                        : l.addressBookAddToBook),
               ),
             ],
           ),

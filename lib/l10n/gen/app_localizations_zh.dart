@@ -1163,6 +1163,212 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutUrlCopiedToast => 'URL 已複製 — 請在瀏覽器中開啟';
 
   @override
+  String get addressBookTitle => '通訊錄';
+
+  @override
+  String get addressBookPickerTitle => '選擇收款人';
+
+  @override
+  String get addressBookAddTooltip => '新增項目';
+
+  @override
+  String get addressBookEmptyTitle => '尚無已儲存地址';
+
+  @override
+  String get addressBookEmptyBodyPicker => '儲存你即將傳送的收款人。';
+
+  @override
+  String get addressBookEmptyBody => '將常傳送的收款人地址儲存起來,下次無需每次重新貼上。';
+
+  @override
+  String get addressBookAddAction => '新增項目';
+
+  @override
+  String get addressBookErrorLabelEmpty => '標籤不可為空。';
+
+  @override
+  String get addressBookErrorAddressEmpty => '地址不可為空。';
+
+  @override
+  String get addressBookDeleteTitle => '刪除此項目?';
+
+  @override
+  String get addressBookDeleteBody => '地址本身不受影響 — 只是移除這個已儲存的標籤 / 備註。';
+
+  @override
+  String get addressBookDeleteAction => '刪除';
+
+  @override
+  String get addressBookEditTitle => '編輯地址';
+
+  @override
+  String get addressBookAddTitle => '新增地址';
+
+  @override
+  String get addressBookDeleteTooltip => '刪除';
+
+  @override
+  String get addressBookLabelField => '標籤';
+
+  @override
+  String get addressBookAddressField => '地址';
+
+  @override
+  String get addressBookAddressLocked => '地址無法編輯 — 請刪除後重新新增。';
+
+  @override
+  String get addressBookScanTooltip => '掃描';
+
+  @override
+  String get addressBookPasteTooltip => '貼上';
+
+  @override
+  String get addressBookNotesField => '備註(選填)';
+
+  @override
+  String get addressBookNotesHint => '純文字 — 僅儲存於本機。';
+
+  @override
+  String get addressBookSaveChanges => '儲存變更';
+
+  @override
+  String get addressBookAddToBook => '加入通訊錄';
+
+  @override
+  String get qrScanTitle => '掃描 QR 碼';
+
+  @override
+  String get qrScanTorchTooltip => '手電筒';
+
+  @override
+  String qrScanCameraError(String code) {
+    return '相機錯誤:$code';
+  }
+
+  @override
+  String get qrScanPermissionDenied => '相機權限被拒';
+
+  @override
+  String get qrScanPermissionBody =>
+      'PeekWallet 需要相機權限以掃描 QR 碼。只在此畫面開啟期間使用相機,僅讀取 QR 內容。';
+
+  @override
+  String get qrScanTryAgain => '重試';
+
+  @override
+  String get qrScanOpenSettings => '開啟應用程式設定';
+
+  @override
+  String get qrScanCenterHint => '將 QR 碼置於畫面中央';
+
+  @override
+  String get rpcResetTitle => '重置所有自訂端點?';
+
+  @override
+  String get rpcResetBody => '每個鏈都會回到公開預設端點。你可以隨時重新新增自訂端點。';
+
+  @override
+  String get rpcResetAction => '重置';
+
+  @override
+  String get rpcScreenTitle => '自訂 RPC 端點';
+
+  @override
+  String get rpcResetAllTooltip => '全部重置';
+
+  @override
+  String get rpcIntroBody => '讓每個鏈指向你自己的節點,而非公開預設端點。欄位留空則保持目前預設。';
+
+  @override
+  String rpcDefaultHint(String hint) {
+    return '預設:$hint';
+  }
+
+  @override
+  String get rpcSaveAction => '儲存';
+
+  @override
+  String get rpcPrivacyNotesBody =>
+      '隱私說明:\n• 公開預設端點會看到你的 IP 與查詢的地址。可自架節點或透過 VPN / Tailscale 區網代理。\n• 你輸入的自訂端點會直接連線 — 網路會看見目的地。請選擇你信任的服務商。';
+
+  @override
+  String get restoreAllTitle => '從金庫種子還原所有幣種';
+
+  @override
+  String get restoreAllIntro => '從既有的 12/24 字金庫種子,為每個支援的幣種衍生一個錢包。';
+
+  @override
+  String get restoreAllNote =>
+      '已存在的錢包會跳過(不會重複)。Monero 不包含 — 它有獨立的種子格式,需從其自有流程還原。';
+
+  @override
+  String get restoreAllAction => '從金庫種子還原全部';
+
+  @override
+  String get restoreAllVaultLocked => '金庫已鎖定。請解鎖後再試。';
+
+  @override
+  String restoreAllHasWallet(String symbol) {
+    return '已有 $symbol 錢包 — 跳過';
+  }
+
+  @override
+  String get restoreAllWillDerive => '將從 BIP39 金庫種子衍生';
+
+  @override
+  String showSeedTitle(String name) {
+    return '助記詞 · $name';
+  }
+
+  @override
+  String get showSeedPasswordPrompt => '請輸入應用程式密碼以查看此錢包的助記詞。';
+
+  @override
+  String get showSeedPasswordLabel => '應用程式密碼';
+
+  @override
+  String get showSeedRevealAction => '顯示';
+
+  @override
+  String get showSeedRecoveryPhrase => '助記詞';
+
+  @override
+  String get showSeedCopyPhrase => '複製助記詞';
+
+  @override
+  String get showSeedCopyClipboardClears => '已複製 — 剪貼簿將於 30 秒後自動清除';
+
+  @override
+  String get showSeedPassphraseSection => '通行短語(第 25 字)';
+
+  @override
+  String get showSeedSeedOffsetSection => '種子偏移';
+
+  @override
+  String get showSeedAddressLabel => '地址';
+
+  @override
+  String get showSeedViewKeyLabel => '檢視金鑰';
+
+  @override
+  String get showSeedSpendKeyLabel => '花費金鑰';
+
+  @override
+  String get showSeedCopySpendKey => '複製花費金鑰';
+
+  @override
+  String showSeedStorageFooter(String format, String coin) {
+    return '儲存格式:$format。幣種:$coin。';
+  }
+
+  @override
+  String get showSeedWriteDownWarning =>
+      '請寫在紙上並安全保存。任何持有此助記詞的人都能完全控制錢包。請勿截圖 — FLAG_SECURE 也會阻擋。';
+
+  @override
+  String get showSeedKeysOnlyDisplay => '僅金鑰';
+
+  @override
   String get erc20EmptyHint =>
       '尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。';
 
@@ -2352,6 +2558,212 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get aboutUrlCopiedToast => 'URL 已複製 — 請在瀏覽器中開啟';
+
+  @override
+  String get addressBookTitle => '通訊錄';
+
+  @override
+  String get addressBookPickerTitle => '選擇收款人';
+
+  @override
+  String get addressBookAddTooltip => '新增項目';
+
+  @override
+  String get addressBookEmptyTitle => '尚無已儲存地址';
+
+  @override
+  String get addressBookEmptyBodyPicker => '儲存你即將傳送的收款人。';
+
+  @override
+  String get addressBookEmptyBody => '將常傳送的收款人地址儲存起來,下次無需每次重新貼上。';
+
+  @override
+  String get addressBookAddAction => '新增項目';
+
+  @override
+  String get addressBookErrorLabelEmpty => '標籤不可為空。';
+
+  @override
+  String get addressBookErrorAddressEmpty => '地址不可為空。';
+
+  @override
+  String get addressBookDeleteTitle => '刪除此項目?';
+
+  @override
+  String get addressBookDeleteBody => '地址本身不受影響 — 只是移除這個已儲存的標籤 / 備註。';
+
+  @override
+  String get addressBookDeleteAction => '刪除';
+
+  @override
+  String get addressBookEditTitle => '編輯地址';
+
+  @override
+  String get addressBookAddTitle => '新增地址';
+
+  @override
+  String get addressBookDeleteTooltip => '刪除';
+
+  @override
+  String get addressBookLabelField => '標籤';
+
+  @override
+  String get addressBookAddressField => '地址';
+
+  @override
+  String get addressBookAddressLocked => '地址無法編輯 — 請刪除後重新新增。';
+
+  @override
+  String get addressBookScanTooltip => '掃描';
+
+  @override
+  String get addressBookPasteTooltip => '貼上';
+
+  @override
+  String get addressBookNotesField => '備註(選填)';
+
+  @override
+  String get addressBookNotesHint => '純文字 — 僅儲存於本機。';
+
+  @override
+  String get addressBookSaveChanges => '儲存變更';
+
+  @override
+  String get addressBookAddToBook => '加入通訊錄';
+
+  @override
+  String get qrScanTitle => '掃描 QR 碼';
+
+  @override
+  String get qrScanTorchTooltip => '手電筒';
+
+  @override
+  String qrScanCameraError(String code) {
+    return '相機錯誤:$code';
+  }
+
+  @override
+  String get qrScanPermissionDenied => '相機權限被拒';
+
+  @override
+  String get qrScanPermissionBody =>
+      'PeekWallet 需要相機權限以掃描 QR 碼。只在此畫面開啟期間使用相機,僅讀取 QR 內容。';
+
+  @override
+  String get qrScanTryAgain => '重試';
+
+  @override
+  String get qrScanOpenSettings => '開啟應用程式設定';
+
+  @override
+  String get qrScanCenterHint => '將 QR 碼置於畫面中央';
+
+  @override
+  String get rpcResetTitle => '重置所有自訂端點?';
+
+  @override
+  String get rpcResetBody => '每個鏈都會回到公開預設端點。你可以隨時重新新增自訂端點。';
+
+  @override
+  String get rpcResetAction => '重置';
+
+  @override
+  String get rpcScreenTitle => '自訂 RPC 端點';
+
+  @override
+  String get rpcResetAllTooltip => '全部重置';
+
+  @override
+  String get rpcIntroBody => '讓每個鏈指向你自己的節點,而非公開預設端點。欄位留空則保持目前預設。';
+
+  @override
+  String rpcDefaultHint(String hint) {
+    return '預設:$hint';
+  }
+
+  @override
+  String get rpcSaveAction => '儲存';
+
+  @override
+  String get rpcPrivacyNotesBody =>
+      '隱私說明:\n• 公開預設端點會看到你的 IP 與查詢的地址。可自架節點或透過 VPN / Tailscale 區網代理。\n• 你輸入的自訂端點會直接連線 — 網路會看見目的地。請選擇你信任的服務商。';
+
+  @override
+  String get restoreAllTitle => '從金庫種子還原所有幣種';
+
+  @override
+  String get restoreAllIntro => '從既有的 12/24 字金庫種子,為每個支援的幣種衍生一個錢包。';
+
+  @override
+  String get restoreAllNote =>
+      '已存在的錢包會跳過(不會重複)。Monero 不包含 — 它有獨立的種子格式,需從其自有流程還原。';
+
+  @override
+  String get restoreAllAction => '從金庫種子還原全部';
+
+  @override
+  String get restoreAllVaultLocked => '金庫已鎖定。請解鎖後再試。';
+
+  @override
+  String restoreAllHasWallet(String symbol) {
+    return '已有 $symbol 錢包 — 跳過';
+  }
+
+  @override
+  String get restoreAllWillDerive => '將從 BIP39 金庫種子衍生';
+
+  @override
+  String showSeedTitle(String name) {
+    return '助記詞 · $name';
+  }
+
+  @override
+  String get showSeedPasswordPrompt => '請輸入應用程式密碼以查看此錢包的助記詞。';
+
+  @override
+  String get showSeedPasswordLabel => '應用程式密碼';
+
+  @override
+  String get showSeedRevealAction => '顯示';
+
+  @override
+  String get showSeedRecoveryPhrase => '助記詞';
+
+  @override
+  String get showSeedCopyPhrase => '複製助記詞';
+
+  @override
+  String get showSeedCopyClipboardClears => '已複製 — 剪貼簿將於 30 秒後自動清除';
+
+  @override
+  String get showSeedPassphraseSection => '通行短語(第 25 字)';
+
+  @override
+  String get showSeedSeedOffsetSection => '種子偏移';
+
+  @override
+  String get showSeedAddressLabel => '地址';
+
+  @override
+  String get showSeedViewKeyLabel => '檢視金鑰';
+
+  @override
+  String get showSeedSpendKeyLabel => '花費金鑰';
+
+  @override
+  String get showSeedCopySpendKey => '複製花費金鑰';
+
+  @override
+  String showSeedStorageFooter(String format, String coin) {
+    return '儲存格式:$format。幣種:$coin。';
+  }
+
+  @override
+  String get showSeedWriteDownWarning =>
+      '請寫在紙上並安全保存。任何持有此助記詞的人都能完全控制錢包。請勿截圖 — FLAG_SECURE 也會阻擋。';
+
+  @override
+  String get showSeedKeysOnlyDisplay => '僅金鑰';
 
   @override
   String get erc20EmptyHint =>

@@ -1210,6 +1210,221 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutUrlCopiedToast => 'URL copied — open in your browser';
 
   @override
+  String get addressBookTitle => 'Address book';
+
+  @override
+  String get addressBookPickerTitle => 'Pick recipient';
+
+  @override
+  String get addressBookAddTooltip => 'Add entry';
+
+  @override
+  String get addressBookEmptyTitle => 'No saved addresses yet';
+
+  @override
+  String get addressBookEmptyBodyPicker =>
+      'Save the recipient you\'re about to send to.';
+
+  @override
+  String get addressBookEmptyBody =>
+      'Save the addresses of people you send to often so you don\'t have to paste each time.';
+
+  @override
+  String get addressBookAddAction => 'Add entry';
+
+  @override
+  String get addressBookErrorLabelEmpty => 'Label cannot be empty.';
+
+  @override
+  String get addressBookErrorAddressEmpty => 'Address cannot be empty.';
+
+  @override
+  String get addressBookDeleteTitle => 'Delete entry?';
+
+  @override
+  String get addressBookDeleteBody =>
+      'The address is not affected — only this saved label / note is removed.';
+
+  @override
+  String get addressBookDeleteAction => 'Delete';
+
+  @override
+  String get addressBookEditTitle => 'Edit address';
+
+  @override
+  String get addressBookAddTitle => 'Add address';
+
+  @override
+  String get addressBookDeleteTooltip => 'Delete';
+
+  @override
+  String get addressBookLabelField => 'Label';
+
+  @override
+  String get addressBookAddressField => 'Address';
+
+  @override
+  String get addressBookAddressLocked =>
+      'Addresses can\'t be edited — delete and re-add to change.';
+
+  @override
+  String get addressBookScanTooltip => 'Scan';
+
+  @override
+  String get addressBookPasteTooltip => 'Paste';
+
+  @override
+  String get addressBookNotesField => 'Notes (optional)';
+
+  @override
+  String get addressBookNotesHint => 'Free-text — only stored locally.';
+
+  @override
+  String get addressBookSaveChanges => 'Save changes';
+
+  @override
+  String get addressBookAddToBook => 'Add to book';
+
+  @override
+  String get qrScanTitle => 'Scan QR';
+
+  @override
+  String get qrScanTorchTooltip => 'Torch';
+
+  @override
+  String qrScanCameraError(String code) {
+    return 'Camera error: $code';
+  }
+
+  @override
+  String get qrScanPermissionDenied => 'Camera permission denied';
+
+  @override
+  String get qrScanPermissionBody =>
+      'PeekWallet needs camera access to scan QR codes. The camera is only used while this screen is open and only reads the QR payload.';
+
+  @override
+  String get qrScanTryAgain => 'Try again';
+
+  @override
+  String get qrScanOpenSettings => 'Open app settings';
+
+  @override
+  String get qrScanCenterHint => 'Center the QR code in the frame';
+
+  @override
+  String get rpcResetTitle => 'Reset all overrides?';
+
+  @override
+  String get rpcResetBody =>
+      'Every chain will go back to its public default endpoint. You can re-add overrides at any time.';
+
+  @override
+  String get rpcResetAction => 'Reset';
+
+  @override
+  String get rpcScreenTitle => 'Custom RPC endpoints';
+
+  @override
+  String get rpcResetAllTooltip => 'Reset all';
+
+  @override
+  String get rpcIntroBody =>
+      'Point each chain at your own node instead of the public default. Leaving a field blank keeps the current default.';
+
+  @override
+  String rpcDefaultHint(String hint) {
+    return 'Default: $hint';
+  }
+
+  @override
+  String get rpcSaveAction => 'Save';
+
+  @override
+  String get rpcPrivacyNotesBody =>
+      'Privacy notes:\n• Public defaults see your IP address and which addresses you query. Run your own node or proxy through a VPN / LAN over Tailscale.\n• Custom RPC endpoints sent here go straight to whatever URL you enter — your network sees the destination. Pick providers you trust.';
+
+  @override
+  String get restoreAllTitle => 'Restore all coins from vault';
+
+  @override
+  String get restoreAllIntro =>
+      'Adds a wallet for every supported coin, derived from your existing 12/24-word vault seed.';
+
+  @override
+  String get restoreAllNote =>
+      'Existing wallets are skipped (no duplicates). Monero is excluded — it has a separate seed format and is restored from its own setup.';
+
+  @override
+  String get restoreAllAction => 'Restore all from vault seed';
+
+  @override
+  String get restoreAllVaultLocked => 'Vault is locked. Unlock and try again.';
+
+  @override
+  String restoreAllHasWallet(String symbol) {
+    return 'Already have a $symbol wallet — skip';
+  }
+
+  @override
+  String get restoreAllWillDerive => 'Will derive from BIP39 vault seed';
+
+  @override
+  String showSeedTitle(String name) {
+    return 'Recovery phrase · $name';
+  }
+
+  @override
+  String get showSeedPasswordPrompt =>
+      'Enter your app password to see this wallet\'s recovery phrase.';
+
+  @override
+  String get showSeedPasswordLabel => 'App password';
+
+  @override
+  String get showSeedRevealAction => 'Reveal';
+
+  @override
+  String get showSeedRecoveryPhrase => 'Recovery phrase';
+
+  @override
+  String get showSeedCopyPhrase => 'Copy phrase';
+
+  @override
+  String get showSeedCopyClipboardClears =>
+      'Copied — clipboard auto-clears in 30s';
+
+  @override
+  String get showSeedPassphraseSection => 'Passphrase (25th word)';
+
+  @override
+  String get showSeedSeedOffsetSection => 'Seed offset';
+
+  @override
+  String get showSeedAddressLabel => 'Address';
+
+  @override
+  String get showSeedViewKeyLabel => 'View key';
+
+  @override
+  String get showSeedSpendKeyLabel => 'Spend key';
+
+  @override
+  String get showSeedCopySpendKey => 'Copy spend key';
+
+  @override
+  String showSeedStorageFooter(String format, String coin) {
+    return 'Storage: $format. Coin: $coin.';
+  }
+
+  @override
+  String get showSeedWriteDownWarning =>
+      'Write this down on paper and store it somewhere safe. Anyone with this phrase has full control of the wallet. Don\'t take a screenshot — FLAG_SECURE blocks it anyway.';
+
+  @override
+  String get showSeedKeysOnlyDisplay => 'Keys only';
+
+  @override
   String get erc20EmptyHint =>
       'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
 

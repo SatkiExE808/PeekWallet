@@ -2187,6 +2187,390 @@ abstract class AppLocalizations {
   /// **'URL copied — open in your browser'**
   String get aboutUrlCopiedToast;
 
+  /// No description provided for @addressBookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Address book'**
+  String get addressBookTitle;
+
+  /// No description provided for @addressBookPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick recipient'**
+  String get addressBookPickerTitle;
+
+  /// No description provided for @addressBookAddTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add entry'**
+  String get addressBookAddTooltip;
+
+  /// No description provided for @addressBookEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved addresses yet'**
+  String get addressBookEmptyTitle;
+
+  /// No description provided for @addressBookEmptyBodyPicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the recipient you\'re about to send to.'**
+  String get addressBookEmptyBodyPicker;
+
+  /// No description provided for @addressBookEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the addresses of people you send to often so you don\'t have to paste each time.'**
+  String get addressBookEmptyBody;
+
+  /// No description provided for @addressBookAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add entry'**
+  String get addressBookAddAction;
+
+  /// No description provided for @addressBookErrorLabelEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Label cannot be empty.'**
+  String get addressBookErrorLabelEmpty;
+
+  /// No description provided for @addressBookErrorAddressEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Address cannot be empty.'**
+  String get addressBookErrorAddressEmpty;
+
+  /// No description provided for @addressBookDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry?'**
+  String get addressBookDeleteTitle;
+
+  /// No description provided for @addressBookDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The address is not affected — only this saved label / note is removed.'**
+  String get addressBookDeleteBody;
+
+  /// No description provided for @addressBookDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get addressBookDeleteAction;
+
+  /// No description provided for @addressBookEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit address'**
+  String get addressBookEditTitle;
+
+  /// No description provided for @addressBookAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add address'**
+  String get addressBookAddTitle;
+
+  /// No description provided for @addressBookDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get addressBookDeleteTooltip;
+
+  /// No description provided for @addressBookLabelField.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get addressBookLabelField;
+
+  /// No description provided for @addressBookAddressField.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get addressBookAddressField;
+
+  /// No description provided for @addressBookAddressLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses can\'t be edited — delete and re-add to change.'**
+  String get addressBookAddressLocked;
+
+  /// No description provided for @addressBookScanTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get addressBookScanTooltip;
+
+  /// No description provided for @addressBookPasteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get addressBookPasteTooltip;
+
+  /// No description provided for @addressBookNotesField.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get addressBookNotesField;
+
+  /// No description provided for @addressBookNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Free-text — only stored locally.'**
+  String get addressBookNotesHint;
+
+  /// No description provided for @addressBookSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get addressBookSaveChanges;
+
+  /// No description provided for @addressBookAddToBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to book'**
+  String get addressBookAddToBook;
+
+  /// No description provided for @qrScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR'**
+  String get qrScanTitle;
+
+  /// No description provided for @qrScanTorchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Torch'**
+  String get qrScanTorchTooltip;
+
+  /// No description provided for @qrScanCameraError.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera error: {code}'**
+  String qrScanCameraError(String code);
+
+  /// No description provided for @qrScanPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission denied'**
+  String get qrScanPermissionDenied;
+
+  /// No description provided for @qrScanPermissionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'PeekWallet needs camera access to scan QR codes. The camera is only used while this screen is open and only reads the QR payload.'**
+  String get qrScanPermissionBody;
+
+  /// No description provided for @qrScanTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get qrScanTryAgain;
+
+  /// No description provided for @qrScanOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open app settings'**
+  String get qrScanOpenSettings;
+
+  /// No description provided for @qrScanCenterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Center the QR code in the frame'**
+  String get qrScanCenterHint;
+
+  /// No description provided for @rpcResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all overrides?'**
+  String get rpcResetTitle;
+
+  /// No description provided for @rpcResetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every chain will go back to its public default endpoint. You can re-add overrides at any time.'**
+  String get rpcResetBody;
+
+  /// No description provided for @rpcResetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get rpcResetAction;
+
+  /// No description provided for @rpcScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom RPC endpoints'**
+  String get rpcScreenTitle;
+
+  /// No description provided for @rpcResetAllTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all'**
+  String get rpcResetAllTooltip;
+
+  /// No description provided for @rpcIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Point each chain at your own node instead of the public default. Leaving a field blank keeps the current default.'**
+  String get rpcIntroBody;
+
+  /// No description provided for @rpcDefaultHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Default: {hint}'**
+  String rpcDefaultHint(String hint);
+
+  /// No description provided for @rpcSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get rpcSaveAction;
+
+  /// No description provided for @rpcPrivacyNotesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy notes:\n• Public defaults see your IP address and which addresses you query. Run your own node or proxy through a VPN / LAN over Tailscale.\n• Custom RPC endpoints sent here go straight to whatever URL you enter — your network sees the destination. Pick providers you trust.'**
+  String get rpcPrivacyNotesBody;
+
+  /// No description provided for @restoreAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore all coins from vault'**
+  String get restoreAllTitle;
+
+  /// No description provided for @restoreAllIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a wallet for every supported coin, derived from your existing 12/24-word vault seed.'**
+  String get restoreAllIntro;
+
+  /// No description provided for @restoreAllNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing wallets are skipped (no duplicates). Monero is excluded — it has a separate seed format and is restored from its own setup.'**
+  String get restoreAllNote;
+
+  /// No description provided for @restoreAllAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore all from vault seed'**
+  String get restoreAllAction;
+
+  /// No description provided for @restoreAllVaultLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault is locked. Unlock and try again.'**
+  String get restoreAllVaultLocked;
+
+  /// No description provided for @restoreAllHasWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have a {symbol} wallet — skip'**
+  String restoreAllHasWallet(String symbol);
+
+  /// No description provided for @restoreAllWillDerive.
+  ///
+  /// In en, this message translates to:
+  /// **'Will derive from BIP39 vault seed'**
+  String get restoreAllWillDerive;
+
+  /// No description provided for @showSeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase · {name}'**
+  String showSeedTitle(String name);
+
+  /// No description provided for @showSeedPasswordPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your app password to see this wallet\'s recovery phrase.'**
+  String get showSeedPasswordPrompt;
+
+  /// No description provided for @showSeedPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'App password'**
+  String get showSeedPasswordLabel;
+
+  /// No description provided for @showSeedRevealAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal'**
+  String get showSeedRevealAction;
+
+  /// No description provided for @showSeedRecoveryPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase'**
+  String get showSeedRecoveryPhrase;
+
+  /// No description provided for @showSeedCopyPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy phrase'**
+  String get showSeedCopyPhrase;
+
+  /// No description provided for @showSeedCopyClipboardClears.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied — clipboard auto-clears in 30s'**
+  String get showSeedCopyClipboardClears;
+
+  /// No description provided for @showSeedPassphraseSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase (25th word)'**
+  String get showSeedPassphraseSection;
+
+  /// No description provided for @showSeedSeedOffsetSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed offset'**
+  String get showSeedSeedOffsetSection;
+
+  /// No description provided for @showSeedAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get showSeedAddressLabel;
+
+  /// No description provided for @showSeedViewKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View key'**
+  String get showSeedViewKeyLabel;
+
+  /// No description provided for @showSeedSpendKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Spend key'**
+  String get showSeedSpendKeyLabel;
+
+  /// No description provided for @showSeedCopySpendKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy spend key'**
+  String get showSeedCopySpendKey;
+
+  /// No description provided for @showSeedStorageFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage: {format}. Coin: {coin}.'**
+  String showSeedStorageFooter(String format, String coin);
+
+  /// No description provided for @showSeedWriteDownWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Write this down on paper and store it somewhere safe. Anyone with this phrase has full control of the wallet. Don\'t take a screenshot — FLAG_SECURE blocks it anyway.'**
+  String get showSeedWriteDownWarning;
+
+  /// No description provided for @showSeedKeysOnlyDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Keys only'**
+  String get showSeedKeysOnlyDisplay;
+
   /// No description provided for @erc20EmptyHint.
   ///
   /// In en, this message translates to:
