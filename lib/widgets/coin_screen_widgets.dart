@@ -6,6 +6,11 @@ import '../theme.dart';
 /// Small accent pill — used for "cached" + error indicators under
 /// the hero balance. Premium alternative to inline-red error text.
 /// Auto-truncates long messages so multi-line errors stay tidy.
+///
+/// Fades + slides in on first appearance so a freshly-surfaced
+/// error (or cached badge appearing after a network failure)
+/// reads as new content rather than a static element that was
+/// always there.
 class StatusPill extends StatelessWidget {
   const StatusPill({
     super.key,
@@ -20,34 +25,50 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Semantics wraps the animated subtree so the label remains
+    // accessible the moment the widget mounts — screen readers +
+    // widget tests don't have to wait for the fade-in to finish
+    // before they can find it.
     return Semantics(
       label: text,
       liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withAlpha(28),
-          borderRadius: PeekDesign.brPill,
-          border: Border.all(color: color.withAlpha(80)),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: PeekDesign.tMed,
+        curve: PeekDesign.easeOut,
+        builder: (_, t, child) => Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 4),
+            child: child,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                text,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withAlpha(28),
+            borderRadius: PeekDesign.brPill,
+            border: Border.all(color: color.withAlpha(80)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
