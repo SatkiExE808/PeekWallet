@@ -788,6 +788,8 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onAdd});
   final VoidCallback onAdd;
 
+  static const _previewCoins = ['BTC', 'ETH', 'SOL', 'TRX', 'XMR'];
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -797,35 +799,10 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    PeekColors.accent.withAlpha(48),
-                    PeekColors.accent.withAlpha(0),
-                  ],
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: PeekColors.surface2,
-                  border: Border.all(color: PeekColors.border),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 32,
-                  color: PeekColors.accent,
-                ),
-              ),
-            ),
+            // Breathing wallet icon — same animation as the lock-
+            // screen lock so the empty state reads as "waiting for
+            // you" instead of "nothing here".
+            const _EmptyStateIcon(),
             const SizedBox(height: PeekDesign.sp5),
             Text(
               l.homeEmptyTitle,
@@ -842,7 +819,35 @@ class _EmptyState extends StatelessWidget {
               style: const TextStyle(
                   color: PeekColors.text2, fontSize: 13, height: 1.4),
             ),
-            const SizedBox(height: PeekDesign.sp6),
+            const SizedBox(height: PeekDesign.sp5),
+            // Inline coin-cluster preview — five overlapping ringed
+            // avatars hint at the chains the user can add without
+            // making it feel like a separate "feature list" screen.
+            SizedBox(
+              height: 36,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  for (var i = 0; i < _previewCoins.length; i++)
+                    Positioned(
+                      left: i * 22.0,
+                      child: Container(
+                        padding: const EdgeInsets.all(1.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: PeekColors.bg,
+                          border: Border.all(
+                              color: PeekColors.coinAccent(_previewCoins[i])
+                                  .withAlpha(96),
+                              width: 1.5),
+                        ),
+                        child: coinAvatar(_previewCoins[i], radius: 14),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: PeekDesign.sp5),
             SizedBox(
               width: 220,
               child: ElevatedButton.icon(
@@ -854,6 +859,87 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Empty-state wallet icon with a slow breathing glow — visual
+/// counterpart to the lock-screen lock. Without this, the wallets
+/// list empty state reads as "nothing here" instead of "ready when
+/// you are".
+class _EmptyStateIcon extends StatefulWidget {
+  const _EmptyStateIcon();
+
+  @override
+  State<_EmptyStateIcon> createState() => _EmptyStateIconState();
+}
+
+class _EmptyStateIconState extends State<_EmptyStateIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, _) {
+        final t = Curves.easeInOut.transform(_ctrl.value);
+        final scale = 0.95 + (t * 0.10);
+        final glowAlpha = (40 + (t * 36)).round();
+        return SizedBox(
+          width: 112,
+          height: 112,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 112,
+                  height: 112,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      PeekColors.accent.withAlpha(glowAlpha),
+                      PeekColors.accent.withAlpha(0),
+                    ]),
+                  ),
+                ),
+              ),
+              Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: PeekColors.surface2,
+                  border: Border.all(color: PeekColors.border),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 32,
+                  color: PeekColors.accent,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

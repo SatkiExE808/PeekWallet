@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
+import 'frosted_sheet.dart';
 
 /// Shared, premium bottom sheet for "Receive [coin]". Used by every
 /// coin screen so they all look the same — drag handle, coin chip,
@@ -23,13 +24,8 @@ Future<void> showReceiveSheet(
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final l = AppLocalizations.of(context);
-  await showModalBottomSheet<void>(
+  await showFrostedBottomSheet<void>(
     context: context,
-    backgroundColor: PeekColors.bg2,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (ctx) => _ReceiveSheetBody(
       coinId: coinId,
       coinName: coinName,

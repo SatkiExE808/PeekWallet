@@ -5,6 +5,7 @@ import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/coin_avatar.dart';
 import '../util/explorer_links.dart';
+import 'frosted_sheet.dart';
 
 /// One labelled key/value row in the tx-detail sheet (e.g. "Fee",
 /// "Block height"). Status / amount rows have their own variants
@@ -41,13 +42,8 @@ Future<void> showTxDetailSheet(
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final l = AppLocalizations.of(context);
-  await showModalBottomSheet<void>(
+  await showFrostedBottomSheet<void>(
     context: context,
-    backgroundColor: PeekColors.bg2,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (ctx) => _TxDetailBody(
       coinId: coinId,
       isIncoming: isIncoming,
