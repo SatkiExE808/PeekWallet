@@ -117,23 +117,48 @@ class _EntryTile extends StatelessWidget {
     final short = addr.length > 22
         ? '${addr.substring(0, 10)}…${addr.substring(addr.length - 6)}'
         : addr;
+    final accent = PeekColors.coinAccent(entry.coinId);
     return Material(
       color: PeekColors.surface,
       borderRadius: PeekDesign.brCard,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: PeekDesign.brCard,
-        splashColor: PeekColors.accentMuted,
+        splashColor: accent.withAlpha(36),
+        highlightColor: accent.withAlpha(20),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: PeekDesign.brCard,
             border: Border.all(color: PeekColors.hairline, width: 1),
+            // Same coin-aware left-edge stripe as the wallets list
+            // rows, so contacts visually belong to the same family
+            // as the wallets they pay to.
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              stops: const [0.0, 0.012, 0.012, 1.0],
+              colors: [
+                accent,
+                accent,
+                PeekColors.surface,
+                PeekColors.surface,
+              ],
+            ),
           ),
           padding: const EdgeInsets.symmetric(
               horizontal: PeekDesign.sp4, vertical: PeekDesign.sp3),
           child: Row(
             children: [
-              coinAvatar(entry.coinId, radius: 18),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: accent.withAlpha(96), width: 1.5),
+                ),
+                child: coinAvatar(entry.coinId, radius: 16),
+              ),
               const SizedBox(width: PeekDesign.sp3),
               Expanded(
                 child: Column(

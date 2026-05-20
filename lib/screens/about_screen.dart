@@ -114,13 +114,27 @@ class AboutScreen extends StatelessWidget {
   Widget _kvCard(List<Widget> rows) {
     return Container(
       decoration: BoxDecoration(
-        color: PeekColors.surface,
+        gradient: PeekDesign.coinHeroGradient(PeekColors.accent),
         borderRadius: PeekDesign.brCard,
         border: Border.all(color: PeekColors.hairline),
       ),
       padding: const EdgeInsets.symmetric(
           horizontal: PeekDesign.sp4, vertical: PeekDesign.sp2),
-      child: Column(children: rows),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            right: -40,
+            top: -40,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: PeekDesign.heroAccentBloom(PeekColors.accent),
+            ),
+          ),
+          Column(children: rows),
+        ],
+      ),
     );
   }
 

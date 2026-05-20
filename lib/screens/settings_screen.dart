@@ -671,16 +671,31 @@ class _SectionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Section header with a hairline rule on the right — the same
+    // treatment Tangem / Settings.app use to chunk a long settings
+    // list into visually distinct groups without screaming.
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          color: PeekColors.text3,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.4,
-        ),
+      child: Row(
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: PeekColors.text3,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Divider(
+              color: PeekColors.hairline,
+              height: 1,
+              thickness: 1,
+            ),
+          ),
+        ],
       ),
     );
   }
