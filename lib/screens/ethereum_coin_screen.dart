@@ -867,8 +867,14 @@ class _EthTxRow extends StatelessWidget {
               width: 36, height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: PeekColors.surface2,
+                color: tx.isIncoming
+                    ? PeekColors.green.withAlpha(28)
+                    : PeekColors.surface2,
                 borderRadius: PeekDesign.brSmall,
+                border: tx.isIncoming
+                    ? Border.all(
+                        color: PeekColors.green.withAlpha(72), width: 1)
+                    : null,
               ),
               child: Icon(
                 tx.isIncoming

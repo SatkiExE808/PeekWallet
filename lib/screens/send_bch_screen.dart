@@ -220,7 +220,22 @@ class _SendBchScreenState extends State<SendBchScreen> {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: _previewing ? _buildPreview() : _buildForm(),
+            child: AnimatedSwitcher(
+              duration: PeekDesign.tMed,
+              switchInCurve: PeekDesign.easeOut,
+              switchOutCurve: PeekDesign.easeOut,
+              transitionBuilder: (child, animation) => SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.08, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: KeyedSubtree(
+                key: ValueKey<bool>(_previewing),
+                child: _previewing ? _buildPreview() : _buildForm(),
+              ),
+            ),
           ),
         ),
       ),

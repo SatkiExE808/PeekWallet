@@ -250,7 +250,27 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: _previewing ? _buildPreview() : _buildForm(),
+            // Sliding form → preview transition. The new step slides
+            // in from the right (a tap-into-confirm feel) and the
+            // old one slides out to the left. Matches the wallet
+            // navigation gesture so the user reads it as "moved
+            // forward" rather than a content swap.
+            child: AnimatedSwitcher(
+              duration: PeekDesign.tMed,
+              switchInCurve: PeekDesign.easeOut,
+              switchOutCurve: PeekDesign.easeOut,
+              transitionBuilder: (child, animation) => SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.08, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: KeyedSubtree(
+                key: ValueKey<bool>(_previewing),
+                child: _previewing ? _buildPreview() : _buildForm(),
+              ),
+            ),
           ),
         ),
       ),

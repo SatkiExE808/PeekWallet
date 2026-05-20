@@ -539,8 +539,18 @@ class _BtcTxRow extends StatelessWidget {
               width: 36, height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: PeekColors.surface2,
+                // Incoming → soft green tint, outgoing → muted
+                // surface. The colored chip lets the user scan a long
+                // history list and see "deposits vs spends" without
+                // reading the sign on the amount.
+                color: tx.isIncoming
+                    ? PeekColors.green.withAlpha(28)
+                    : PeekColors.surface2,
                 borderRadius: PeekDesign.brSmall,
+                border: tx.isIncoming
+                    ? Border.all(
+                        color: PeekColors.green.withAlpha(72), width: 1)
+                    : null,
               ),
               child: Icon(
                 tx.isIncoming
