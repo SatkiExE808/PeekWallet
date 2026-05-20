@@ -110,35 +110,53 @@ class _ReceiveSheetBody extends StatelessWidget {
               ],
             ),
             const SizedBox(height: PeekDesign.sp5),
-            // QR card — white surface with subtle inset border so it
-            // reads as a deliberate object on the dark sheet.
+            // QR card — white surface with a coin-tinted frame so
+            // each chain's receive screen reads as its own. The
+            // outer glow + inset border give the card weight against
+            // the frosted sheet behind it.
             Center(
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  // Subtle gradient frame around the white QR card —
+                  // takes its colors from the coin's brand accent.
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      PeekColors.coinAccent(coinId).withAlpha(120),
+                      PeekColors.coinAccent(coinId).withAlpha(40),
+                    ],
+                  ),
                   borderRadius: PeekDesign.brCard,
                   boxShadow: [
                     BoxShadow(
-                      color: PeekColors.accent.withAlpha(28),
-                      blurRadius: 28,
+                      color: PeekColors.coinAccent(coinId).withAlpha(36),
+                      blurRadius: 32,
                       spreadRadius: -4,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: QrImageView(
-                  data: address,
-                  version: QrVersions.auto,
-                  size: 220,
-                  backgroundColor: Colors.white,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: Color(0xFF0A0E18),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: PeekDesign.brCard,
                   ),
-                  dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.square,
-                    color: Color(0xFF0A0E18),
+                  child: QrImageView(
+                    data: address,
+                    version: QrVersions.auto,
+                    size: 220,
+                    backgroundColor: Colors.white,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: Color(0xFF0A0E18),
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: Color(0xFF0A0E18),
+                    ),
                   ),
                 ),
               ),

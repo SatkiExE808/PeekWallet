@@ -138,13 +138,33 @@ class _LockScreenState extends State<LockScreen> {
               // motion that signals the secure boundary.
               _BreathingLockGlow(lockedOut: lockedOut),
               const SizedBox(height: PeekDesign.sp5),
-              Text(
-                l.appName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5),
+              // Wordmark as a gradient-tinted shader. Tangem +
+              // Phantom both use a colored mask on their app name so
+              // it reads as part of the brand identity rather than
+              // generic Roboto bold.
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: lockedOut
+                      ? const [PeekColors.text2, PeekColors.text3]
+                      : const [
+                          PeekColors.accent,
+                          PeekColors.accent2,
+                          PeekColors.accent3,
+                        ],
+                ).createShader(bounds),
+                child: Text(
+                  l.appName,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: Colors.white,
+                  ),
+                ),
               ),
               const SizedBox(height: 6),
               Text(

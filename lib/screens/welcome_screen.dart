@@ -28,13 +28,27 @@ class WelcomeScreen extends StatelessWidget {
               // as "alive" the moment the user opens the app.
               const _WelcomeEmblem(),
               const SizedBox(height: 24),
-              Text(
-                l.appName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5),
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    PeekColors.accent,
+                    PeekColors.accent2,
+                    PeekColors.accent3,
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  l.appName,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: Colors.white,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
