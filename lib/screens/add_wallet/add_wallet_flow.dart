@@ -183,6 +183,7 @@ class _ActionTile extends StatelessWidget {
     return Material(
       color: PeekColors.surface,
       borderRadius: PeekDesign.brCard,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: PeekDesign.brCard,
         splashColor: PeekColors.accentMuted,
@@ -190,46 +191,66 @@ class _ActionTile extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: PeekDesign.brCard,
+            gradient: PeekDesign.coinHeroGradient(PeekColors.accent),
             border: Border.all(color: PeekColors.hairline, width: 1),
           ),
           padding: const EdgeInsets.fromLTRB(PeekDesign.sp4,
               PeekDesign.sp4, PeekDesign.sp4, PeekDesign.sp4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: PeekColors.accentMuted,
-                  borderRadius: PeekDesign.brSmall,
-                ),
-                child: Icon(icon, color: PeekColors.accent, size: 20),
-              ),
-              const SizedBox(width: PeekDesign.sp3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                            color: PeekColors.text,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1)),
-                    const SizedBox(height: 4),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            color: PeekColors.text2,
-                            fontSize: 12,
-                            height: 1.4)),
-                  ],
+              // Soft accent bloom in the upper-right — mirrors the
+              // coin-screen hero treatment so the picker feels like
+              // a premium surface rather than a Material list row.
+              Positioned(
+                right: -30,
+                top: -30,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration:
+                      PeekDesign.heroAccentBloom(PeekColors.accent),
                 ),
               ),
-              const SizedBox(width: PeekDesign.sp2),
-              const Icon(Icons.chevron_right,
-                  color: PeekColors.text3, size: 18),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: PeekColors.accentMuted,
+                      borderRadius: PeekDesign.brSmall,
+                      border: Border.all(
+                          color: PeekColors.accent.withAlpha(96), width: 1),
+                    ),
+                    child: Icon(icon, color: PeekColors.accent, size: 20),
+                  ),
+                  const SizedBox(width: PeekDesign.sp3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: const TextStyle(
+                                color: PeekColors.text,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1)),
+                        const SizedBox(height: 4),
+                        Text(subtitle,
+                            style: const TextStyle(
+                                color: PeekColors.text2,
+                                fontSize: 12,
+                                height: 1.4)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: PeekDesign.sp2),
+                  const Icon(Icons.chevron_right,
+                      color: PeekColors.text3, size: 18),
+                ],
+              ),
             ],
           ),
         ),

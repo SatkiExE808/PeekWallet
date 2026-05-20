@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 
 import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
+import '../util/coin_avatar.dart';
 import 'create_wallet_screen.dart';
 import 'import_wallet_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
+
+  static const _previewCoins = ['BTC', 'ETH', 'SOL', 'TRX', 'XMR'];
 
   @override
   Widget build(BuildContext context) {
@@ -20,20 +23,53 @@ class WelcomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              const Icon(Icons.account_balance_wallet, size: 64, color: PeekColors.accent),
-              const SizedBox(height: 20),
+              // Breathing wallet emblem — first impression. Same
+              // glow animation as the lock screen so the brand reads
+              // as "alive" the moment the user opens the app.
+              const _WelcomeEmblem(),
+              const SizedBox(height: 24),
               Text(
                 l.appName,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    fontSize: 28, fontWeight: FontWeight.w700),
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5),
               ),
               const SizedBox(height: 8),
               Text(
                 l.welcomeTagline,
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(color: PeekColors.text2, fontSize: 14),
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 14, height: 1.4),
+              ),
+              const SizedBox(height: PeekDesign.sp5),
+              // Coin-cluster preview — five overlapping brand-tinted
+              // avatars hint at the supported chains so the user can
+              // see at a glance what they're getting.
+              SizedBox(
+                height: 40,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    for (var i = 0; i < _previewCoins.length; i++)
+                      Positioned(
+                        left: i * 24.0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: PeekColors.bg,
+                            border: Border.all(
+                                color: PeekColors.coinAccent(_previewCoins[i])
+                                    .withAlpha(110),
+                                width: 1.5),
+                          ),
+                          child: coinAvatar(_previewCoins[i], radius: 16),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const Spacer(),
               ElevatedButton(
@@ -168,6 +204,94 @@ Full text: DISCLAIMER.md in the source repo.
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Animated welcome-screen emblem. Soft accent halo breathes behind
+/// a circular surface with the wallet glyph. Matches the lock-screen
+/// lock-glow + the empty-state wallet-glow so the brand has a single
+/// consistent "this app is alive" motion language.
+class _WelcomeEmblem extends StatefulWidget {
+  const _WelcomeEmblem();
+
+  @override
+  State<_WelcomeEmblem> createState() => _WelcomeEmblemState();
+}
+
+class _WelcomeEmblemState extends State<_WelcomeEmblem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, _) {
+        final t = Curves.easeInOut.transform(_ctrl.value);
+        final scale = 0.94 + (t * 0.10);
+        final glowAlpha = (44 + (t * 32)).round();
+        return SizedBox(
+          width: 132,
+          height: 132,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 132,
+                  height: 132,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      PeekColors.accent.withAlpha(glowAlpha),
+                      PeekColors.accent.withAlpha(0),
+                    ]),
+                  ),
+                ),
+              ),
+              Container(
+                width: 80,
+                height: 80,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: PeekColors.surface2,
+                  border: Border.all(color: PeekColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: PeekColors.accent.withAlpha(48),
+                      blurRadius: 24,
+                      spreadRadius: -2,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 36,
+                  color: PeekColors.accent,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
