@@ -303,6 +303,396 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sendScreenTitle(String coinName) {
+    return 'Send $coinName';
+  }
+
+  @override
+  String sendScanTitle(String symbol) {
+    return 'Scan $symbol address';
+  }
+
+  @override
+  String sendBtcAmountLabel(String symbol) {
+    return 'Amount ($symbol or sat)';
+  }
+
+  @override
+  String sendBroadcastSuccess(String prefix) {
+    return 'Broadcast! txid: $prefix…';
+  }
+
+  @override
+  String get sendBtcLoadingUtxos => 'Loading UTXOs…';
+
+  @override
+  String sendBtcUtxoError(String error) {
+    return 'UTXO error: $error';
+  }
+
+  @override
+  String get sendBtcAvailableHint => 'available · confirmed UTXOs only';
+
+  @override
+  String sendBtcFeeRatesError(String error) {
+    return 'Fee rates unavailable: $error';
+  }
+
+  @override
+  String get sendBtcLoadingFeeRates => 'Loading fee rates…';
+
+  @override
+  String get sendBtcFinalFeeHint =>
+      'Final fee + change will be shown after broadcast. Once submitted to the network it CANNOT be reversed.';
+
+  @override
+  String get sendBtcExperimentalBody =>
+      'send is BIP-0143 spec-vector tested but has not been audited end-to-end.';
+
+  @override
+  String sendBtcOnlyBech32(String prefix) {
+    return 'Only bech32 P2WPKH ($prefix…) addresses are supported';
+  }
+
+  @override
+  String sendBtcExceedsBalance(int available) {
+    return 'Amount exceeds confirmed balance ($available sat)';
+  }
+
+  @override
+  String get sendBtcFeeRateLabel => 'Fee rate';
+
+  @override
+  String get sendBtcFeeTierFastest => 'Fastest';
+
+  @override
+  String get sendBtcFeeTierHalfHour => 'Half hour';
+
+  @override
+  String get sendBtcFeeTierHour => 'Hour';
+
+  @override
+  String get sendBtcFeeTierEconomy => 'Economy';
+
+  @override
+  String get sendBtcFeeEtaFastest => '~10 min';
+
+  @override
+  String get sendBtcFeeEtaHalfHour => '~30 min';
+
+  @override
+  String get sendBtcFeeEtaHour => '~1 hour';
+
+  @override
+  String get sendBtcFeeEtaEconomy => 'When the mempool allows';
+
+  @override
+  String get sendBchRecipientLabel => 'Recipient address (CashAddr)';
+
+  @override
+  String get sendBchExperimentalBody =>
+      'legacy P2PKH with SIGHASH_FORKID. The BIP143 sighash is spec-vector tested via BTC SegWit; the BCH-specific 0x41 sighash byte + legacy tx envelope are unit-tested but unaudited.';
+
+  @override
+  String get sendBchErrorMustBeCashAddr =>
+      'Recipient must be a CashAddr (bitcoincash:q…/p… or just q…/p…)';
+
+  @override
+  String get sendBchErrorP2shNotSupported =>
+      'P2SH BCH addresses (p…) aren\'t supported yet — only P2KH (q…) is in this build.';
+
+  @override
+  String get sendBchFinalFeeHint =>
+      'BCH legacy P2PKH with SIGHASH_FORKID. Once submitted this CANNOT be reversed (BCH does not honor RBF).';
+
+  @override
+  String get sendBchAvailableShort => 'available';
+
+  @override
+  String get sendBchNetworkFeeLabel => 'Network fee';
+
+  @override
+  String sendBchFeeRateDescription(int rate, int typical) {
+    return '$rate sat/byte — typical 1-input tx ≈ $typical sat. BCH fees are extremely low.';
+  }
+
+  @override
+  String get sendBchAmountLabel => 'Amount (BCH or sat)';
+
+  @override
+  String get sendEthExperimentalBody =>
+      'RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.';
+
+  @override
+  String get sendEthErrorBadAddress =>
+      'Recipient must be a 0x-prefixed 40-hex-character address';
+
+  @override
+  String sendEthErrorExceedsToken(String symbol) {
+    return 'Amount exceeds $symbol balance';
+  }
+
+  @override
+  String sendEthErrorNoGas(String symbol) {
+    return 'No $symbol for gas — fund this wallet first';
+  }
+
+  @override
+  String sendEthAmountLabelToken(String symbol) {
+    return 'Amount ($symbol or base units)';
+  }
+
+  @override
+  String sendEthAmountLabelNative(String symbol) {
+    return 'Amount ($symbol or wei)';
+  }
+
+  @override
+  String get sendEthMaxFeeLabel => 'Max fee per gas';
+
+  @override
+  String get sendEthPriorityFeeLabel => 'Priority fee';
+
+  @override
+  String get sendEthLoadingBalance => 'Loading balance…';
+
+  @override
+  String sendEthBalanceError(String error) {
+    return 'Balance error: $error';
+  }
+
+  @override
+  String sendEthAvailableForGas(String amount, String symbol) {
+    return 'available · $amount $symbol for gas';
+  }
+
+  @override
+  String sendEthFeeError(String error) {
+    return 'Fee data unavailable: $error';
+  }
+
+  @override
+  String get sendEthLoadingFee => 'Loading fee rates…';
+
+  @override
+  String get sendEthNetworkFeeHeader => 'NETWORK FEE';
+
+  @override
+  String get sendEthAutoBadge => 'AUTO';
+
+  @override
+  String get sendEthBaseLabel => 'Base';
+
+  @override
+  String get sendEthTipLabel => 'Tip';
+
+  @override
+  String get sendEthMaxLabel => 'Max';
+
+  @override
+  String get sendEthFinalFeeHint =>
+      'Final fee depends on the network base fee at inclusion time. Anything below max is refunded — overpaying doesn\'t actually cost. Once submitted this CANNOT be reversed.';
+
+  @override
+  String get sendSolExperimentalBody =>
+      'Solana transaction encoding is unit-tested but the end-to-end send path has not been audited.';
+
+  @override
+  String get sendSolErrorBadAddress =>
+      'Address should be 32-44 base58 characters';
+
+  @override
+  String get sendSolErrorNoSol =>
+      'No SOL for fees — fund this wallet with a small amount of SOL first';
+
+  @override
+  String sendSolErrorNeedsAtaSol(String symbol) {
+    return 'Recipient has no $symbol account — sending creates one (needs extra ~0.00204 SOL rent + fee).';
+  }
+
+  @override
+  String get sendSolErrorNotEnoughSol => 'Not enough SOL for the network fee.';
+
+  @override
+  String get sendSolErrorAmountFeeExceeds => 'Amount + fee exceeds balance';
+
+  @override
+  String sendSolAmountLabelToken(String symbol) {
+    return 'Amount ($symbol or base units)';
+  }
+
+  @override
+  String get sendSolAmountLabelNative => 'Amount (SOL or lamports)';
+
+  @override
+  String get sendSolAddressHint => 'Solana address';
+
+  @override
+  String get sendSolNetworkFeeLabel => 'Network fee';
+
+  @override
+  String get sendSolAtaRentLabel => 'ATA rent';
+
+  @override
+  String get sendSolTotalOutLabel => 'Total SOL out';
+
+  @override
+  String get sendSolFinalFeeHintNative =>
+      'Solana fees are fixed at 5000 lamports per signature. Once submitted this CANNOT be reversed.';
+
+  @override
+  String sendSolFinalFeeHintNewAta(String symbol) {
+    return 'Recipient has no $symbol account yet. Sending creates one for them (~0.00204 SOL rent, paid by you). Once submitted this CANNOT be reversed.';
+  }
+
+  @override
+  String get sendTrxExperimentalBody =>
+      'Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don\'t decode the protobuf body.';
+
+  @override
+  String get sendTrxErrorBadAddress =>
+      'Recipient must be a base58 Tron address (starts with T, 34 chars)';
+
+  @override
+  String get sendTrxErrorNoTrx =>
+      'No TRX for bandwidth/energy — fund this wallet with TRX first';
+
+  @override
+  String get sendTrxRecipientLabel => 'Recipient (Tron base58)';
+
+  @override
+  String sendTrxAmountLabelToken(String symbol) {
+    return 'Amount ($symbol or base units)';
+  }
+
+  @override
+  String get sendTrxAmountLabelNative => 'Amount (TRX or sun)';
+
+  @override
+  String get sendTrxBandwidthLabel => 'Bandwidth/energy';
+
+  @override
+  String get sendTrxBandwidthToken => 'Up to ~30 TRX-equiv (TRC-20)';
+
+  @override
+  String get sendTrxBandwidthNative => 'Free quota or ~0.27 TRX';
+
+  @override
+  String get sendTrxFinalFeeHint =>
+      'Tron transactions are built by the RPC node; we re-verify the txid hash before signing locally. Once submitted this CANNOT be reversed.';
+
+  @override
+  String get sendXmrTitle => 'Send XMR';
+
+  @override
+  String get sendXmrScanTitle => 'Scan recipient address';
+
+  @override
+  String sendXmrAvailable(String amount) {
+    return 'Available: $amount XMR';
+  }
+
+  @override
+  String get sendXmrAddRecipient => 'Add recipient';
+
+  @override
+  String get sendXmrSendAllTitle => 'Send all';
+
+  @override
+  String get sendXmrSendAllBody =>
+      'Sweep every spendable output to the first recipient — fee will be subtracted automatically.';
+
+  @override
+  String get sendXmrFeePriorityLabel => 'Fee priority';
+
+  @override
+  String get sendXmrTierSlow => 'Slow';
+
+  @override
+  String get sendXmrTierNormal => 'Normal';
+
+  @override
+  String get sendXmrTierFast => 'Fast';
+
+  @override
+  String get sendXmrReviewAction => 'Review send';
+
+  @override
+  String get sendXmrToLabel => 'To';
+
+  @override
+  String sendXmrToNumbered(int index) {
+    return 'To #$index';
+  }
+
+  @override
+  String get sendXmrSubtotalLabel => 'Subtotal';
+
+  @override
+  String get sendXmrSweepLabel => 'Sending (sweep)';
+
+  @override
+  String get sendXmrNetworkFee => 'Network fee';
+
+  @override
+  String sendXmrSplitWarning(int count) {
+    return 'This send will be relayed as $count sub-transactions.';
+  }
+
+  @override
+  String get sendXmrBroadcastTitle => 'Transaction broadcast';
+
+  @override
+  String get sendXmrBroadcastBody =>
+      'It will appear in your transaction history once the network confirms it.';
+
+  @override
+  String get sendXmrTxIdLabel => 'TX ID';
+
+  @override
+  String get sendXmrTxIdCopied => 'TX ID copied';
+
+  @override
+  String get sendXmrCopyTxIdAction => 'Copy TX ID';
+
+  @override
+  String get sendXmrDoneAction => 'Done';
+
+  @override
+  String get sendXmrRecipientHeader => 'Recipient';
+
+  @override
+  String get sendXmrRemoveTooltip => 'Remove';
+
+  @override
+  String get sendXmrAddressLabel => 'Recipient address';
+
+  @override
+  String get sendXmrAddressBookTooltip => 'Address book';
+
+  @override
+  String get sendXmrPasteTooltip => 'Paste';
+
+  @override
+  String get sendXmrAmountLabel => 'Amount (XMR)';
+
+  @override
+  String get sendXmrAmountHintSweep => 'Sweep — amount set automatically';
+
+  @override
+  String sendXmrErrorBadAddress(String tag) {
+    return 'Address doesn\'t look like Monero$tag.';
+  }
+
+  @override
+  String sendXmrErrorAmountZero(String tag) {
+    return 'Amount must be greater than 0$tag.';
+  }
+
+  @override
+  String get sendXmrErrorExceedsBalance => 'Total exceeds your balance.';
+
+  @override
   String get erc20EmptyHint =>
       'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
 

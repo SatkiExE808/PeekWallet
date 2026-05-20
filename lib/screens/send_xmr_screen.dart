@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../address_book/address_book.dart';
 import '../coins/monero/monero_wallet.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../theme.dart';
 import '../util/screenshot_guard.dart';
 import '../widgets/coin_screen_widgets.dart';
@@ -56,9 +57,10 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   }
 
   Future<void> _scanAddressFor(int i) async {
+    final l = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => const QrScanScreen(title: 'Scan recipient address'),
+        builder: (_) => QrScanScreen(title: l.sendXmrScanTitle),
       ),
     );
     if (scanned != null && scanned.isNotEmpty) {
@@ -81,6 +83,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   }
 
   Future<void> _build() async {
+    final l = AppLocalizations.of(context);
     setState(() {
       _err = null;
       _busy = true;
@@ -97,7 +100,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       final tag = _recipients.length == 1 ? '' : ' (row ${i + 1})';
       if (!_isLikelyXmrAddress(addr)) {
         setState(() {
-          _err = 'Address doesn\'t look like Monero$tag.';
+          _err = l.sendXmrErrorBadAddress(tag);
           _busy = false;
         });
         return;
@@ -119,7 +122,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
       }
       if (amt <= BigInt.zero) {
         setState(() {
-          _err = 'Amount must be greater than 0$tag.';
+          _err = l.sendXmrErrorAmountZero(tag);
           _busy = false;
         });
         return;
@@ -129,7 +132,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
     }
     if (!_sweepAll && runningTotal > totalBalance) {
       setState(() {
-        _err = 'Total exceeds your balance.';
+        _err = l.sendXmrErrorExceedsBalance;
         _busy = false;
       });
       return;
@@ -174,8 +177,9 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scaffold = Scaffold(
-      appBar: AppBar(title: const Text('Send XMR')),
+      appBar: AppBar(title: Text(l.sendXmrTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -195,12 +199,13 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   // --- Step 1: form ---
 
   Widget _formView() {
+    final l = AppLocalizations.of(context);
     final balance = widget.wallet.balanceXmr;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Available: ${balance.toStringAsFixed(9)} XMR',
+          l.sendXmrAvailable(balance.toStringAsFixed(9)),
           style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: 16),
@@ -228,7 +233,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
             child: TextButton.icon(
               onPressed: _addRecipient,
               icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add recipient'),
+              label: Text(l.sendXmrAddRecipient),
             ),
           ),
         ],
@@ -250,25 +255,26 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
               _recipients.removeRange(1, _recipients.length);
             }
           }),
-          title: const Text('Send all', style: TextStyle(fontSize: 14)),
-          subtitle: const Text(
-            'Sweep every spendable output to the first recipient — fee '
-            'taken from the swept amount. Disables multi-recipient.',
-            style: TextStyle(color: PeekColors.text3, fontSize: 11),
+          title: Text(l.sendXmrSendAllTitle,
+              style: const TextStyle(fontSize: 14)),
+          subtitle: Text(
+            l.sendXmrSendAllBody,
+            style:
+                const TextStyle(color: PeekColors.text3, fontSize: 11),
           ),
           dense: true,
         ),
         const SizedBox(height: 14),
-        const Text(
-          'Fee priority',
-          style: TextStyle(color: PeekColors.text2, fontSize: 12),
+        Text(
+          l.sendXmrFeePriorityLabel,
+          style: const TextStyle(color: PeekColors.text2, fontSize: 12),
         ),
         const SizedBox(height: 6),
         SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 1, label: Text('Slow')),
-            ButtonSegment(value: 2, label: Text('Normal')),
-            ButtonSegment(value: 4, label: Text('Fast')),
+          segments: [
+            ButtonSegment(value: 1, label: Text(l.sendXmrTierSlow)),
+            ButtonSegment(value: 2, label: Text(l.sendXmrTierNormal)),
+            ButtonSegment(value: 4, label: Text(l.sendXmrTierFast)),
           ],
           selected: {_priority},
           showSelectedIcon: false,
@@ -287,7 +293,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Review send'),
+              : Text(l.sendXmrReviewAction),
         ),
       ],
     );
@@ -296,6 +302,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   // --- Step 2: confirm ---
 
   Widget _confirmView() {
+    final l = AppLocalizations.of(context);
     final pt = _pending!;
     final total = pt.amountXmr + pt.feeXmr;
     return Column(
@@ -331,8 +338,8 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
               for (var i = 0; i < _recipients.length; i++) ...[
                 _ConfirmRow(
                   label: _recipients.length == 1
-                      ? 'To'
-                      : 'To #${i + 1}',
+                      ? l.sendXmrToLabel
+                      : l.sendXmrToNumbered(i + 1),
                   value: _recipients[i].addr.text.trim(),
                   mono: true,
                 ),
@@ -347,12 +354,13 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
               ],
               const Divider(height: 18, color: PeekColors.hairline),
               _ConfirmRow(
-                label: _sweepAll ? 'Sending (sweep)' : 'Subtotal',
+                label:
+                    _sweepAll ? l.sendXmrSweepLabel : l.sendXmrSubtotalLabel,
                 value: '${pt.amountXmr.toStringAsFixed(9)} XMR',
               ),
               const Divider(height: 18, color: PeekColors.hairline),
               _ConfirmRow(
-                  label: 'Network fee',
+                  label: l.sendXmrNetworkFee,
                   value: '${pt.feeXmr.toStringAsFixed(9)} XMR'),
             ],
           ),
@@ -374,7 +382,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'This send will be relayed as ${pt.txCount} sub-transactions.',
+                    l.sendXmrSplitWarning(pt.txCount),
                     style: const TextStyle(
                         color: PeekColors.text3,
                         fontSize: 11,
@@ -419,7 +427,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.arrow_back_rounded,
-                label: 'Back',
+                label: l.actionBack,
                 primary: false,
                 onTap: _busy ? null : () => setState(() => _pending = null),
               ),
@@ -428,7 +436,7 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.send_rounded,
-                label: _busy ? 'Sending…' : 'Send',
+                label: _busy ? l.actionSending : l.actionSend,
                 primary: true,
                 onTap: _busy ? null : _confirm,
               ),
@@ -442,27 +450,29 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
   // --- Step 3: result ---
 
   Widget _resultView() {
+    final l = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Icon(Icons.check_circle, color: PeekColors.green, size: 56),
         const SizedBox(height: 12),
-        const Text(
-          'Transaction broadcast',
+        Text(
+          l.sendXmrBroadcastTitle,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'It will appear in your transaction history once the network confirms it.',
+        Text(
+          l.sendXmrBroadcastBody,
           textAlign: TextAlign.center,
-          style: TextStyle(color: PeekColors.text2, fontSize: 13),
+          style: const TextStyle(color: PeekColors.text2, fontSize: 13),
         ),
         const SizedBox(height: PeekDesign.sp6),
-        const Text(
-          'TX ID',
-          style: TextStyle(
+        Text(
+          l.sendXmrTxIdLabel,
+          style: const TextStyle(
               color: PeekColors.text3,
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -486,16 +496,16 @@ class _SendXmrScreenState extends State<SendXmrScreen> {
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: _broadcastTxid!));
             messenger.showSnackBar(
-              const SnackBar(content: Text('TX ID copied')),
+              SnackBar(content: Text(l.sendXmrTxIdCopied)),
             );
           },
           icon: const Icon(Icons.copy, size: 16),
-          label: const Text('Copy TX ID'),
+          label: Text(l.sendXmrCopyTxIdAction),
         ),
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Done'),
+          child: Text(l.sendXmrDoneAction),
         ),
       ],
     );
@@ -541,6 +551,7 @@ class _RecipientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final showHeader = total > 1;
     return Container(
       padding: const EdgeInsets.all(PeekDesign.sp4),
@@ -573,10 +584,10 @@ class _RecipientCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Recipient',
-                    style: TextStyle(
+                    l.sendXmrRecipientHeader,
+                    style: const TextStyle(
                       color: PeekColors.text2,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -589,7 +600,7 @@ class _RecipientCard extends StatelessWidget {
                     icon: const Icon(Icons.close_rounded, size: 18),
                     color: PeekColors.text3,
                     onPressed: onRemove,
-                    tooltip: 'Remove',
+                    tooltip: l.sendXmrRemoveTooltip,
                   ),
               ],
             ),
@@ -599,24 +610,24 @@ class _RecipientCard extends StatelessWidget {
             autocorrect: false,
             textCapitalization: TextCapitalization.none,
             decoration: InputDecoration(
-              labelText: 'Recipient address',
+              labelText: l.sendXmrAddressLabel,
               hintText: '4… or 8…',
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.contact_page_outlined, size: 18),
-                    tooltip: 'Address book',
+                    tooltip: l.sendXmrAddressBookTooltip,
                     onPressed: onPickBook,
                   ),
                   IconButton(
                     icon: const Icon(Icons.qr_code_scanner, size: 18),
-                    tooltip: 'Scan QR',
+                    tooltip: l.sendFormScanTooltip,
                     onPressed: onScan,
                   ),
                   IconButton(
                     icon: const Icon(Icons.content_paste, size: 18),
-                    tooltip: 'Paste',
+                    tooltip: l.sendXmrPasteTooltip,
                     onPressed: () async {
                       final data = await Clipboard.getData('text/plain');
                       if (data?.text != null) {
@@ -637,8 +648,9 @@ class _RecipientCard extends StatelessWidget {
               FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
             ],
             decoration: InputDecoration(
-              labelText: 'Amount (XMR)',
-              hintText: sweepAll ? 'Sweep — amount set automatically' : '0.0',
+              labelText: l.sendXmrAmountLabel,
+              hintText:
+                  sweepAll ? l.sendXmrAmountHintSweep : '0.0',
             ),
           ),
         ],

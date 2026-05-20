@@ -294,6 +294,386 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String sendScreenTitle(String coinName) {
+    return '傳送 $coinName';
+  }
+
+  @override
+  String sendScanTitle(String symbol) {
+    return '掃描 $symbol 地址';
+  }
+
+  @override
+  String sendBtcAmountLabel(String symbol) {
+    return '金額($symbol 或 sat)';
+  }
+
+  @override
+  String sendBroadcastSuccess(String prefix) {
+    return '已廣播!交易 ID: $prefix…';
+  }
+
+  @override
+  String get sendBtcLoadingUtxos => '載入 UTXO 中…';
+
+  @override
+  String sendBtcUtxoError(String error) {
+    return 'UTXO 錯誤:$error';
+  }
+
+  @override
+  String get sendBtcAvailableHint => '可用 · 僅計算已確認 UTXO';
+
+  @override
+  String sendBtcFeeRatesError(String error) {
+    return '無法取得手續費率:$error';
+  }
+
+  @override
+  String get sendBtcLoadingFeeRates => '載入手續費率…';
+
+  @override
+  String get sendBtcFinalFeeHint => '最終手續費與找零會在廣播後顯示。一旦提交至網路後即無法撤回。';
+
+  @override
+  String get sendBtcExperimentalBody => '傳送已通過 BIP-0143 規範向量測試,但尚未經過端對端審計。';
+
+  @override
+  String sendBtcOnlyBech32(String prefix) {
+    return '僅支援 bech32 P2WPKH($prefix…)地址';
+  }
+
+  @override
+  String sendBtcExceedsBalance(int available) {
+    return '金額超過已確認餘額($available sat)';
+  }
+
+  @override
+  String get sendBtcFeeRateLabel => '手續費率';
+
+  @override
+  String get sendBtcFeeTierFastest => '最快';
+
+  @override
+  String get sendBtcFeeTierHalfHour => '半小時';
+
+  @override
+  String get sendBtcFeeTierHour => '一小時';
+
+  @override
+  String get sendBtcFeeTierEconomy => '節省';
+
+  @override
+  String get sendBtcFeeEtaFastest => '約 10 分鐘';
+
+  @override
+  String get sendBtcFeeEtaHalfHour => '約 30 分鐘';
+
+  @override
+  String get sendBtcFeeEtaHour => '約 1 小時';
+
+  @override
+  String get sendBtcFeeEtaEconomy => '視記憶池而定';
+
+  @override
+  String get sendBchRecipientLabel => '收款地址(CashAddr)';
+
+  @override
+  String get sendBchExperimentalBody =>
+      '傳統 P2PKH 加 SIGHASH_FORKID。BIP143 sighash 已透過 BTC SegWit 規範向量測試;BCH 專屬的 0x41 sighash 位元組及傳統交易封包已單元測試但未經審計。';
+
+  @override
+  String get sendBchErrorMustBeCashAddr =>
+      '收款人必須為 CashAddr(bitcoincash:q…/p… 或直接 q…/p…)';
+
+  @override
+  String get sendBchErrorP2shNotSupported =>
+      '目前尚未支援 P2SH BCH 地址(p…) — 本版本只支援 P2KH(q…)。';
+
+  @override
+  String get sendBchFinalFeeHint =>
+      'BCH 傳統 P2PKH 含 SIGHASH_FORKID。一旦提交後即無法撤回(BCH 不支援 RBF)。';
+
+  @override
+  String get sendBchAvailableShort => '可用';
+
+  @override
+  String get sendBchNetworkFeeLabel => '網路手續費';
+
+  @override
+  String sendBchFeeRateDescription(int rate, int typical) {
+    return '$rate sat/byte — 一般單輸入交易約 $typical sat。BCH 手續費極低。';
+  }
+
+  @override
+  String get sendBchAmountLabel => '金額(BCH 或 sat)';
+
+  @override
+  String get sendEthExperimentalBody =>
+      'RLP + EIP-1559 sighash + ECDSA 復原已單元測試,但端對端傳送流程尚未審計。';
+
+  @override
+  String get sendEthErrorBadAddress => '收款人必須是 0x 前綴加 40 字元十六進位地址';
+
+  @override
+  String sendEthErrorExceedsToken(String symbol) {
+    return '金額超過 $symbol 餘額';
+  }
+
+  @override
+  String sendEthErrorNoGas(String symbol) {
+    return '沒有 $symbol 可付手續費 — 請先注資至此錢包';
+  }
+
+  @override
+  String sendEthAmountLabelToken(String symbol) {
+    return '金額($symbol 或最小單位)';
+  }
+
+  @override
+  String sendEthAmountLabelNative(String symbol) {
+    return '金額($symbol 或 wei)';
+  }
+
+  @override
+  String get sendEthMaxFeeLabel => '每單位 gas 上限';
+
+  @override
+  String get sendEthPriorityFeeLabel => '優先費';
+
+  @override
+  String get sendEthLoadingBalance => '載入餘額中…';
+
+  @override
+  String sendEthBalanceError(String error) {
+    return '餘額錯誤:$error';
+  }
+
+  @override
+  String sendEthAvailableForGas(String amount, String symbol) {
+    return '可用 · $amount $symbol 可付手續費';
+  }
+
+  @override
+  String sendEthFeeError(String error) {
+    return '手續費資料無法取得:$error';
+  }
+
+  @override
+  String get sendEthLoadingFee => '載入手續費率…';
+
+  @override
+  String get sendEthNetworkFeeHeader => '網路手續費';
+
+  @override
+  String get sendEthAutoBadge => '自動';
+
+  @override
+  String get sendEthBaseLabel => '基本';
+
+  @override
+  String get sendEthTipLabel => '小費';
+
+  @override
+  String get sendEthMaxLabel => '上限';
+
+  @override
+  String get sendEthFinalFeeHint =>
+      '最終手續費取決於上鏈時的網路基礎費。低於上限的部分會退回 — 多付不會真的多花。一旦提交即無法撤回。';
+
+  @override
+  String get sendSolExperimentalBody => 'Solana 交易編碼已單元測試,但端對端傳送流程尚未審計。';
+
+  @override
+  String get sendSolErrorBadAddress => '地址應為 32-44 個 base58 字元';
+
+  @override
+  String get sendSolErrorNoSol => '沒有 SOL 可付手續費 — 請先注入少量 SOL 至此錢包';
+
+  @override
+  String sendSolErrorNeedsAtaSol(String symbol) {
+    return '收款人尚未有 $symbol 帳戶 — 傳送會建立一個(需額外 ~0.00204 SOL 租金 + 手續費)。';
+  }
+
+  @override
+  String get sendSolErrorNotEnoughSol => 'SOL 不足以付網路費。';
+
+  @override
+  String get sendSolErrorAmountFeeExceeds => '金額加手續費超過餘額';
+
+  @override
+  String sendSolAmountLabelToken(String symbol) {
+    return '金額($symbol 或最小單位)';
+  }
+
+  @override
+  String get sendSolAmountLabelNative => '金額(SOL 或 lamport)';
+
+  @override
+  String get sendSolAddressHint => 'Solana 地址';
+
+  @override
+  String get sendSolNetworkFeeLabel => '網路手續費';
+
+  @override
+  String get sendSolAtaRentLabel => 'ATA 租金';
+
+  @override
+  String get sendSolTotalOutLabel => 'SOL 總支出';
+
+  @override
+  String get sendSolFinalFeeHintNative =>
+      'Solana 手續費固定為每個簽章 5000 lamport。一旦提交即無法撤回。';
+
+  @override
+  String sendSolFinalFeeHintNewAta(String symbol) {
+    return '收款人尚未有 $symbol 帳戶。傳送會為對方建立一個(約 0.00204 SOL 租金,由你支付)。一旦提交即無法撤回。';
+  }
+
+  @override
+  String get sendTrxExperimentalBody =>
+      'Tron 交易由 RPC 建構並於本機簽章。簽章前會驗證 txid 雜湊,但不會解碼 protobuf 內容。';
+
+  @override
+  String get sendTrxErrorBadAddress => '收款人必須是 base58 Tron 地址(以 T 開頭,34 字元)';
+
+  @override
+  String get sendTrxErrorNoTrx => '沒有 TRX 可付頻寬/能量 — 請先注入 TRX 至此錢包';
+
+  @override
+  String get sendTrxRecipientLabel => '收款人(Tron base58)';
+
+  @override
+  String sendTrxAmountLabelToken(String symbol) {
+    return '金額($symbol 或最小單位)';
+  }
+
+  @override
+  String get sendTrxAmountLabelNative => '金額(TRX 或 sun)';
+
+  @override
+  String get sendTrxBandwidthLabel => '頻寬/能量';
+
+  @override
+  String get sendTrxBandwidthToken => '最多約 30 TRX 等值(TRC-20)';
+
+  @override
+  String get sendTrxBandwidthNative => '免費配額或約 0.27 TRX';
+
+  @override
+  String get sendTrxFinalFeeHint =>
+      'Tron 交易由 RPC 節點建構;我們會在本機簽章前重新驗證 txid 雜湊。一旦提交即無法撤回。';
+
+  @override
+  String get sendXmrTitle => '傳送 XMR';
+
+  @override
+  String get sendXmrScanTitle => '掃描收款地址';
+
+  @override
+  String sendXmrAvailable(String amount) {
+    return '可用:$amount XMR';
+  }
+
+  @override
+  String get sendXmrAddRecipient => '新增收款人';
+
+  @override
+  String get sendXmrSendAllTitle => '全部傳送';
+
+  @override
+  String get sendXmrSendAllBody => '將所有可花費的輸出轉至第一位收款人 — 手續費會自動扣除。';
+
+  @override
+  String get sendXmrFeePriorityLabel => '手續費優先順序';
+
+  @override
+  String get sendXmrTierSlow => '慢';
+
+  @override
+  String get sendXmrTierNormal => '一般';
+
+  @override
+  String get sendXmrTierFast => '快';
+
+  @override
+  String get sendXmrReviewAction => '檢視傳送';
+
+  @override
+  String get sendXmrToLabel => '收款人';
+
+  @override
+  String sendXmrToNumbered(int index) {
+    return '收款人 #$index';
+  }
+
+  @override
+  String get sendXmrSubtotalLabel => '小計';
+
+  @override
+  String get sendXmrSweepLabel => '傳送(全部)';
+
+  @override
+  String get sendXmrNetworkFee => '網路費';
+
+  @override
+  String sendXmrSplitWarning(int count) {
+    return '此次傳送將拆為 $count 筆子交易發送。';
+  }
+
+  @override
+  String get sendXmrBroadcastTitle => '交易已廣播';
+
+  @override
+  String get sendXmrBroadcastBody => '網路確認後將出現在你的交易紀錄中。';
+
+  @override
+  String get sendXmrTxIdLabel => '交易 ID';
+
+  @override
+  String get sendXmrTxIdCopied => '交易 ID 已複製';
+
+  @override
+  String get sendXmrCopyTxIdAction => '複製交易 ID';
+
+  @override
+  String get sendXmrDoneAction => '完成';
+
+  @override
+  String get sendXmrRecipientHeader => '收款人';
+
+  @override
+  String get sendXmrRemoveTooltip => '移除';
+
+  @override
+  String get sendXmrAddressLabel => '收款地址';
+
+  @override
+  String get sendXmrAddressBookTooltip => '通訊錄';
+
+  @override
+  String get sendXmrPasteTooltip => '貼上';
+
+  @override
+  String get sendXmrAmountLabel => '金額(XMR)';
+
+  @override
+  String get sendXmrAmountHintSweep => '全部 — 金額自動設定';
+
+  @override
+  String sendXmrErrorBadAddress(String tag) {
+    return '地址不像是 Monero 格式$tag。';
+  }
+
+  @override
+  String sendXmrErrorAmountZero(String tag) {
+    return '金額必須大於 0$tag。';
+  }
+
+  @override
+  String get sendXmrErrorExceedsBalance => '總額超過餘額。';
+
+  @override
   String get erc20EmptyHint =>
       '尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。';
 
@@ -614,6 +994,386 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String experimentalSendWarning(String symbol) {
     return '傳送功能仍為實驗性 — 請以小額測試後再傳送大額 $symbol。';
   }
+
+  @override
+  String sendScreenTitle(String coinName) {
+    return '傳送 $coinName';
+  }
+
+  @override
+  String sendScanTitle(String symbol) {
+    return '掃描 $symbol 地址';
+  }
+
+  @override
+  String sendBtcAmountLabel(String symbol) {
+    return '金額($symbol 或 sat)';
+  }
+
+  @override
+  String sendBroadcastSuccess(String prefix) {
+    return '已廣播!交易 ID: $prefix…';
+  }
+
+  @override
+  String get sendBtcLoadingUtxos => '載入 UTXO 中…';
+
+  @override
+  String sendBtcUtxoError(String error) {
+    return 'UTXO 錯誤:$error';
+  }
+
+  @override
+  String get sendBtcAvailableHint => '可用 · 僅計算已確認 UTXO';
+
+  @override
+  String sendBtcFeeRatesError(String error) {
+    return '無法取得手續費率:$error';
+  }
+
+  @override
+  String get sendBtcLoadingFeeRates => '載入手續費率…';
+
+  @override
+  String get sendBtcFinalFeeHint => '最終手續費與找零會在廣播後顯示。一旦提交至網路後即無法撤回。';
+
+  @override
+  String get sendBtcExperimentalBody => '傳送已通過 BIP-0143 規範向量測試,但尚未經過端對端審計。';
+
+  @override
+  String sendBtcOnlyBech32(String prefix) {
+    return '僅支援 bech32 P2WPKH($prefix…)地址';
+  }
+
+  @override
+  String sendBtcExceedsBalance(int available) {
+    return '金額超過已確認餘額($available sat)';
+  }
+
+  @override
+  String get sendBtcFeeRateLabel => '手續費率';
+
+  @override
+  String get sendBtcFeeTierFastest => '最快';
+
+  @override
+  String get sendBtcFeeTierHalfHour => '半小時';
+
+  @override
+  String get sendBtcFeeTierHour => '一小時';
+
+  @override
+  String get sendBtcFeeTierEconomy => '節省';
+
+  @override
+  String get sendBtcFeeEtaFastest => '約 10 分鐘';
+
+  @override
+  String get sendBtcFeeEtaHalfHour => '約 30 分鐘';
+
+  @override
+  String get sendBtcFeeEtaHour => '約 1 小時';
+
+  @override
+  String get sendBtcFeeEtaEconomy => '視記憶池而定';
+
+  @override
+  String get sendBchRecipientLabel => '收款地址(CashAddr)';
+
+  @override
+  String get sendBchExperimentalBody =>
+      '傳統 P2PKH 加 SIGHASH_FORKID。BIP143 sighash 已透過 BTC SegWit 規範向量測試;BCH 專屬的 0x41 sighash 位元組及傳統交易封包已單元測試但未經審計。';
+
+  @override
+  String get sendBchErrorMustBeCashAddr =>
+      '收款人必須為 CashAddr(bitcoincash:q…/p… 或直接 q…/p…)';
+
+  @override
+  String get sendBchErrorP2shNotSupported =>
+      '目前尚未支援 P2SH BCH 地址(p…) — 本版本只支援 P2KH(q…)。';
+
+  @override
+  String get sendBchFinalFeeHint =>
+      'BCH 傳統 P2PKH 含 SIGHASH_FORKID。一旦提交後即無法撤回(BCH 不支援 RBF)。';
+
+  @override
+  String get sendBchAvailableShort => '可用';
+
+  @override
+  String get sendBchNetworkFeeLabel => '網路手續費';
+
+  @override
+  String sendBchFeeRateDescription(int rate, int typical) {
+    return '$rate sat/byte — 一般單輸入交易約 $typical sat。BCH 手續費極低。';
+  }
+
+  @override
+  String get sendBchAmountLabel => '金額(BCH 或 sat)';
+
+  @override
+  String get sendEthExperimentalBody =>
+      'RLP + EIP-1559 sighash + ECDSA 復原已單元測試,但端對端傳送流程尚未審計。';
+
+  @override
+  String get sendEthErrorBadAddress => '收款人必須是 0x 前綴加 40 字元十六進位地址';
+
+  @override
+  String sendEthErrorExceedsToken(String symbol) {
+    return '金額超過 $symbol 餘額';
+  }
+
+  @override
+  String sendEthErrorNoGas(String symbol) {
+    return '沒有 $symbol 可付手續費 — 請先注資至此錢包';
+  }
+
+  @override
+  String sendEthAmountLabelToken(String symbol) {
+    return '金額($symbol 或最小單位)';
+  }
+
+  @override
+  String sendEthAmountLabelNative(String symbol) {
+    return '金額($symbol 或 wei)';
+  }
+
+  @override
+  String get sendEthMaxFeeLabel => '每單位 gas 上限';
+
+  @override
+  String get sendEthPriorityFeeLabel => '優先費';
+
+  @override
+  String get sendEthLoadingBalance => '載入餘額中…';
+
+  @override
+  String sendEthBalanceError(String error) {
+    return '餘額錯誤:$error';
+  }
+
+  @override
+  String sendEthAvailableForGas(String amount, String symbol) {
+    return '可用 · $amount $symbol 可付手續費';
+  }
+
+  @override
+  String sendEthFeeError(String error) {
+    return '手續費資料無法取得:$error';
+  }
+
+  @override
+  String get sendEthLoadingFee => '載入手續費率…';
+
+  @override
+  String get sendEthNetworkFeeHeader => '網路手續費';
+
+  @override
+  String get sendEthAutoBadge => '自動';
+
+  @override
+  String get sendEthBaseLabel => '基本';
+
+  @override
+  String get sendEthTipLabel => '小費';
+
+  @override
+  String get sendEthMaxLabel => '上限';
+
+  @override
+  String get sendEthFinalFeeHint =>
+      '最終手續費取決於上鏈時的網路基礎費。低於上限的部分會退回 — 多付不會真的多花。一旦提交即無法撤回。';
+
+  @override
+  String get sendSolExperimentalBody => 'Solana 交易編碼已單元測試,但端對端傳送流程尚未審計。';
+
+  @override
+  String get sendSolErrorBadAddress => '地址應為 32-44 個 base58 字元';
+
+  @override
+  String get sendSolErrorNoSol => '沒有 SOL 可付手續費 — 請先注入少量 SOL 至此錢包';
+
+  @override
+  String sendSolErrorNeedsAtaSol(String symbol) {
+    return '收款人尚未有 $symbol 帳戶 — 傳送會建立一個(需額外 ~0.00204 SOL 租金 + 手續費)。';
+  }
+
+  @override
+  String get sendSolErrorNotEnoughSol => 'SOL 不足以付網路費。';
+
+  @override
+  String get sendSolErrorAmountFeeExceeds => '金額加手續費超過餘額';
+
+  @override
+  String sendSolAmountLabelToken(String symbol) {
+    return '金額($symbol 或最小單位)';
+  }
+
+  @override
+  String get sendSolAmountLabelNative => '金額(SOL 或 lamport)';
+
+  @override
+  String get sendSolAddressHint => 'Solana 地址';
+
+  @override
+  String get sendSolNetworkFeeLabel => '網路手續費';
+
+  @override
+  String get sendSolAtaRentLabel => 'ATA 租金';
+
+  @override
+  String get sendSolTotalOutLabel => 'SOL 總支出';
+
+  @override
+  String get sendSolFinalFeeHintNative =>
+      'Solana 手續費固定為每個簽章 5000 lamport。一旦提交即無法撤回。';
+
+  @override
+  String sendSolFinalFeeHintNewAta(String symbol) {
+    return '收款人尚未有 $symbol 帳戶。傳送會為對方建立一個(約 0.00204 SOL 租金,由你支付)。一旦提交即無法撤回。';
+  }
+
+  @override
+  String get sendTrxExperimentalBody =>
+      'Tron 交易由 RPC 建構並於本機簽章。簽章前會驗證 txid 雜湊,但不會解碼 protobuf 內容。';
+
+  @override
+  String get sendTrxErrorBadAddress => '收款人必須是 base58 Tron 地址(以 T 開頭,34 字元)';
+
+  @override
+  String get sendTrxErrorNoTrx => '沒有 TRX 可付頻寬/能量 — 請先注入 TRX 至此錢包';
+
+  @override
+  String get sendTrxRecipientLabel => '收款人(Tron base58)';
+
+  @override
+  String sendTrxAmountLabelToken(String symbol) {
+    return '金額($symbol 或最小單位)';
+  }
+
+  @override
+  String get sendTrxAmountLabelNative => '金額(TRX 或 sun)';
+
+  @override
+  String get sendTrxBandwidthLabel => '頻寬/能量';
+
+  @override
+  String get sendTrxBandwidthToken => '最多約 30 TRX 等值(TRC-20)';
+
+  @override
+  String get sendTrxBandwidthNative => '免費配額或約 0.27 TRX';
+
+  @override
+  String get sendTrxFinalFeeHint =>
+      'Tron 交易由 RPC 節點建構;我們會在本機簽章前重新驗證 txid 雜湊。一旦提交即無法撤回。';
+
+  @override
+  String get sendXmrTitle => '傳送 XMR';
+
+  @override
+  String get sendXmrScanTitle => '掃描收款地址';
+
+  @override
+  String sendXmrAvailable(String amount) {
+    return '可用:$amount XMR';
+  }
+
+  @override
+  String get sendXmrAddRecipient => '新增收款人';
+
+  @override
+  String get sendXmrSendAllTitle => '全部傳送';
+
+  @override
+  String get sendXmrSendAllBody => '將所有可花費的輸出轉至第一位收款人 — 手續費會自動扣除。';
+
+  @override
+  String get sendXmrFeePriorityLabel => '手續費優先順序';
+
+  @override
+  String get sendXmrTierSlow => '慢';
+
+  @override
+  String get sendXmrTierNormal => '一般';
+
+  @override
+  String get sendXmrTierFast => '快';
+
+  @override
+  String get sendXmrReviewAction => '檢視傳送';
+
+  @override
+  String get sendXmrToLabel => '收款人';
+
+  @override
+  String sendXmrToNumbered(int index) {
+    return '收款人 #$index';
+  }
+
+  @override
+  String get sendXmrSubtotalLabel => '小計';
+
+  @override
+  String get sendXmrSweepLabel => '傳送(全部)';
+
+  @override
+  String get sendXmrNetworkFee => '網路費';
+
+  @override
+  String sendXmrSplitWarning(int count) {
+    return '此次傳送將拆為 $count 筆子交易發送。';
+  }
+
+  @override
+  String get sendXmrBroadcastTitle => '交易已廣播';
+
+  @override
+  String get sendXmrBroadcastBody => '網路確認後將出現在你的交易紀錄中。';
+
+  @override
+  String get sendXmrTxIdLabel => '交易 ID';
+
+  @override
+  String get sendXmrTxIdCopied => '交易 ID 已複製';
+
+  @override
+  String get sendXmrCopyTxIdAction => '複製交易 ID';
+
+  @override
+  String get sendXmrDoneAction => '完成';
+
+  @override
+  String get sendXmrRecipientHeader => '收款人';
+
+  @override
+  String get sendXmrRemoveTooltip => '移除';
+
+  @override
+  String get sendXmrAddressLabel => '收款地址';
+
+  @override
+  String get sendXmrAddressBookTooltip => '通訊錄';
+
+  @override
+  String get sendXmrPasteTooltip => '貼上';
+
+  @override
+  String get sendXmrAmountLabel => '金額(XMR)';
+
+  @override
+  String get sendXmrAmountHintSweep => '全部 — 金額自動設定';
+
+  @override
+  String sendXmrErrorBadAddress(String tag) {
+    return '地址不像是 Monero 格式$tag。';
+  }
+
+  @override
+  String sendXmrErrorAmountZero(String tag) {
+    return '金額必須大於 0$tag。';
+  }
+
+  @override
+  String get sendXmrErrorExceedsBalance => '總額超過餘額。';
 
   @override
   String get erc20EmptyHint =>

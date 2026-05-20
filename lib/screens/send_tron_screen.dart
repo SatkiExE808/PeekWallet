@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../address_book/address_book.dart';
 import '../coins/tron/trc20.dart';
 import '../coins/tron/tron_wallet.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/remember_recipient.dart';
@@ -149,9 +150,10 @@ class _SendTronScreenState extends State<SendTronScreen> {
   }
 
   Future<void> _scanQr() async {
+    final l = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => const QrScanScreen(title: 'Scan Tron address'),
+        builder: (_) => QrScanScreen(title: l.sendScanTitle('TRX')),
       ),
     );
     if (scanned != null && scanned.isNotEmpty) {
@@ -184,39 +186,38 @@ class _SendTronScreenState extends State<SendTronScreen> {
   }
 
   Future<void> _onContinue() async {
+    final l = AppLocalizations.of(context);
     setState(() => _error = null);
     final parsed = _parseAmount();
     final addr = _addrCtrl.text.trim();
     if (!addr.startsWith('T') || addr.length != 34) {
-      setState(() => _error =
-          'Recipient must be a base58 Tron address (starts with T, 34 chars)');
+      setState(() => _error = l.sendTrxErrorBadAddress);
       return;
     }
 
     if (widget.token != null) {
       final amt = parsed.tokenRaw;
       if (amt == null || amt <= BigInt.zero) {
-        setState(() => _error = 'Enter a valid amount');
+        setState(() => _error = l.sendFormErrorInvalidAmount);
         return;
       }
       if (amt > _tokenBalanceRaw) {
-        setState(() => _error =
-            'Amount exceeds ${widget.token!.symbol} balance');
+        setState(() =>
+            _error = l.sendEthErrorExceedsToken(widget.token!.symbol));
         return;
       }
       if (_balanceSun == 0) {
-        setState(() => _error =
-            'No TRX for bandwidth/energy — fund this wallet with TRX first');
+        setState(() => _error = l.sendTrxErrorNoTrx);
         return;
       }
     } else {
       final amt = parsed.sun;
       if (amt == null || amt <= 0) {
-        setState(() => _error = 'Enter a valid amount');
+        setState(() => _error = l.sendFormErrorInvalidAmount);
         return;
       }
       if (amt > _balanceSun) {
-        setState(() => _error = 'Amount exceeds balance');
+        setState(() => _error = l.sendFormErrorAmountExceedsBalance);
         return;
       }
     }
@@ -224,8 +225,9 @@ class _SendTronScreenState extends State<SendTronScreen> {
   }
 
   Future<void> _onConfirm() async {
+    final l = AppLocalizations.of(context);
     if (_confirmCtrl.text.trim().toUpperCase() != 'SEND') {
-      setState(() => _error = 'Type SEND to confirm');
+      setState(() => _error = l.sendFormConfirmHint);
       return;
     }
     setState(() {
@@ -258,7 +260,7 @@ class _SendTronScreenState extends State<SendTronScreen> {
       messenger.showSnackBar(
         SnackBar(
           backgroundColor: PeekColors.green,
-          content: Text('Broadcast! tx: ${txid.substring(0, 16)}…'),
+          content: Text(l.sendBroadcastSuccess(txid.substring(0, 16))),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -275,9 +277,11 @@ class _SendTronScreenState extends State<SendTronScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ScreenshotGuard(
       child: Scaffold(
-        appBar: AppBar(title: Text('Send ${widget.assetSymbol}')),
+        appBar:
+            AppBar(title: Text(l.sendScreenTitle(widget.assetSymbol))),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -298,17 +302,16 @@ class _SendTronScreenState extends State<SendTronScreen> {
     final fiat = displayValue > 0
         ? PriceFeed.I.formatFiat(symbol, displayValue.toDouble())
         : '';
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don\'t decode the protobuf body.'),
+        ExperimentalBanner(body: l.sendTrxExperimentalBody),
         const SizedBox(height: 16),
         _balanceCard(),
         const SizedBox(height: 20),
-        const Text('Recipient (Tron base58)',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendTrxRecipientLabel,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _addrCtrl,
@@ -319,17 +322,17 @@ class _SendTronScreenState extends State<SendTronScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.bookmark_border, size: 18),
-                  tooltip: 'From address book',
+                  tooltip: l.sendFormBookTooltip,
                   onPressed: _pickFromBook,
                 ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  tooltip: 'Scan QR',
+                  tooltip: l.sendFormScanTooltip,
                   onPressed: _scanQr,
                 ),
                 IconButton(
                   icon: const Icon(Icons.paste, size: 18),
-                  tooltip: 'Paste from clipboard',
+                  tooltip: l.sendFormPasteTooltip,
                   onPressed: () async {
                     final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
@@ -349,8 +352,8 @@ class _SendTronScreenState extends State<SendTronScreen> {
             Expanded(
               child: Text(
                 widget.token != null
-                    ? 'Amount ($symbol or base units)'
-                    : 'Amount (TRX or sun)',
+                    ? l.sendTrxAmountLabelToken(symbol)
+                    : l.sendTrxAmountLabelNative,
                 style: const TextStyle(
                     color: PeekColors.text2, fontSize: 12),
               ),
@@ -363,7 +366,8 @@ class _SendTronScreenState extends State<SendTronScreen> {
                 minimumSize: const Size(0, 24),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Max', style: TextStyle(fontSize: 12)),
+              child: Text(l.sendFormMaxButton,
+                  style: const TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -384,13 +388,14 @@ class _SendTronScreenState extends State<SendTronScreen> {
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _loading ? null : _onContinue,
-          child: const Text('Continue'),
+          child: Text(l.actionContinue),
         ),
       ],
     );
   }
 
   Widget _buildPreview() {
+    final l = AppLocalizations.of(context);
     final parsed = _parseAmount();
     final addr = _addrCtrl.text.trim();
     final amountStr = widget.token != null
@@ -399,9 +404,7 @@ class _SendTronScreenState extends State<SendTronScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                "Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don't decode the protobuf body."),
+        ExperimentalBanner(body: l.sendTrxExperimentalBody),
         const SizedBox(height: PeekDesign.sp4),
         Container(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -422,19 +425,20 @@ class _SendTronScreenState extends State<SendTronScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'will be sent to',
-                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              Text(
+                l.sendFormWillBeSentTo,
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 12),
               ),
               const SizedBox(height: PeekDesign.sp4),
-              _kvRow('To',
+              _kvRow(l.sendFormToLabel,
                   '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
               const Divider(height: 18, color: PeekColors.hairline),
               _kvRow(
-                  'Bandwidth/energy',
+                  l.sendTrxBandwidthLabel,
                   widget.token != null
-                      ? 'Up to ~30 TRX-equiv (TRC-20)'
-                      : 'Free quota or ~0.27 TRX'),
+                      ? l.sendTrxBandwidthToken
+                      : l.sendTrxBandwidthNative),
             ],
           ),
         ),
@@ -448,16 +452,14 @@ class _SendTronScreenState extends State<SendTronScreen> {
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Icon(Icons.info_outline_rounded,
+            children: [
+              const Icon(Icons.info_outline_rounded,
                   size: 14, color: PeekColors.text3),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Tron transactions are built by the RPC node; we re-'
-                  'verify the txid hash before signing. Once submitted '
-                  'this CANNOT be reversed.',
-                  style: TextStyle(
+                  l.sendTrxFinalFeeHint,
+                  style: const TextStyle(
                       color: PeekColors.text3, fontSize: 11, height: 1.4),
                 ),
               ),
@@ -465,14 +467,15 @@ class _SendTronScreenState extends State<SendTronScreen> {
           ),
         ),
         const SizedBox(height: PeekDesign.sp5),
-        const Text('Type SEND to confirm',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendFormConfirmHint,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _confirmCtrl,
           textCapitalization: TextCapitalization.characters,
           autocorrect: false,
-          decoration: const InputDecoration(hintText: 'SEND'),
+          decoration:
+              InputDecoration(hintText: l.sendFormConfirmPlaceholder),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
@@ -484,7 +487,7 @@ class _SendTronScreenState extends State<SendTronScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.arrow_back_rounded,
-                label: 'Back',
+                label: l.actionBack,
                 primary: false,
                 onTap: _broadcasting
                     ? null
@@ -498,7 +501,7 @@ class _SendTronScreenState extends State<SendTronScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.send_rounded,
-                label: _broadcasting ? 'Sending…' : 'Send',
+                label: _broadcasting ? l.actionSending : l.actionSend,
                 primary: true,
                 onTap: _broadcasting ? null : _onConfirm,
               ),
@@ -510,6 +513,7 @@ class _SendTronScreenState extends State<SendTronScreen> {
   }
 
   Widget _balanceCard() {
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -530,11 +534,11 @@ class _SendTronScreenState extends State<SendTronScreen> {
             const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _loading
-                  ? const Text('Loading balance…',
-                      style: TextStyle(
+                  ? Text(l.sendEthLoadingBalance,
+                      style: const TextStyle(
                           color: PeekColors.text2, fontSize: 13))
                   : _balanceError != null
-                      ? Text('Balance error: $_balanceError',
+                      ? Text(l.sendEthBalanceError(_balanceError!),
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Column(
@@ -554,8 +558,11 @@ class _SendTronScreenState extends State<SendTronScreen> {
                             ),
                             Text(
                               widget.token != null
-                                  ? 'available · ${(_balanceSun / 1000000.0).toStringAsFixed(6)} TRX for fees'
-                                  : 'available',
+                                  ? l.sendEthAvailableForGas(
+                                      (_balanceSun / 1000000.0)
+                                          .toStringAsFixed(6),
+                                      'TRX')
+                                  : l.sendBchAvailableShort,
                               style: const TextStyle(
                                   color: PeekColors.text3,
                                   fontSize: 11),

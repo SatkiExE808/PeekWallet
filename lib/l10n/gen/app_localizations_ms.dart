@@ -297,6 +297,397 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String sendScreenTitle(String coinName) {
+    return 'Hantar $coinName';
+  }
+
+  @override
+  String sendScanTitle(String symbol) {
+    return 'Imbas alamat $symbol';
+  }
+
+  @override
+  String sendBtcAmountLabel(String symbol) {
+    return 'Jumlah ($symbol atau sat)';
+  }
+
+  @override
+  String sendBroadcastSuccess(String prefix) {
+    return 'Siaran selesai! txid: $prefix…';
+  }
+
+  @override
+  String get sendBtcLoadingUtxos => 'Memuatkan UTXO…';
+
+  @override
+  String sendBtcUtxoError(String error) {
+    return 'Ralat UTXO: $error';
+  }
+
+  @override
+  String get sendBtcAvailableHint => 'tersedia · hanya UTXO disahkan';
+
+  @override
+  String sendBtcFeeRatesError(String error) {
+    return 'Kadar yuran tidak tersedia: $error';
+  }
+
+  @override
+  String get sendBtcLoadingFeeRates => 'Memuatkan kadar yuran…';
+
+  @override
+  String get sendBtcFinalFeeHint =>
+      'Yuran akhir + baki akan ditunjukkan selepas siaran. Setelah dihantar ke rangkaian, ia TIDAK boleh dibatalkan.';
+
+  @override
+  String get sendBtcExperimentalBody =>
+      'Hantar telah diuji vektor spec BIP-0143 tetapi belum diaudit hujung-ke-hujung.';
+
+  @override
+  String sendBtcOnlyBech32(String prefix) {
+    return 'Hanya alamat bech32 P2WPKH ($prefix…) yang disokong';
+  }
+
+  @override
+  String sendBtcExceedsBalance(int available) {
+    return 'Jumlah melebihi baki disahkan ($available sat)';
+  }
+
+  @override
+  String get sendBtcFeeRateLabel => 'Kadar yuran';
+
+  @override
+  String get sendBtcFeeTierFastest => 'Terpantas';
+
+  @override
+  String get sendBtcFeeTierHalfHour => 'Setengah jam';
+
+  @override
+  String get sendBtcFeeTierHour => 'Sejam';
+
+  @override
+  String get sendBtcFeeTierEconomy => 'Ekonomi';
+
+  @override
+  String get sendBtcFeeEtaFastest => '~10 min';
+
+  @override
+  String get sendBtcFeeEtaHalfHour => '~30 min';
+
+  @override
+  String get sendBtcFeeEtaHour => '~1 jam';
+
+  @override
+  String get sendBtcFeeEtaEconomy => 'Apabila mempool membenarkan';
+
+  @override
+  String get sendBchRecipientLabel => 'Alamat penerima (CashAddr)';
+
+  @override
+  String get sendBchExperimentalBody =>
+      'P2PKH legasi dengan SIGHASH_FORKID. Sighash BIP143 telah diuji vektor spec melalui BTC SegWit; bait sighash 0x41 khas BCH + sampul transaksi legasi telah diuji unit tetapi belum diaudit.';
+
+  @override
+  String get sendBchErrorMustBeCashAddr =>
+      'Penerima mesti CashAddr (bitcoincash:q…/p… atau q…/p… sahaja)';
+
+  @override
+  String get sendBchErrorP2shNotSupported =>
+      'Alamat BCH P2SH (p…) belum disokong — hanya P2KH (q…) dalam binaan ini.';
+
+  @override
+  String get sendBchFinalFeeHint =>
+      'BCH P2PKH legasi dengan SIGHASH_FORKID. Setelah dihantar ini TIDAK boleh dibatalkan (BCH tidak menyokong RBF).';
+
+  @override
+  String get sendBchAvailableShort => 'tersedia';
+
+  @override
+  String get sendBchNetworkFeeLabel => 'Yuran rangkaian';
+
+  @override
+  String sendBchFeeRateDescription(int rate, int typical) {
+    return '$rate sat/byte — biasanya tx 1-input ≈ $typical sat. Yuran BCH sangat rendah.';
+  }
+
+  @override
+  String get sendBchAmountLabel => 'Jumlah (BCH atau sat)';
+
+  @override
+  String get sendEthExperimentalBody =>
+      'RLP + sighash EIP-1559 + pemulihan ECDSA telah diuji unit tetapi laluan hantar hujung-ke-hujung belum diaudit.';
+
+  @override
+  String get sendEthErrorBadAddress =>
+      'Penerima mesti alamat 0x + 40 aksara heksadesimal';
+
+  @override
+  String sendEthErrorExceedsToken(String symbol) {
+    return 'Jumlah melebihi baki $symbol';
+  }
+
+  @override
+  String sendEthErrorNoGas(String symbol) {
+    return 'Tiada $symbol untuk gas — dana dompet ini dahulu';
+  }
+
+  @override
+  String sendEthAmountLabelToken(String symbol) {
+    return 'Jumlah ($symbol atau unit asas)';
+  }
+
+  @override
+  String sendEthAmountLabelNative(String symbol) {
+    return 'Jumlah ($symbol atau wei)';
+  }
+
+  @override
+  String get sendEthMaxFeeLabel => 'Yuran maks per gas';
+
+  @override
+  String get sendEthPriorityFeeLabel => 'Yuran keutamaan';
+
+  @override
+  String get sendEthLoadingBalance => 'Memuatkan baki…';
+
+  @override
+  String sendEthBalanceError(String error) {
+    return 'Ralat baki: $error';
+  }
+
+  @override
+  String sendEthAvailableForGas(String amount, String symbol) {
+    return 'tersedia · $amount $symbol untuk gas';
+  }
+
+  @override
+  String sendEthFeeError(String error) {
+    return 'Data yuran tidak tersedia: $error';
+  }
+
+  @override
+  String get sendEthLoadingFee => 'Memuatkan kadar yuran…';
+
+  @override
+  String get sendEthNetworkFeeHeader => 'YURAN RANGKAIAN';
+
+  @override
+  String get sendEthAutoBadge => 'AUTO';
+
+  @override
+  String get sendEthBaseLabel => 'Asas';
+
+  @override
+  String get sendEthTipLabel => 'Tip';
+
+  @override
+  String get sendEthMaxLabel => 'Maks';
+
+  @override
+  String get sendEthFinalFeeHint =>
+      'Yuran akhir bergantung pada yuran asas rangkaian semasa dimasukkan. Apa-apa di bawah maks dikembalikan — bayar lebih tidak benar-benar berkos. Setelah dihantar ini TIDAK boleh dibatalkan.';
+
+  @override
+  String get sendSolExperimentalBody =>
+      'Pengekodan transaksi Solana telah diuji unit tetapi laluan hantar hujung-ke-hujung belum diaudit.';
+
+  @override
+  String get sendSolErrorBadAddress => 'Alamat sepatutnya 32-44 aksara base58';
+
+  @override
+  String get sendSolErrorNoSol =>
+      'Tiada SOL untuk yuran — dana dompet ini dengan sedikit SOL dahulu';
+
+  @override
+  String sendSolErrorNeedsAtaSol(String symbol) {
+    return 'Penerima tiada akaun $symbol — penghantaran akan mencipta satu (memerlukan ~0.00204 SOL sewa + yuran).';
+  }
+
+  @override
+  String get sendSolErrorNotEnoughSol =>
+      'Tidak cukup SOL untuk yuran rangkaian.';
+
+  @override
+  String get sendSolErrorAmountFeeExceeds => 'Jumlah + yuran melebihi baki';
+
+  @override
+  String sendSolAmountLabelToken(String symbol) {
+    return 'Jumlah ($symbol atau unit asas)';
+  }
+
+  @override
+  String get sendSolAmountLabelNative => 'Jumlah (SOL atau lamport)';
+
+  @override
+  String get sendSolAddressHint => 'Alamat Solana';
+
+  @override
+  String get sendSolNetworkFeeLabel => 'Yuran rangkaian';
+
+  @override
+  String get sendSolAtaRentLabel => 'Sewa ATA';
+
+  @override
+  String get sendSolTotalOutLabel => 'Jumlah SOL keluar';
+
+  @override
+  String get sendSolFinalFeeHintNative =>
+      'Yuran Solana ditetapkan pada 5000 lamport setiap tandatangan. Setelah dihantar TIDAK boleh dibatalkan.';
+
+  @override
+  String sendSolFinalFeeHintNewAta(String symbol) {
+    return 'Penerima belum ada akaun $symbol. Menghantar mencipta satu untuk mereka (~0.00204 SOL sewa, dibayar anda). Setelah dihantar TIDAK boleh dibatalkan.';
+  }
+
+  @override
+  String get sendTrxExperimentalBody =>
+      'Tx Tron dibina oleh RPC dan ditandatangani secara tempatan. Hash txid disahkan sebelum ditandatangan, tetapi kami tidak menyahkod badan protobuf.';
+
+  @override
+  String get sendTrxErrorBadAddress =>
+      'Penerima mesti alamat base58 Tron (mula dengan T, 34 aksara)';
+
+  @override
+  String get sendTrxErrorNoTrx =>
+      'Tiada TRX untuk lebar jalur/tenaga — dana dompet ini dengan TRX dahulu';
+
+  @override
+  String get sendTrxRecipientLabel => 'Penerima (Tron base58)';
+
+  @override
+  String sendTrxAmountLabelToken(String symbol) {
+    return 'Jumlah ($symbol atau unit asas)';
+  }
+
+  @override
+  String get sendTrxAmountLabelNative => 'Jumlah (TRX atau sun)';
+
+  @override
+  String get sendTrxBandwidthLabel => 'Lebar jalur/tenaga';
+
+  @override
+  String get sendTrxBandwidthToken => 'Sehingga ~30 TRX setara (TRC-20)';
+
+  @override
+  String get sendTrxBandwidthNative => 'Kuota percuma atau ~0.27 TRX';
+
+  @override
+  String get sendTrxFinalFeeHint =>
+      'Transaksi Tron dibina oleh nod RPC; kami mengesahkan semula hash txid sebelum menandatangan secara tempatan. Setelah dihantar TIDAK boleh dibatalkan.';
+
+  @override
+  String get sendXmrTitle => 'Hantar XMR';
+
+  @override
+  String get sendXmrScanTitle => 'Imbas alamat penerima';
+
+  @override
+  String sendXmrAvailable(String amount) {
+    return 'Tersedia: $amount XMR';
+  }
+
+  @override
+  String get sendXmrAddRecipient => 'Tambah penerima';
+
+  @override
+  String get sendXmrSendAllTitle => 'Hantar semua';
+
+  @override
+  String get sendXmrSendAllBody =>
+      'Sapu setiap output yang boleh dibelanjakan kepada penerima pertama — yuran akan ditolak secara automatik.';
+
+  @override
+  String get sendXmrFeePriorityLabel => 'Keutamaan yuran';
+
+  @override
+  String get sendXmrTierSlow => 'Perlahan';
+
+  @override
+  String get sendXmrTierNormal => 'Biasa';
+
+  @override
+  String get sendXmrTierFast => 'Pantas';
+
+  @override
+  String get sendXmrReviewAction => 'Semak penghantaran';
+
+  @override
+  String get sendXmrToLabel => 'Kepada';
+
+  @override
+  String sendXmrToNumbered(int index) {
+    return 'Kepada #$index';
+  }
+
+  @override
+  String get sendXmrSubtotalLabel => 'Subjumlah';
+
+  @override
+  String get sendXmrSweepLabel => 'Menghantar (sapu)';
+
+  @override
+  String get sendXmrNetworkFee => 'Yuran rangkaian';
+
+  @override
+  String sendXmrSplitWarning(int count) {
+    return 'Penghantaran ini akan disalurkan sebagai $count sub-transaksi.';
+  }
+
+  @override
+  String get sendXmrBroadcastTitle => 'Transaksi disiarkan';
+
+  @override
+  String get sendXmrBroadcastBody =>
+      'Ia akan muncul dalam sejarah transaksi anda setelah rangkaian mengesahkannya.';
+
+  @override
+  String get sendXmrTxIdLabel => 'TX ID';
+
+  @override
+  String get sendXmrTxIdCopied => 'TX ID disalin';
+
+  @override
+  String get sendXmrCopyTxIdAction => 'Salin TX ID';
+
+  @override
+  String get sendXmrDoneAction => 'Selesai';
+
+  @override
+  String get sendXmrRecipientHeader => 'Penerima';
+
+  @override
+  String get sendXmrRemoveTooltip => 'Buang';
+
+  @override
+  String get sendXmrAddressLabel => 'Alamat penerima';
+
+  @override
+  String get sendXmrAddressBookTooltip => 'Buku alamat';
+
+  @override
+  String get sendXmrPasteTooltip => 'Tampal';
+
+  @override
+  String get sendXmrAmountLabel => 'Jumlah (XMR)';
+
+  @override
+  String get sendXmrAmountHintSweep =>
+      'Sapu — jumlah ditetapkan secara automatik';
+
+  @override
+  String sendXmrErrorBadAddress(String tag) {
+    return 'Alamat tidak kelihatan seperti Monero$tag.';
+  }
+
+  @override
+  String sendXmrErrorAmountZero(String tag) {
+    return 'Jumlah mesti lebih daripada 0$tag.';
+  }
+
+  @override
+  String get sendXmrErrorExceedsBalance => 'Jumlah melebihi baki anda.';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.';
 

@@ -158,6 +158,241 @@
     }
   },
 
+  "sendScreenTitle": "Send {coinName}",
+  "@sendScreenTitle": {
+    "placeholders": {
+      "coinName": {"type": "String"}
+    }
+  },
+  "sendScanTitle": "Scan {symbol} address",
+  "@sendScanTitle": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendBtcAmountLabel": "Amount ({symbol} or sat)",
+  "@sendBtcAmountLabel": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendBroadcastSuccess": "Broadcast! txid: {prefix}…",
+  "@sendBroadcastSuccess": {
+    "placeholders": {
+      "prefix": {"type": "String"}
+    }
+  },
+  "sendBtcLoadingUtxos": "Loading UTXOs…",
+  "sendBtcUtxoError": "UTXO error: {error}",
+  "@sendBtcUtxoError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "sendBtcAvailableHint": "available · confirmed UTXOs only",
+  "sendBtcFeeRatesError": "Fee rates unavailable: {error}",
+  "@sendBtcFeeRatesError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "sendBtcLoadingFeeRates": "Loading fee rates…",
+  "sendBtcFinalFeeHint": "Final fee + change will be shown after broadcast. Once submitted to the network it CANNOT be reversed.",
+  "sendBtcExperimentalBody": "send is BIP-0143 spec-vector tested but has not been audited end-to-end.",
+  "sendBtcOnlyBech32": "Only bech32 P2WPKH ({prefix}…) addresses are supported",
+  "@sendBtcOnlyBech32": {
+    "placeholders": {
+      "prefix": {"type": "String"}
+    }
+  },
+  "sendBtcExceedsBalance": "Amount exceeds confirmed balance ({available} sat)",
+  "@sendBtcExceedsBalance": {
+    "placeholders": {
+      "available": {"type": "int"}
+    }
+  },
+  "sendBtcFeeRateLabel": "Fee rate",
+  "sendBtcFeeTierFastest": "Fastest",
+  "sendBtcFeeTierHalfHour": "Half hour",
+  "sendBtcFeeTierHour": "Hour",
+  "sendBtcFeeTierEconomy": "Economy",
+  "sendBtcFeeEtaFastest": "~10 min",
+  "sendBtcFeeEtaHalfHour": "~30 min",
+  "sendBtcFeeEtaHour": "~1 hour",
+  "sendBtcFeeEtaEconomy": "When the mempool allows",
+  "sendBchRecipientLabel": "Recipient address (CashAddr)",
+  "sendBchExperimentalBody": "legacy P2PKH with SIGHASH_FORKID. The BIP143 sighash is spec-vector tested via BTC SegWit; the BCH-specific 0x41 sighash byte + legacy tx envelope are unit-tested but unaudited.",
+  "sendBchErrorMustBeCashAddr": "Recipient must be a CashAddr (bitcoincash:q…/p… or just q…/p…)",
+  "sendBchErrorP2shNotSupported": "P2SH BCH addresses (p…) aren't supported yet — only P2KH (q…) is in this build.",
+  "sendBchFinalFeeHint": "BCH legacy P2PKH with SIGHASH_FORKID. Once submitted this CANNOT be reversed (BCH does not honor RBF).",
+  "sendBchAvailableShort": "available",
+  "sendBchNetworkFeeLabel": "Network fee",
+  "sendBchFeeRateDescription": "{rate} sat/byte — typical 1-input tx ≈ {typical} sat. BCH fees are extremely low.",
+  "@sendBchFeeRateDescription": {
+    "placeholders": {
+      "rate": {"type": "int"},
+      "typical": {"type": "int"}
+    }
+  },
+  "sendBchAmountLabel": "Amount (BCH or sat)",
+  "sendEthExperimentalBody": "RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.",
+  "sendEthErrorBadAddress": "Recipient must be a 0x-prefixed 40-hex-character address",
+  "sendEthErrorExceedsToken": "Amount exceeds {symbol} balance",
+  "@sendEthErrorExceedsToken": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendEthErrorNoGas": "No {symbol} for gas — fund this wallet first",
+  "@sendEthErrorNoGas": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendEthAmountLabelToken": "Amount ({symbol} or base units)",
+  "@sendEthAmountLabelToken": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendEthAmountLabelNative": "Amount ({symbol} or wei)",
+  "@sendEthAmountLabelNative": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendEthMaxFeeLabel": "Max fee per gas",
+  "sendEthPriorityFeeLabel": "Priority fee",
+  "sendEthLoadingBalance": "Loading balance…",
+  "sendEthBalanceError": "Balance error: {error}",
+  "@sendEthBalanceError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "sendEthAvailableForGas": "available · {amount} {symbol} for gas",
+  "@sendEthAvailableForGas": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendEthFeeError": "Fee data unavailable: {error}",
+  "@sendEthFeeError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "sendEthLoadingFee": "Loading fee rates…",
+  "sendEthNetworkFeeHeader": "NETWORK FEE",
+  "sendEthAutoBadge": "AUTO",
+  "sendEthBaseLabel": "Base",
+  "sendEthTipLabel": "Tip",
+  "sendEthMaxLabel": "Max",
+  "sendEthFinalFeeHint": "Final fee depends on the network base fee at inclusion time. Anything below max is refunded — overpaying doesn't actually cost. Once submitted this CANNOT be reversed.",
+  "sendSolExperimentalBody": "Solana transaction encoding is unit-tested but the end-to-end send path has not been audited.",
+  "sendSolErrorBadAddress": "Address should be 32-44 base58 characters",
+  "sendSolErrorNoSol": "No SOL for fees — fund this wallet with a small amount of SOL first",
+  "sendSolErrorNeedsAtaSol": "Recipient has no {symbol} account — sending creates one (needs extra ~0.00204 SOL rent + fee).",
+  "@sendSolErrorNeedsAtaSol": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendSolErrorNotEnoughSol": "Not enough SOL for the network fee.",
+  "sendSolErrorAmountFeeExceeds": "Amount + fee exceeds balance",
+  "sendSolAmountLabelToken": "Amount ({symbol} or base units)",
+  "@sendSolAmountLabelToken": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendSolAmountLabelNative": "Amount (SOL or lamports)",
+  "sendSolAddressHint": "Solana address",
+  "sendSolNetworkFeeLabel": "Network fee",
+  "sendSolAtaRentLabel": "ATA rent",
+  "sendSolTotalOutLabel": "Total SOL out",
+  "sendSolFinalFeeHintNative": "Solana fees are fixed at 5000 lamports per signature. Once submitted this CANNOT be reversed.",
+  "sendSolFinalFeeHintNewAta": "Recipient has no {symbol} account yet. Sending creates one for them (~0.00204 SOL rent, paid by you). Once submitted this CANNOT be reversed.",
+  "sendTrxExperimentalBody": "Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don't decode the protobuf body.",
+  "sendTrxErrorBadAddress": "Recipient must be a base58 Tron address (starts with T, 34 chars)",
+  "sendTrxErrorNoTrx": "No TRX for bandwidth/energy — fund this wallet with TRX first",
+  "sendTrxRecipientLabel": "Recipient (Tron base58)",
+  "sendTrxAmountLabelToken": "Amount ({symbol} or base units)",
+  "@sendTrxAmountLabelToken": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+  "sendTrxAmountLabelNative": "Amount (TRX or sun)",
+  "sendTrxBandwidthLabel": "Bandwidth/energy",
+  "sendTrxBandwidthToken": "Up to ~30 TRX-equiv (TRC-20)",
+  "sendTrxBandwidthNative": "Free quota or ~0.27 TRX",
+  "sendTrxFinalFeeHint": "Tron transactions are built by the RPC node; we re-verify the txid hash before signing locally. Once submitted this CANNOT be reversed.",
+  "sendXmrTitle": "Send XMR",
+  "sendXmrScanTitle": "Scan recipient address",
+  "sendXmrAvailable": "Available: {amount} XMR",
+  "@sendXmrAvailable": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "sendXmrAddRecipient": "Add recipient",
+  "sendXmrSendAllTitle": "Send all",
+  "sendXmrSendAllBody": "Sweep every spendable output to the first recipient — fee will be subtracted automatically.",
+  "sendXmrFeePriorityLabel": "Fee priority",
+  "sendXmrTierSlow": "Slow",
+  "sendXmrTierNormal": "Normal",
+  "sendXmrTierFast": "Fast",
+  "sendXmrReviewAction": "Review send",
+  "sendXmrToLabel": "To",
+  "sendXmrToNumbered": "To #{index}",
+  "@sendXmrToNumbered": {
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "sendXmrSubtotalLabel": "Subtotal",
+  "sendXmrSweepLabel": "Sending (sweep)",
+  "sendXmrNetworkFee": "Network fee",
+  "sendXmrSplitWarning": "This send will be relayed as {count} sub-transactions.",
+  "@sendXmrSplitWarning": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "sendXmrBroadcastTitle": "Transaction broadcast",
+  "sendXmrBroadcastBody": "It will appear in your transaction history once the network confirms it.",
+  "sendXmrTxIdLabel": "TX ID",
+  "sendXmrTxIdCopied": "TX ID copied",
+  "sendXmrCopyTxIdAction": "Copy TX ID",
+  "sendXmrDoneAction": "Done",
+  "sendXmrRecipientHeader": "Recipient",
+  "sendXmrRemoveTooltip": "Remove",
+  "sendXmrAddressLabel": "Recipient address",
+  "sendXmrAddressBookTooltip": "Address book",
+  "sendXmrPasteTooltip": "Paste",
+  "sendXmrAmountLabel": "Amount (XMR)",
+  "sendXmrAmountHintSweep": "Sweep — amount set automatically",
+  "sendXmrErrorBadAddress": "Address doesn't look like Monero{tag}.",
+  "@sendXmrErrorBadAddress": {
+    "placeholders": {
+      "tag": {"type": "String"}
+    }
+  },
+  "sendXmrErrorAmountZero": "Amount must be greater than 0{tag}.",
+  "@sendXmrErrorAmountZero": {
+    "placeholders": {
+      "tag": {"type": "String"}
+    }
+  },
+  "sendXmrErrorExceedsBalance": "Total exceeds your balance.",
+  "@sendSolFinalFeeHintNewAta": {
+    "placeholders": {
+      "symbol": {"type": "String"}
+    }
+  },
+
   "erc20EmptyHint": "No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.",
   "ercAddCustomTitle": "Add custom ERC-20 token",
   "ercAddCustomBody": "Paste the token's contract address. We'll fetch its symbol and decimals from the chain.",

@@ -7,6 +7,7 @@ import '../address_book/address_book.dart';
 import '../coins/solana/solana_rpc_client.dart';
 import '../coins/solana/solana_wallet.dart';
 import '../coins/solana/spl_tokens.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/remember_recipient.dart';
@@ -164,9 +165,10 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Future<void> _scanQr() async {
+    final l = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => const QrScanScreen(title: 'Scan Solana address'),
+        builder: (_) => QrScanScreen(title: l.sendScanTitle('SOL')),
       ),
     );
     if (scanned != null && scanned.isNotEmpty) {
@@ -202,28 +204,28 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Future<void> _onContinue() async {
+    final l = AppLocalizations.of(context);
     setState(() => _error = null);
     final parsed = _parseAmount();
     final addr = _addrCtrl.text.trim();
     if (addr.length < 32 || addr.length > 44) {
-      setState(() => _error = 'Address should be 32-44 base58 characters');
+      setState(() => _error = l.sendSolErrorBadAddress);
       return;
     }
 
     if (widget.token != null) {
       final amt = parsed.tokenRaw;
       if (amt == null || amt <= BigInt.zero) {
-        setState(() => _error = 'Enter a valid amount');
+        setState(() => _error = l.sendFormErrorInvalidAmount);
         return;
       }
       if (amt > _tokenBalanceRaw) {
         setState(() =>
-            _error = 'Amount exceeds ${widget.token!.symbol} balance');
+            _error = l.sendEthErrorExceedsToken(widget.token!.symbol));
         return;
       }
       if (_balanceLamports < _feeLamports) {
-        setState(() => _error =
-            'No SOL for fees — fund this wallet with a small amount of SOL first');
+        setState(() => _error = l.sendSolErrorNoSol);
         return;
       }
 
@@ -256,10 +258,8 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
         setState(() {
           _probingAta = false;
           _error = needsAta
-              ? "Recipient has no ${widget.token!.symbol} account — "
-                  "creating one costs ~0.00204 SOL on top of the network "
-                  "fee. Top up ${((solRequired - _balanceLamports) / 1e9).toStringAsFixed(6)} SOL and retry."
-              : 'Not enough SOL for the network fee.';
+              ? l.sendSolErrorNeedsAtaSol(widget.token!.symbol)
+              : l.sendSolErrorNotEnoughSol;
         });
         return;
       }
@@ -272,19 +272,20 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     }
     final amt = parsed.lamports;
     if (amt == null || amt <= 0) {
-      setState(() => _error = 'Enter a valid amount');
+      setState(() => _error = l.sendFormErrorInvalidAmount);
       return;
     }
     if (amt + _feeLamports > _balanceLamports) {
-      setState(() => _error = 'Amount + fee exceeds balance');
+      setState(() => _error = l.sendSolErrorAmountFeeExceeds);
       return;
     }
     setState(() => _previewing = true);
   }
 
   Future<void> _onConfirm() async {
+    final l = AppLocalizations.of(context);
     if (_confirmCtrl.text.trim().toUpperCase() != 'SEND') {
-      setState(() => _error = 'Type SEND to confirm');
+      setState(() => _error = l.sendFormConfirmHint);
       return;
     }
     final parsed = _parseAmount();
@@ -319,7 +320,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
       messenger.showSnackBar(
         SnackBar(
           backgroundColor: PeekColors.green,
-          content: Text('Broadcast! sig: ${sig.substring(0, 16)}…'),
+          content: Text(l.sendBroadcastSuccess(sig.substring(0, 16))),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -336,12 +337,13 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ScreenshotGuard(
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.token != null
-              ? 'Send ${widget.token!.symbol}'
-              : 'Send Solana'),
+              ? l.sendScreenTitle(widget.token!.symbol)
+              : l.sendScreenTitle('Solana')),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -354,6 +356,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Widget _buildForm() {
+    final l = AppLocalizations.of(context);
     final parsed = _parseAmount();
     final displayValue = widget.token != null && parsed.tokenRaw != null
         ? widget.wallet
@@ -367,35 +370,33 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'Solana transaction encoding is unit-tested but the end-to-end send path has not been audited.'),
+        ExperimentalBanner(body: l.sendSolExperimentalBody),
         const SizedBox(height: 16),
         _balanceCard(),
         const SizedBox(height: 20),
-        const Text('Recipient address',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendFormRecipientLabel,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _addrCtrl,
           decoration: InputDecoration(
-            hintText: 'Solana address',
+            hintText: l.sendSolAddressHint,
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.bookmark_border, size: 18),
-                  tooltip: 'From address book',
+                  tooltip: l.sendFormBookTooltip,
                   onPressed: _pickFromBook,
                 ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  tooltip: 'Scan QR',
+                  tooltip: l.sendFormScanTooltip,
                   onPressed: _scanQr,
                 ),
                 IconButton(
                   icon: const Icon(Icons.paste, size: 18),
-                  tooltip: 'Paste from clipboard',
+                  tooltip: l.sendFormPasteTooltip,
                   onPressed: () async {
                     final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
@@ -415,8 +416,8 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
             Expanded(
               child: Text(
                   widget.token != null
-                      ? 'Amount (${widget.token!.symbol} or base units)'
-                      : 'Amount (SOL or lamports)',
+                      ? l.sendSolAmountLabelToken(widget.token!.symbol)
+                      : l.sendSolAmountLabelNative,
                   style: const TextStyle(
                       color: PeekColors.text2, fontSize: 12)),
             ),
@@ -432,7 +433,8 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
                 minimumSize: const Size(0, 24),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Max', style: TextStyle(fontSize: 12)),
+              child: Text(l.sendFormMaxButton,
+                  style: const TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -464,13 +466,14 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Continue'),
+              : Text(l.actionContinue),
         ),
       ],
     );
   }
 
   Widget _buildPreview() {
+    final l = AppLocalizations.of(context);
     final parsed = _parseAmount();
     final addr = _addrCtrl.text.trim();
     final amountStr = widget.token != null
@@ -479,9 +482,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'Solana transaction encoding is unit-tested but the end-to-end send path has not been audited.'),
+        ExperimentalBanner(body: l.sendSolExperimentalBody),
         const SizedBox(height: PeekDesign.sp4),
         Container(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -502,25 +503,26 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'will be sent to',
-                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              Text(
+                l.sendFormWillBeSentTo,
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 12),
               ),
               const SizedBox(height: PeekDesign.sp4),
-              _kvRow('To',
+              _kvRow(l.sendFormToLabel,
                   '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
               const Divider(height: 18, color: PeekColors.hairline),
-              _kvRow('Network fee',
+              _kvRow(l.sendSolNetworkFeeLabel,
                   '${(_feeLamports / 1000000000.0).toStringAsFixed(9)} SOL'),
               if (_destinationNeedsAta == true) ...[
                 const Divider(height: 18, color: PeekColors.hairline),
                 _kvRow(
-                  'ATA rent',
+                  l.sendSolAtaRentLabel,
                   '${(SolanaWallet.ataRentLamports / 1000000000.0).toStringAsFixed(9)} SOL',
                 ),
                 const Divider(height: 18, color: PeekColors.hairline),
                 _kvRow(
-                  'Total SOL out',
+                  l.sendSolTotalOutLabel,
                   '${((_feeLamports + SolanaWallet.ataRentLamports) / 1000000000.0).toStringAsFixed(9)} SOL',
                 ),
               ],
@@ -544,14 +546,9 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
               Expanded(
                 child: Text(
                   _destinationNeedsAta == true
-                      ? "Recipient has no ${widget.token!.symbol} account yet. "
-                          "Sending creates one for them (~0.00204 SOL rent, "
-                          "refundable to whoever closes the account). Plus "
-                          "the standard 5000-lamport tx fee. Once submitted "
-                          "this CANNOT be reversed."
-                      : 'Solana fees are fixed at 5000 lamports per signature. '
-                          'Once submitted this CANNOT be reversed.',
-                  style: TextStyle(
+                      ? l.sendSolFinalFeeHintNewAta(widget.token!.symbol)
+                      : l.sendSolFinalFeeHintNative,
+                  style: const TextStyle(
                       color: PeekColors.text3, fontSize: 11, height: 1.4),
                 ),
               ),
@@ -559,14 +556,15 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
           ),
         ),
         const SizedBox(height: PeekDesign.sp5),
-        const Text('Type SEND to confirm',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendFormConfirmHint,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _confirmCtrl,
           textCapitalization: TextCapitalization.characters,
           autocorrect: false,
-          decoration: const InputDecoration(hintText: 'SEND'),
+          decoration:
+              InputDecoration(hintText: l.sendFormConfirmPlaceholder),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
@@ -578,7 +576,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.arrow_back_rounded,
-                label: 'Back',
+                label: l.actionBack,
                 primary: false,
                 onTap: _broadcasting
                     ? null
@@ -592,7 +590,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.send_rounded,
-                label: _broadcasting ? 'Sending…' : 'Send',
+                label: _broadcasting ? l.actionSending : l.actionSend,
                 primary: true,
                 onTap: _broadcasting ? null : _onConfirm,
               ),
@@ -604,6 +602,7 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Widget _balanceCard() {
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -624,11 +623,11 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
             const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _loading
-                  ? const Text('Loading balance…',
-                      style: TextStyle(
+                  ? Text(l.sendEthLoadingBalance,
+                      style: const TextStyle(
                           color: PeekColors.text2, fontSize: 13))
                   : _balanceError != null
-                      ? Text('Balance error: $_balanceError',
+                      ? Text(l.sendEthBalanceError(_balanceError!),
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Column(
@@ -648,8 +647,11 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
                             ),
                             Text(
                               widget.token != null
-                                  ? 'available · ${(_balanceLamports / 1000000000.0).toStringAsFixed(6)} SOL for fees'
-                                  : 'available',
+                                  ? l.sendEthAvailableForGas(
+                                      (_balanceLamports / 1000000000.0)
+                                          .toStringAsFixed(6),
+                                      'SOL')
+                                  : l.sendBchAvailableShort,
                               style: const TextStyle(
                                   color: PeekColors.text3,
                                   fontSize: 11),
@@ -664,18 +666,21 @@ class _SendSolanaScreenState extends State<SendSolanaScreen> {
   }
 
   Widget _feeCard() {
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Network fee',
-                style: TextStyle(color: PeekColors.text2, fontSize: 12)),
-            SizedBox(height: 4),
+          children: [
+            Text(l.sendSolNetworkFeeLabel,
+                style: const TextStyle(
+                    color: PeekColors.text2, fontSize: 12)),
+            const SizedBox(height: 4),
             Text(
-              '5000 lamports (~0.000005 SOL) per signature — fixed.',
-              style: TextStyle(color: PeekColors.text, fontSize: 12),
+              l.sendSolFinalFeeHintNative,
+              style:
+                  const TextStyle(color: PeekColors.text, fontSize: 12),
             ),
           ],
         ),

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../address_book/address_book.dart';
 import '../coins/bitcoin/bitcoin_wallet.dart';
 import '../coins/bitcoin/mempool_client.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/remember_recipient.dart';
@@ -149,10 +150,11 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 
   Future<void> _scanQr() async {
+    final l = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => QrScanScreen(
-          title: 'Scan ${widget.wallet.params.symbol} address',
+          title: l.sendScanTitle(widget.wallet.params.symbol),
         ),
       ),
     );
@@ -173,30 +175,30 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 
   Future<void> _onContinue() async {
+    final l = AppLocalizations.of(context);
     setState(() => _error = null);
     final amount = _parseAmountSat();
     if (amount == null || amount <= 0) {
-      setState(() => _error = 'Enter a valid amount');
+      setState(() => _error = l.sendFormErrorInvalidAmount);
       return;
     }
     final addr = _addrCtrl.text.trim();
     final hrpPrefix = '${widget.wallet.params.bech32Hrp}1q';
     if (!addr.startsWith(hrpPrefix)) {
-      setState(() => _error =
-          'Only bech32 P2WPKH ($hrpPrefix…) addresses are supported');
+      setState(() => _error = l.sendBtcOnlyBech32(hrpPrefix));
       return;
     }
     if (amount > _availableSat) {
-      setState(() =>
-          _error = 'Amount exceeds confirmed balance ($_availableSat sat)');
+      setState(() => _error = l.sendBtcExceedsBalance(_availableSat));
       return;
     }
     setState(() => _previewing = true);
   }
 
   Future<void> _onConfirm() async {
+    final l = AppLocalizations.of(context);
     if (_confirmCtrl.text.trim().toUpperCase() != 'SEND') {
-      setState(() => _error = 'Type SEND to confirm');
+      setState(() => _error = l.sendFormConfirmHint);
       return;
     }
     final amount = _parseAmountSat();
@@ -222,7 +224,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
       messenger.showSnackBar(
         SnackBar(
           backgroundColor: PeekColors.green,
-          content: Text('Broadcast! txid: ${built.txid.substring(0, 12)}…'),
+          content: Text(l.sendBroadcastSuccess(built.txid.substring(0, 12))),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -239,11 +241,12 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final coinName = widget.wallet.params.name;
     return ScreenshotGuard(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Send $coinName'),
+          title: Text(l.sendScreenTitle(coinName)),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -256,6 +259,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 
   Widget _buildForm() {
+    final l = AppLocalizations.of(context);
     final amountSat = _parseAmountSat();
     final fiatStr = amountSat == null
         ? ''
@@ -264,14 +268,12 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'send is BIP-0143 spec-vector tested but has not been audited end-to-end.'),
+        ExperimentalBanner(body: l.sendBtcExperimentalBody),
         const SizedBox(height: 16),
         _balanceRow(),
         const SizedBox(height: 20),
-        const Text('Recipient address',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendFormRecipientLabel,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _addrCtrl,
@@ -285,17 +287,17 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.bookmark_border, size: 18),
-                  tooltip: 'From address book',
+                  tooltip: l.sendFormBookTooltip,
                   onPressed: _pickFromBook,
                 ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  tooltip: 'Scan QR',
+                  tooltip: l.sendFormScanTooltip,
                   onPressed: _scanQr,
                 ),
                 IconButton(
                   icon: const Icon(Icons.paste, size: 18),
-                  tooltip: 'Paste from clipboard',
+                  tooltip: l.sendFormPasteTooltip,
                   onPressed: () async {
                     final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
@@ -314,7 +316,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
           children: [
             Expanded(
               child: Text(
-                'Amount (${widget.wallet.params.symbol} or sat)',
+                l.sendBtcAmountLabel(widget.wallet.params.symbol),
                 style: const TextStyle(
                     color: PeekColors.text2, fontSize: 12),
               ),
@@ -327,7 +329,8 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
                 minimumSize: const Size(0, 24),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Max', style: TextStyle(fontSize: 12)),
+              child: Text(l.sendFormMaxButton,
+                  style: const TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -351,22 +354,21 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
         ElevatedButton(
           onPressed:
               (_utxosLoading || _availableSat == 0) ? null : _onContinue,
-          child: const Text('Continue'),
+          child: Text(l.actionContinue),
         ),
       ],
     );
   }
 
   Widget _buildPreview() {
+    final l = AppLocalizations.of(context);
     final amount = _parseAmountSat()!;
     final feeRate = _selectedFeeRate;
     final addr = _addrCtrl.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'send is BIP-0143 spec-vector tested but has not been audited end-to-end.'),
+        ExperimentalBanner(body: l.sendBtcExperimentalBody),
         const SizedBox(height: PeekDesign.sp4),
         Container(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -387,17 +389,18 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'will be sent to',
-                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              Text(
+                l.sendFormWillBeSentTo,
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 12),
               ),
               const SizedBox(height: PeekDesign.sp4),
-              _kvRow('To',
+              _kvRow(l.sendFormToLabel,
                   '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
               const Divider(height: 18, color: PeekColors.hairline),
-              _kvRow('Fee rate', '$feeRate sat/vB'),
+              _kvRow(l.sendBtcFeeRateLabel, '$feeRate sat/vB'),
               const Divider(height: 18, color: PeekColors.hairline),
-              _kvRow('Available', '$_availableSat sat'),
+              _kvRow(l.sendFormAvailableLabel, '$_availableSat sat'),
             ],
           ),
         ),
@@ -411,15 +414,14 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Icon(Icons.info_outline_rounded,
+            children: [
+              const Icon(Icons.info_outline_rounded,
                   size: 14, color: PeekColors.text3),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Final fee + change will be shown after broadcast. Once '
-                  'submitted to the network it CANNOT be reversed.',
-                  style: TextStyle(
+                  l.sendBtcFinalFeeHint,
+                  style: const TextStyle(
                       color: PeekColors.text3, fontSize: 11, height: 1.4),
                 ),
               ),
@@ -427,16 +429,16 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
           ),
         ),
         const SizedBox(height: PeekDesign.sp5),
-        const Text(
-          'Type SEND to confirm',
-          style: TextStyle(color: PeekColors.text2, fontSize: 12),
+        Text(
+          l.sendFormConfirmHint,
+          style: const TextStyle(color: PeekColors.text2, fontSize: 12),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: _confirmCtrl,
           textCapitalization: TextCapitalization.characters,
           autocorrect: false,
-          decoration: const InputDecoration(hintText: 'SEND'),
+          decoration: InputDecoration(hintText: l.sendFormConfirmPlaceholder),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
@@ -448,7 +450,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.arrow_back_rounded,
-                label: 'Back',
+                label: l.actionBack,
                 primary: false,
                 onTap: _broadcasting
                     ? null
@@ -462,7 +464,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.send_rounded,
-                label: _broadcasting ? 'Sending…' : 'Send',
+                label: _broadcasting ? l.actionSending : l.actionSend,
                 primary: true,
                 onTap: _broadcasting ? null : _onConfirm,
               ),
@@ -474,6 +476,7 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 
   Widget _balanceRow() {
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -494,11 +497,11 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
             const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _utxosLoading
-                  ? const Text('Loading UTXOs…',
-                      style: TextStyle(
+                  ? Text(l.sendBtcLoadingUtxos,
+                      style: const TextStyle(
                           color: PeekColors.text2, fontSize: 13))
                   : _utxosError != null
-                      ? Text('UTXO error: $_utxosError',
+                      ? Text(l.sendBtcUtxoError(_utxosError!),
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Column(
@@ -515,9 +518,9 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
                                 letterSpacing: -0.1,
                               ),
                             ),
-                            const Text(
-                              'available · confirmed UTXOs only',
-                              style: TextStyle(
+                            Text(
+                              l.sendBtcAvailableHint,
+                              style: const TextStyle(
                                   color: PeekColors.text3, fontSize: 11),
                             ),
                           ],
@@ -530,14 +533,15 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
   }
 
   Widget _feeSelector() {
+    final l = AppLocalizations.of(context);
     final fees = _fees;
     if (_feesError != null) {
-      return Text('Fee rates unavailable: $_feesError',
+      return Text(l.sendBtcFeeRatesError(_feesError!),
           style: const TextStyle(color: PeekColors.red, fontSize: 12));
     }
     if (fees == null) {
-      return const Text('Loading fee rates…',
-          style: TextStyle(color: PeekColors.text3, fontSize: 12));
+      return Text(l.sendBtcLoadingFeeRates,
+          style: const TextStyle(color: PeekColors.text3, fontSize: 12));
     }
     Widget tile(_FeeTier t, String label, int rate, String hint) {
       final selected = _tier == t;
@@ -616,24 +620,26 @@ class _SendBitcoinScreenState extends State<SendBitcoinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'FEE PRIORITY',
-          style: TextStyle(
+        Text(
+          l.sendFormFeePriorityLabel,
+          style: const TextStyle(
               color: PeekColors.text3,
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.2),
         ),
         const SizedBox(height: PeekDesign.sp2),
-        tile(_FeeTier.fastest, 'Fastest', fees.fastestSatPerVByte, '~10 min'),
+        tile(_FeeTier.fastest, l.sendBtcFeeTierFastest,
+            fees.fastestSatPerVByte, l.sendBtcFeeEtaFastest),
         const SizedBox(height: PeekDesign.sp2),
-        tile(_FeeTier.halfHour, 'Half hour', fees.halfHourSatPerVByte,
-            '~30 min'),
+        tile(_FeeTier.halfHour, l.sendBtcFeeTierHalfHour,
+            fees.halfHourSatPerVByte, l.sendBtcFeeEtaHalfHour),
         const SizedBox(height: PeekDesign.sp2),
-        tile(_FeeTier.hour, 'Hour', fees.hourSatPerVByte, '~1 hour'),
+        tile(_FeeTier.hour, l.sendBtcFeeTierHour, fees.hourSatPerVByte,
+            l.sendBtcFeeEtaHour),
         const SizedBox(height: PeekDesign.sp2),
-        tile(_FeeTier.economy, 'Economy', fees.economySatPerVByte,
-            'When the mempool allows'),
+        tile(_FeeTier.economy, l.sendBtcFeeTierEconomy,
+            fees.economySatPerVByte, l.sendBtcFeeEtaEconomy),
       ],
     );
   }

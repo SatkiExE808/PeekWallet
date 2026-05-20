@@ -627,6 +627,648 @@ abstract class AppLocalizations {
   /// **'Send is experimental — test with small amounts before moving meaningful {symbol}.'**
   String experimentalSendWarning(String symbol);
 
+  /// No description provided for @sendScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send {coinName}'**
+  String sendScreenTitle(String coinName);
+
+  /// No description provided for @sendScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan {symbol} address'**
+  String sendScanTitle(String symbol);
+
+  /// No description provided for @sendBtcAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount ({symbol} or sat)'**
+  String sendBtcAmountLabel(String symbol);
+
+  /// No description provided for @sendBroadcastSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast! txid: {prefix}…'**
+  String sendBroadcastSuccess(String prefix);
+
+  /// No description provided for @sendBtcLoadingUtxos.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading UTXOs…'**
+  String get sendBtcLoadingUtxos;
+
+  /// No description provided for @sendBtcUtxoError.
+  ///
+  /// In en, this message translates to:
+  /// **'UTXO error: {error}'**
+  String sendBtcUtxoError(String error);
+
+  /// No description provided for @sendBtcAvailableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'available · confirmed UTXOs only'**
+  String get sendBtcAvailableHint;
+
+  /// No description provided for @sendBtcFeeRatesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee rates unavailable: {error}'**
+  String sendBtcFeeRatesError(String error);
+
+  /// No description provided for @sendBtcLoadingFeeRates.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading fee rates…'**
+  String get sendBtcLoadingFeeRates;
+
+  /// No description provided for @sendBtcFinalFeeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Final fee + change will be shown after broadcast. Once submitted to the network it CANNOT be reversed.'**
+  String get sendBtcFinalFeeHint;
+
+  /// No description provided for @sendBtcExperimentalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'send is BIP-0143 spec-vector tested but has not been audited end-to-end.'**
+  String get sendBtcExperimentalBody;
+
+  /// No description provided for @sendBtcOnlyBech32.
+  ///
+  /// In en, this message translates to:
+  /// **'Only bech32 P2WPKH ({prefix}…) addresses are supported'**
+  String sendBtcOnlyBech32(String prefix);
+
+  /// No description provided for @sendBtcExceedsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount exceeds confirmed balance ({available} sat)'**
+  String sendBtcExceedsBalance(int available);
+
+  /// No description provided for @sendBtcFeeRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee rate'**
+  String get sendBtcFeeRateLabel;
+
+  /// No description provided for @sendBtcFeeTierFastest.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest'**
+  String get sendBtcFeeTierFastest;
+
+  /// No description provided for @sendBtcFeeTierHalfHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Half hour'**
+  String get sendBtcFeeTierHalfHour;
+
+  /// No description provided for @sendBtcFeeTierHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hour'**
+  String get sendBtcFeeTierHour;
+
+  /// No description provided for @sendBtcFeeTierEconomy.
+  ///
+  /// In en, this message translates to:
+  /// **'Economy'**
+  String get sendBtcFeeTierEconomy;
+
+  /// No description provided for @sendBtcFeeEtaFastest.
+  ///
+  /// In en, this message translates to:
+  /// **'~10 min'**
+  String get sendBtcFeeEtaFastest;
+
+  /// No description provided for @sendBtcFeeEtaHalfHour.
+  ///
+  /// In en, this message translates to:
+  /// **'~30 min'**
+  String get sendBtcFeeEtaHalfHour;
+
+  /// No description provided for @sendBtcFeeEtaHour.
+  ///
+  /// In en, this message translates to:
+  /// **'~1 hour'**
+  String get sendBtcFeeEtaHour;
+
+  /// No description provided for @sendBtcFeeEtaEconomy.
+  ///
+  /// In en, this message translates to:
+  /// **'When the mempool allows'**
+  String get sendBtcFeeEtaEconomy;
+
+  /// No description provided for @sendBchRecipientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient address (CashAddr)'**
+  String get sendBchRecipientLabel;
+
+  /// No description provided for @sendBchExperimentalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'legacy P2PKH with SIGHASH_FORKID. The BIP143 sighash is spec-vector tested via BTC SegWit; the BCH-specific 0x41 sighash byte + legacy tx envelope are unit-tested but unaudited.'**
+  String get sendBchExperimentalBody;
+
+  /// No description provided for @sendBchErrorMustBeCashAddr.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient must be a CashAddr (bitcoincash:q…/p… or just q…/p…)'**
+  String get sendBchErrorMustBeCashAddr;
+
+  /// No description provided for @sendBchErrorP2shNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'P2SH BCH addresses (p…) aren\'t supported yet — only P2KH (q…) is in this build.'**
+  String get sendBchErrorP2shNotSupported;
+
+  /// No description provided for @sendBchFinalFeeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'BCH legacy P2PKH with SIGHASH_FORKID. Once submitted this CANNOT be reversed (BCH does not honor RBF).'**
+  String get sendBchFinalFeeHint;
+
+  /// No description provided for @sendBchAvailableShort.
+  ///
+  /// In en, this message translates to:
+  /// **'available'**
+  String get sendBchAvailableShort;
+
+  /// No description provided for @sendBchNetworkFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Network fee'**
+  String get sendBchNetworkFeeLabel;
+
+  /// No description provided for @sendBchFeeRateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate} sat/byte — typical 1-input tx ≈ {typical} sat. BCH fees are extremely low.'**
+  String sendBchFeeRateDescription(int rate, int typical);
+
+  /// No description provided for @sendBchAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (BCH or sat)'**
+  String get sendBchAmountLabel;
+
+  /// No description provided for @sendEthExperimentalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.'**
+  String get sendEthExperimentalBody;
+
+  /// No description provided for @sendEthErrorBadAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient must be a 0x-prefixed 40-hex-character address'**
+  String get sendEthErrorBadAddress;
+
+  /// No description provided for @sendEthErrorExceedsToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount exceeds {symbol} balance'**
+  String sendEthErrorExceedsToken(String symbol);
+
+  /// No description provided for @sendEthErrorNoGas.
+  ///
+  /// In en, this message translates to:
+  /// **'No {symbol} for gas — fund this wallet first'**
+  String sendEthErrorNoGas(String symbol);
+
+  /// No description provided for @sendEthAmountLabelToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount ({symbol} or base units)'**
+  String sendEthAmountLabelToken(String symbol);
+
+  /// No description provided for @sendEthAmountLabelNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount ({symbol} or wei)'**
+  String sendEthAmountLabelNative(String symbol);
+
+  /// No description provided for @sendEthMaxFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max fee per gas'**
+  String get sendEthMaxFeeLabel;
+
+  /// No description provided for @sendEthPriorityFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority fee'**
+  String get sendEthPriorityFeeLabel;
+
+  /// No description provided for @sendEthLoadingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading balance…'**
+  String get sendEthLoadingBalance;
+
+  /// No description provided for @sendEthBalanceError.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance error: {error}'**
+  String sendEthBalanceError(String error);
+
+  /// No description provided for @sendEthAvailableForGas.
+  ///
+  /// In en, this message translates to:
+  /// **'available · {amount} {symbol} for gas'**
+  String sendEthAvailableForGas(String amount, String symbol);
+
+  /// No description provided for @sendEthFeeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee data unavailable: {error}'**
+  String sendEthFeeError(String error);
+
+  /// No description provided for @sendEthLoadingFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading fee rates…'**
+  String get sendEthLoadingFee;
+
+  /// No description provided for @sendEthNetworkFeeHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'NETWORK FEE'**
+  String get sendEthNetworkFeeHeader;
+
+  /// No description provided for @sendEthAutoBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'AUTO'**
+  String get sendEthAutoBadge;
+
+  /// No description provided for @sendEthBaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base'**
+  String get sendEthBaseLabel;
+
+  /// No description provided for @sendEthTipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip'**
+  String get sendEthTipLabel;
+
+  /// No description provided for @sendEthMaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get sendEthMaxLabel;
+
+  /// No description provided for @sendEthFinalFeeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Final fee depends on the network base fee at inclusion time. Anything below max is refunded — overpaying doesn\'t actually cost. Once submitted this CANNOT be reversed.'**
+  String get sendEthFinalFeeHint;
+
+  /// No description provided for @sendSolExperimentalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Solana transaction encoding is unit-tested but the end-to-end send path has not been audited.'**
+  String get sendSolExperimentalBody;
+
+  /// No description provided for @sendSolErrorBadAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address should be 32-44 base58 characters'**
+  String get sendSolErrorBadAddress;
+
+  /// No description provided for @sendSolErrorNoSol.
+  ///
+  /// In en, this message translates to:
+  /// **'No SOL for fees — fund this wallet with a small amount of SOL first'**
+  String get sendSolErrorNoSol;
+
+  /// No description provided for @sendSolErrorNeedsAtaSol.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient has no {symbol} account — sending creates one (needs extra ~0.00204 SOL rent + fee).'**
+  String sendSolErrorNeedsAtaSol(String symbol);
+
+  /// No description provided for @sendSolErrorNotEnoughSol.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough SOL for the network fee.'**
+  String get sendSolErrorNotEnoughSol;
+
+  /// No description provided for @sendSolErrorAmountFeeExceeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount + fee exceeds balance'**
+  String get sendSolErrorAmountFeeExceeds;
+
+  /// No description provided for @sendSolAmountLabelToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount ({symbol} or base units)'**
+  String sendSolAmountLabelToken(String symbol);
+
+  /// No description provided for @sendSolAmountLabelNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (SOL or lamports)'**
+  String get sendSolAmountLabelNative;
+
+  /// No description provided for @sendSolAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Solana address'**
+  String get sendSolAddressHint;
+
+  /// No description provided for @sendSolNetworkFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Network fee'**
+  String get sendSolNetworkFeeLabel;
+
+  /// No description provided for @sendSolAtaRentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ATA rent'**
+  String get sendSolAtaRentLabel;
+
+  /// No description provided for @sendSolTotalOutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total SOL out'**
+  String get sendSolTotalOutLabel;
+
+  /// No description provided for @sendSolFinalFeeHintNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Solana fees are fixed at 5000 lamports per signature. Once submitted this CANNOT be reversed.'**
+  String get sendSolFinalFeeHintNative;
+
+  /// No description provided for @sendSolFinalFeeHintNewAta.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient has no {symbol} account yet. Sending creates one for them (~0.00204 SOL rent, paid by you). Once submitted this CANNOT be reversed.'**
+  String sendSolFinalFeeHintNewAta(String symbol);
+
+  /// No description provided for @sendTrxExperimentalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tron tx is built by the RPC and signed locally. The txid hash is verified before signing, but we don\'t decode the protobuf body.'**
+  String get sendTrxExperimentalBody;
+
+  /// No description provided for @sendTrxErrorBadAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient must be a base58 Tron address (starts with T, 34 chars)'**
+  String get sendTrxErrorBadAddress;
+
+  /// No description provided for @sendTrxErrorNoTrx.
+  ///
+  /// In en, this message translates to:
+  /// **'No TRX for bandwidth/energy — fund this wallet with TRX first'**
+  String get sendTrxErrorNoTrx;
+
+  /// No description provided for @sendTrxRecipientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient (Tron base58)'**
+  String get sendTrxRecipientLabel;
+
+  /// No description provided for @sendTrxAmountLabelToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount ({symbol} or base units)'**
+  String sendTrxAmountLabelToken(String symbol);
+
+  /// No description provided for @sendTrxAmountLabelNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (TRX or sun)'**
+  String get sendTrxAmountLabelNative;
+
+  /// No description provided for @sendTrxBandwidthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bandwidth/energy'**
+  String get sendTrxBandwidthLabel;
+
+  /// No description provided for @sendTrxBandwidthToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to ~30 TRX-equiv (TRC-20)'**
+  String get sendTrxBandwidthToken;
+
+  /// No description provided for @sendTrxBandwidthNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Free quota or ~0.27 TRX'**
+  String get sendTrxBandwidthNative;
+
+  /// No description provided for @sendTrxFinalFeeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tron transactions are built by the RPC node; we re-verify the txid hash before signing locally. Once submitted this CANNOT be reversed.'**
+  String get sendTrxFinalFeeHint;
+
+  /// No description provided for @sendXmrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send XMR'**
+  String get sendXmrTitle;
+
+  /// No description provided for @sendXmrScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan recipient address'**
+  String get sendXmrScanTitle;
+
+  /// No description provided for @sendXmrAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available: {amount} XMR'**
+  String sendXmrAvailable(String amount);
+
+  /// No description provided for @sendXmrAddRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add recipient'**
+  String get sendXmrAddRecipient;
+
+  /// No description provided for @sendXmrSendAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send all'**
+  String get sendXmrSendAllTitle;
+
+  /// No description provided for @sendXmrSendAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweep every spendable output to the first recipient — fee will be subtracted automatically.'**
+  String get sendXmrSendAllBody;
+
+  /// No description provided for @sendXmrFeePriorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee priority'**
+  String get sendXmrFeePriorityLabel;
+
+  /// No description provided for @sendXmrTierSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow'**
+  String get sendXmrTierSlow;
+
+  /// No description provided for @sendXmrTierNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get sendXmrTierNormal;
+
+  /// No description provided for @sendXmrTierFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get sendXmrTierFast;
+
+  /// No description provided for @sendXmrReviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Review send'**
+  String get sendXmrReviewAction;
+
+  /// No description provided for @sendXmrToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get sendXmrToLabel;
+
+  /// No description provided for @sendXmrToNumbered.
+  ///
+  /// In en, this message translates to:
+  /// **'To #{index}'**
+  String sendXmrToNumbered(int index);
+
+  /// No description provided for @sendXmrSubtotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get sendXmrSubtotalLabel;
+
+  /// No description provided for @sendXmrSweepLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending (sweep)'**
+  String get sendXmrSweepLabel;
+
+  /// No description provided for @sendXmrNetworkFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Network fee'**
+  String get sendXmrNetworkFee;
+
+  /// No description provided for @sendXmrSplitWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This send will be relayed as {count} sub-transactions.'**
+  String sendXmrSplitWarning(int count);
+
+  /// No description provided for @sendXmrBroadcastTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction broadcast'**
+  String get sendXmrBroadcastTitle;
+
+  /// No description provided for @sendXmrBroadcastBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will appear in your transaction history once the network confirms it.'**
+  String get sendXmrBroadcastBody;
+
+  /// No description provided for @sendXmrTxIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TX ID'**
+  String get sendXmrTxIdLabel;
+
+  /// No description provided for @sendXmrTxIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'TX ID copied'**
+  String get sendXmrTxIdCopied;
+
+  /// No description provided for @sendXmrCopyTxIdAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy TX ID'**
+  String get sendXmrCopyTxIdAction;
+
+  /// No description provided for @sendXmrDoneAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get sendXmrDoneAction;
+
+  /// No description provided for @sendXmrRecipientHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get sendXmrRecipientHeader;
+
+  /// No description provided for @sendXmrRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get sendXmrRemoveTooltip;
+
+  /// No description provided for @sendXmrAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient address'**
+  String get sendXmrAddressLabel;
+
+  /// No description provided for @sendXmrAddressBookTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Address book'**
+  String get sendXmrAddressBookTooltip;
+
+  /// No description provided for @sendXmrPasteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get sendXmrPasteTooltip;
+
+  /// No description provided for @sendXmrAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (XMR)'**
+  String get sendXmrAmountLabel;
+
+  /// No description provided for @sendXmrAmountHintSweep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweep — amount set automatically'**
+  String get sendXmrAmountHintSweep;
+
+  /// No description provided for @sendXmrErrorBadAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address doesn\'t look like Monero{tag}.'**
+  String sendXmrErrorBadAddress(String tag);
+
+  /// No description provided for @sendXmrErrorAmountZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount must be greater than 0{tag}.'**
+  String sendXmrErrorAmountZero(String tag);
+
+  /// No description provided for @sendXmrErrorExceedsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total exceeds your balance.'**
+  String get sendXmrErrorExceedsBalance;
+
   /// No description provided for @erc20EmptyHint.
   ///
   /// In en, this message translates to:

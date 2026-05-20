@@ -7,6 +7,7 @@ import '../address_book/address_book.dart';
 import '../coins/ethereum/erc20_tokens.dart';
 import '../coins/ethereum/ethereum_wallet.dart';
 import '../coins/ethereum/etherscan_client.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../prices/price_feed.dart';
 import '../theme.dart';
 import '../util/remember_recipient.dart';
@@ -159,10 +160,11 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Future<void> _scanQr() async {
+    final l = AppLocalizations.of(context);
     final scanned = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => QrScanScreen(
-            title: 'Scan ${widget.wallet.network.symbol} address'),
+            title: l.sendScanTitle(widget.wallet.network.symbol)),
       ),
     );
     if (scanned != null && scanned.isNotEmpty) {
@@ -204,32 +206,32 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Future<void> _onContinue() async {
+    final l = AppLocalizations.of(context);
     setState(() => _error = null);
     final amount = _parseAmountRaw();
     if (amount == null || amount <= BigInt.zero) {
-      setState(() => _error = 'Enter a valid amount');
+      setState(() => _error = l.sendFormErrorInvalidAmount);
       return;
     }
     final addr = _addrCtrl.text.trim();
     if (!addr.startsWith('0x') || addr.length != 42) {
-      setState(() =>
-          _error = 'Recipient must be a 0x-prefixed 40-hex-character address');
+      setState(() => _error = l.sendEthErrorBadAddress);
       return;
     }
     if (widget.token != null) {
       if (amount > _tokenBalanceRaw) {
-        setState(() => _error = 'Amount exceeds ${widget.token!.symbol} balance');
+        setState(() =>
+            _error = l.sendEthErrorExceedsToken(widget.token!.symbol));
         return;
       }
-      // Token sends still need native gas — flag if the user has zero ETH/MATIC.
       if (_balanceWei == BigInt.zero) {
-        setState(() => _error =
-            'No ${widget.wallet.network.symbol} for gas — fund this wallet first');
+        setState(() =>
+            _error = l.sendEthErrorNoGas(widget.wallet.network.symbol));
         return;
       }
     } else {
       if (amount > _balanceWei) {
-        setState(() => _error = 'Amount exceeds balance');
+        setState(() => _error = l.sendFormErrorAmountExceedsBalance);
         return;
       }
     }
@@ -237,8 +239,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Future<void> _onConfirm() async {
+    final l = AppLocalizations.of(context);
     if (_confirmCtrl.text.trim().toUpperCase() != 'SEND') {
-      setState(() => _error = 'Type SEND to confirm');
+      setState(() => _error = l.sendFormConfirmHint);
       return;
     }
     final amount = _parseAmountRaw();
@@ -268,7 +271,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
       messenger.showSnackBar(
         SnackBar(
           backgroundColor: PeekColors.green,
-          content: Text('Broadcast! tx: ${built.txHash.substring(0, 14)}…'),
+          content:
+              Text(l.sendBroadcastSuccess(built.txHash.substring(0, 14))),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -285,10 +289,12 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ScreenshotGuard(
       child: Scaffold(
         appBar: AppBar(
-            title: Text('Send ${widget.token?.symbol ?? widget.wallet.network.name}')),
+            title: Text(l.sendScreenTitle(
+                widget.token?.symbol ?? widget.wallet.network.name))),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -300,6 +306,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Widget _buildForm() {
+    final l = AppLocalizations.of(context);
     final amountRaw = _parseAmountRaw();
     final symbol = widget.assetSymbol;
     // Fiat shown next to the amount: for tokens, use the token's
@@ -317,14 +324,12 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.'),
+        ExperimentalBanner(body: l.sendEthExperimentalBody),
         const SizedBox(height: 16),
         _balanceCard(),
         const SizedBox(height: 20),
-        const Text('Recipient address',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendFormRecipientLabel,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _addrCtrl,
@@ -335,17 +340,17 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.bookmark_border, size: 18),
-                  tooltip: 'From address book',
+                  tooltip: l.sendFormBookTooltip,
                   onPressed: _pickFromBook,
                 ),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  tooltip: 'Scan QR',
+                  tooltip: l.sendFormScanTooltip,
                   onPressed: _scanQr,
                 ),
                 IconButton(
                   icon: const Icon(Icons.paste, size: 18),
-                  tooltip: 'Paste from clipboard',
+                  tooltip: l.sendFormPasteTooltip,
                   onPressed: () async {
                     final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
@@ -365,8 +370,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             Expanded(
               child: Text(
                 widget.token != null
-                    ? 'Amount ($symbol or base units)'
-                    : 'Amount ($symbol or wei)',
+                    ? l.sendEthAmountLabelToken(symbol)
+                    : l.sendEthAmountLabelNative(symbol),
                 style: const TextStyle(
                     color: PeekColors.text2, fontSize: 12),
               ),
@@ -383,7 +388,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                 minimumSize: const Size(0, 24),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Max', style: TextStyle(fontSize: 12)),
+              child: Text(l.sendFormMaxButton,
+                  style: const TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -411,22 +417,21 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                       : _balanceWei == BigInt.zero))
               ? null
               : _onContinue,
-          child: const Text('Continue'),
+          child: Text(l.actionContinue),
         ),
       ],
     );
   }
 
   Widget _buildPreview() {
+    final l = AppLocalizations.of(context);
     final amount = _parseAmountRaw()!;
     final fee = _fee!;
     final addr = _addrCtrl.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ExperimentalBanner(
-            body:
-                'RLP + EIP-1559 sighash + ECDSA-recovery are unit-tested but the end-to-end send path has not been audited.'),
+        ExperimentalBanner(body: l.sendEthExperimentalBody),
         const SizedBox(height: PeekDesign.sp4),
         Container(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -449,17 +454,20 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'will be sent to',
-                style: TextStyle(color: PeekColors.text3, fontSize: 12),
+              Text(
+                l.sendFormWillBeSentTo,
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 12),
               ),
               const SizedBox(height: PeekDesign.sp4),
-              _kvRow('To',
+              _kvRow(l.sendFormToLabel,
                   '${addr.substring(0, 12)}…${addr.substring(addr.length - 8)}'),
               const Divider(height: 18, color: PeekColors.hairline),
-              _kvRow('Max fee per gas', '${_gwei(fee.maxFeeWei)} gwei'),
+              _kvRow(
+                  l.sendEthMaxFeeLabel, '${_gwei(fee.maxFeeWei)} gwei'),
               const Divider(height: 18, color: PeekColors.hairline),
-              _kvRow('Priority fee', '${_gwei(fee.maxPriorityFeeWei)} gwei'),
+              _kvRow(l.sendEthPriorityFeeLabel,
+                  '${_gwei(fee.maxPriorityFeeWei)} gwei'),
             ],
           ),
         ),
@@ -473,17 +481,14 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Icon(Icons.info_outline_rounded,
+            children: [
+              const Icon(Icons.info_outline_rounded,
                   size: 14, color: PeekColors.text3),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Final fee depends on the network base fee at inclusion '
-                  "time. Anything below max is refunded — overpaying "
-                  "doesn't actually cost. Once submitted this CANNOT be "
-                  'reversed.',
-                  style: TextStyle(
+                  l.sendEthFinalFeeHint,
+                  style: const TextStyle(
                       color: PeekColors.text3, fontSize: 11, height: 1.4),
                 ),
               ),
@@ -491,14 +496,15 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
           ),
         ),
         const SizedBox(height: PeekDesign.sp5),
-        const Text('Type SEND to confirm',
-            style: TextStyle(color: PeekColors.text2, fontSize: 12)),
+        Text(l.sendFormConfirmHint,
+            style: const TextStyle(color: PeekColors.text2, fontSize: 12)),
         const SizedBox(height: 6),
         TextField(
           controller: _confirmCtrl,
           textCapitalization: TextCapitalization.characters,
           autocorrect: false,
-          decoration: const InputDecoration(hintText: 'SEND'),
+          decoration:
+              InputDecoration(hintText: l.sendFormConfirmPlaceholder),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
@@ -510,7 +516,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.arrow_back_rounded,
-                label: 'Back',
+                label: l.actionBack,
                 primary: false,
                 onTap: _broadcasting
                     ? null
@@ -524,7 +530,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             Expanded(
               child: ActionButton(
                 icon: Icons.send_rounded,
-                label: _broadcasting ? 'Sending…' : 'Send',
+                label: _broadcasting ? l.actionSending : l.actionSend,
                 primary: true,
                 onTap: _broadcasting ? null : _onConfirm,
               ),
@@ -536,6 +542,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Widget _balanceCard() {
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -556,11 +563,11 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             const SizedBox(width: PeekDesign.sp3),
             Expanded(
               child: _loading
-                  ? const Text('Loading balance…',
-                      style: TextStyle(
+                  ? Text(l.sendEthLoadingBalance,
+                      style: const TextStyle(
                           color: PeekColors.text2, fontSize: 13))
                   : _balanceError != null
-                      ? Text('Balance error: $_balanceError',
+                      ? Text(l.sendEthBalanceError(_balanceError!),
                           style: const TextStyle(
                               color: PeekColors.red, fontSize: 12))
                       : Column(
@@ -580,8 +587,11 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                             ),
                             Text(
                               widget.token != null
-                                  ? 'available · ${EthereumTx.weiToEth(_balanceWei).toStringAsFixed(6)} ${widget.wallet.network.symbol} for gas'
-                                  : 'available',
+                                  ? l.sendEthAvailableForGas(
+                                      EthereumTx.weiToEth(_balanceWei)
+                                          .toStringAsFixed(6),
+                                      widget.wallet.network.symbol)
+                                  : l.sendBchAvailableShort,
                               style: const TextStyle(
                                   color: PeekColors.text3,
                                   fontSize: 11),
@@ -596,6 +606,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
   }
 
   Widget _feeCard() {
+    final l = AppLocalizations.of(context);
     final fee = _fee;
     if (_feeError != null) {
       return Container(
@@ -613,7 +624,7 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Fee data unavailable: $_feeError',
+                l.sendEthFeeError(_feeError!),
                 style: const TextStyle(
                     color: PeekColors.red, fontSize: 12, height: 1.4),
               ),
@@ -631,16 +642,16 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
           border: Border.all(color: PeekColors.hairline),
         ),
         child: Row(
-          children: const [
-            SizedBox(
+          children: [
+            const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
                   strokeWidth: 2, color: PeekColors.text2),
             ),
-            SizedBox(width: PeekDesign.sp3),
-            Text('Loading fee rates…',
-                style: TextStyle(
+            const SizedBox(width: PeekDesign.sp3),
+            Text(l.sendEthLoadingFee,
+                style: const TextStyle(
                     color: PeekColors.text3, fontSize: 12)),
           ],
         ),
@@ -661,9 +672,9 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
               const Icon(Icons.local_gas_station_rounded,
                   size: 14, color: PeekColors.text3),
               const SizedBox(width: 6),
-              const Text(
-                'NETWORK FEE',
-                style: TextStyle(
+              Text(
+                l.sendEthNetworkFeeHeader,
+                style: const TextStyle(
                     color: PeekColors.text3,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -677,8 +688,8 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
                   color: PeekColors.accentMuted,
                   borderRadius: PeekDesign.brPill,
                 ),
-                child: const Text('AUTO',
-                    style: TextStyle(
+                child: Text(l.sendEthAutoBadge,
+                    style: const TextStyle(
                         color: PeekColors.accent,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -687,11 +698,12 @@ class _SendEthereumScreenState extends State<SendEthereumScreen> {
             ],
           ),
           const SizedBox(height: PeekDesign.sp3),
-          _feeRow('Base', '${_gwei(fee.baseFeeWei)} gwei'),
+          _feeRow(l.sendEthBaseLabel, '${_gwei(fee.baseFeeWei)} gwei'),
           const SizedBox(height: 4),
-          _feeRow('Tip', '${_gwei(fee.maxPriorityFeeWei)} gwei'),
+          _feeRow(
+              l.sendEthTipLabel, '${_gwei(fee.maxPriorityFeeWei)} gwei'),
           const SizedBox(height: 4),
-          _feeRow('Max', '${_gwei(fee.maxFeeWei)} gwei'),
+          _feeRow(l.sendEthMaxLabel, '${_gwei(fee.maxFeeWei)} gwei'),
         ],
       ),
     );
