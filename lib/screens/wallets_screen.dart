@@ -405,6 +405,7 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   Future<void> _showWalletMenu(WalletMeta meta) async {
+    final l = AppLocalizations.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: PeekColors.bg2,
@@ -415,28 +416,28 @@ class _WalletsScreenState extends State<WalletsScreen> {
             ListTile(
               leading: const Icon(Icons.vpn_key_outlined,
                   color: PeekColors.accent),
-              title: const Text('Show recovery phrase'),
-              subtitle: const Text(
-                'Back this up separately from the vault seed.',
-                style:
-                    TextStyle(color: PeekColors.text3, fontSize: 11),
+              title: Text(l.walletMenuShowSeed),
+              subtitle: Text(
+                l.walletMenuShowSeedBody,
+                style: const TextStyle(
+                    color: PeekColors.text3, fontSize: 11),
               ),
               onTap: () => Navigator.of(ctx).pop('reveal'),
             ),
             ListTile(
               leading: const Icon(Icons.edit, color: PeekColors.text2),
-              title: const Text('Rename'),
+              title: Text(l.walletMenuRename),
               onTap: () => Navigator.of(ctx).pop('rename'),
             ),
             ListTile(
               leading:
                   const Icon(Icons.delete_outline, color: PeekColors.red),
-              title: const Text('Delete'),
+              title: Text(l.actionDelete),
               onTap: () => Navigator.of(ctx).pop('delete'),
             ),
             ListTile(
               leading: const Icon(Icons.close, color: PeekColors.text3),
-              title: const Text('Cancel'),
+              title: Text(l.actionCancel),
               onTap: () => Navigator.of(ctx).pop(),
             ),
           ],
@@ -454,20 +455,21 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   Future<void> _rename(WalletMeta meta) async {
+    final l = AppLocalizations.of(context);
     final controller = TextEditingController(text: meta.name);
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rename wallet'),
+        title: Text(l.walletMenuRenameTitle),
         content: TextField(controller: controller, autofocus: true),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text),
-            child: const Text('Save'),
+            child: Text(l.actionSave),
           ),
         ],
       ),
@@ -479,23 +481,20 @@ class _WalletsScreenState extends State<WalletsScreen> {
   }
 
   Future<void> _delete(WalletMeta meta) async {
+    final l = AppLocalizations.of(context);
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete ${meta.name}?'),
-        content: const Text(
-          'The on-chain wallet is not affected — anyone with the seed '
-          'can still restore it later. Only this device\'s record is '
-          'removed.',
-        ),
+        title: Text(l.walletMenuDeleteTitle(meta.name)),
+        content: Text(l.walletMenuDeleteBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l.actionCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(l.actionDelete),
           ),
         ],
       ),

@@ -2571,6 +2571,42 @@ abstract class AppLocalizations {
   /// **'Keys only'**
   String get showSeedKeysOnlyDisplay;
 
+  /// No description provided for @walletMenuShowSeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Show recovery phrase'**
+  String get walletMenuShowSeed;
+
+  /// No description provided for @walletMenuShowSeedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Back this up separately from the vault seed.'**
+  String get walletMenuShowSeedBody;
+
+  /// No description provided for @walletMenuRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get walletMenuRename;
+
+  /// No description provided for @walletMenuRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename wallet'**
+  String get walletMenuRenameTitle;
+
+  /// No description provided for @walletMenuDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String walletMenuDeleteTitle(String name);
+
+  /// No description provided for @walletMenuDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The on-chain wallet is not affected — anyone with the seed can still restore it later. Only this device\'s record is removed.'**
+  String get walletMenuDeleteBody;
+
   /// No description provided for @erc20EmptyHint.
   ///
   /// In en, this message translates to:

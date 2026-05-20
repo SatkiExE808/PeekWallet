@@ -697,6 +697,18 @@
     }
   },
 
+  "walletMenuShowSeed": "Show recovery phrase",
+  "walletMenuShowSeedBody": "Back this up separately from the vault seed.",
+  "walletMenuRename": "Rename",
+  "walletMenuRenameTitle": "Rename wallet",
+  "walletMenuDeleteTitle": "Delete {name}?",
+  "@walletMenuDeleteTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "walletMenuDeleteBody": "The on-chain wallet is not affected — anyone with the seed can still restore it later. Only this device's record is removed.",
+
   "erc20EmptyHint": "No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.",
   "ercAddCustomTitle": "Add custom ERC-20 token",
   "ercAddCustomBody": "Paste the token's contract address. We'll fetch its symbol and decimals from the chain.",

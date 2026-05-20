@@ -432,6 +432,13 @@
   "showSeedWriteDownWarning": "Ghi ra giấy và cất nơi an toàn. Bất cứ ai có cụm từ này đều kiểm soát toàn bộ ví. Đừng chụp màn hình — FLAG_SECURE cũng chặn nó.",
   "showSeedKeysOnlyDisplay": "Chỉ khoá",
 
+  "walletMenuShowSeed": "Hiện cụm từ khôi phục",
+  "walletMenuShowSeedBody": "Sao lưu riêng, độc lập với seed của két.",
+  "walletMenuRename": "Đổi tên",
+  "walletMenuRenameTitle": "Đổi tên ví",
+  "walletMenuDeleteTitle": "Xoá {name}?",
+  "walletMenuDeleteBody": "Ví trên chuỗi không bị ảnh hưởng — bất kỳ ai có seed vẫn có thể khôi phục về sau. Chỉ bản ghi trên thiết bị này bị xoá.",
+
   "erc20EmptyHint": "Chưa có token — nhận USDT/USDC/DAI vào địa chỉ này hoặc nhấn \"Thêm token\" để theo dõi ERC-20 khác qua địa chỉ hợp đồng.",
   "ercAddCustomTitle": "Thêm token ERC-20 tùy chỉnh",
   "ercAddCustomBody": "Dán địa chỉ hợp đồng token. Chúng tôi sẽ lấy ký hiệu và số thập phân từ chuỗi.",

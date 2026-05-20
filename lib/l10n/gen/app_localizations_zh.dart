@@ -1369,6 +1369,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get showSeedKeysOnlyDisplay => '僅金鑰';
 
   @override
+  String get walletMenuShowSeed => '顯示助記詞';
+
+  @override
+  String get walletMenuShowSeedBody => '與金庫種子分開備份。';
+
+  @override
+  String get walletMenuRename => '重新命名';
+
+  @override
+  String get walletMenuRenameTitle => '重新命名錢包';
+
+  @override
+  String walletMenuDeleteTitle(String name) {
+    return '刪除 $name?';
+  }
+
+  @override
+  String get walletMenuDeleteBody => '鏈上錢包不受影響 — 持有助記詞的人仍能在日後還原。僅移除此裝置上的紀錄。';
+
+  @override
   String get erc20EmptyHint =>
       '尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。';
 
@@ -2764,6 +2784,26 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get showSeedKeysOnlyDisplay => '僅金鑰';
+
+  @override
+  String get walletMenuShowSeed => '顯示助記詞';
+
+  @override
+  String get walletMenuShowSeedBody => '與金庫種子分開備份。';
+
+  @override
+  String get walletMenuRename => '重新命名';
+
+  @override
+  String get walletMenuRenameTitle => '重新命名錢包';
+
+  @override
+  String walletMenuDeleteTitle(String name) {
+    return '刪除 $name?';
+  }
+
+  @override
+  String get walletMenuDeleteBody => '鏈上錢包不受影響 — 持有助記詞的人仍能在日後還原。僅移除此裝置上的紀錄。';
 
   @override
   String get erc20EmptyHint =>

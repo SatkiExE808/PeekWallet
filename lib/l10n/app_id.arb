@@ -432,6 +432,13 @@
   "showSeedWriteDownWarning": "Tulis di kertas dan simpan di tempat aman. Siapa pun dengan frasa ini punya kendali penuh dompet. Jangan tangkap layar — FLAG_SECURE memblokirnya.",
   "showSeedKeysOnlyDisplay": "Hanya kunci",
 
+  "walletMenuShowSeed": "Tampilkan frasa pemulihan",
+  "walletMenuShowSeedBody": "Cadangkan terpisah dari seed brankas.",
+  "walletMenuRename": "Ganti nama",
+  "walletMenuRenameTitle": "Ganti nama dompet",
+  "walletMenuDeleteTitle": "Hapus {name}?",
+  "walletMenuDeleteBody": "Dompet di rantai tidak terpengaruh — siapa pun dengan seed bisa memulihkannya lagi. Hanya catatan di perangkat ini yang dihapus.",
+
   "erc20EmptyHint": "Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketuk \"Tambah token\" untuk melacak ERC-20 lain via alamat kontrak.",
   "ercAddCustomTitle": "Tambah token ERC-20 kustom",
   "ercAddCustomBody": "Tempel alamat kontrak token. Kami akan ambil simbol dan desimal dari rantai.",

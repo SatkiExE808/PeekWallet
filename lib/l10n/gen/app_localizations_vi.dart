@@ -1413,6 +1413,28 @@ class AppLocalizationsVi extends AppLocalizations {
   String get showSeedKeysOnlyDisplay => 'Chỉ khoá';
 
   @override
+  String get walletMenuShowSeed => 'Hiện cụm từ khôi phục';
+
+  @override
+  String get walletMenuShowSeedBody =>
+      'Sao lưu riêng, độc lập với seed của két.';
+
+  @override
+  String get walletMenuRename => 'Đổi tên';
+
+  @override
+  String get walletMenuRenameTitle => 'Đổi tên ví';
+
+  @override
+  String walletMenuDeleteTitle(String name) {
+    return 'Xoá $name?';
+  }
+
+  @override
+  String get walletMenuDeleteBody =>
+      'Ví trên chuỗi không bị ảnh hưởng — bất kỳ ai có seed vẫn có thể khôi phục về sau. Chỉ bản ghi trên thiết bị này bị xoá.';
+
+  @override
   String get erc20EmptyHint =>
       'Chưa có token — nhận USDT/USDC/DAI vào địa chỉ này hoặc nhấn \"Thêm token\" để theo dõi ERC-20 khác qua địa chỉ hợp đồng.';
 

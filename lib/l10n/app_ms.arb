@@ -432,6 +432,13 @@
   "showSeedWriteDownWarning": "Tuliskan di atas kertas dan simpan di tempat selamat. Sesiapa dengan frasa ini mempunyai kawalan penuh ke atas dompet. Jangan ambil tangkapan skrin — FLAG_SECURE menyekatnya juga.",
   "showSeedKeysOnlyDisplay": "Kunci sahaja",
 
+  "walletMenuShowSeed": "Tunjuk frasa pemulihan",
+  "walletMenuShowSeedBody": "Sandarkan ini secara berasingan daripada benih bilik kebal.",
+  "walletMenuRename": "Namakan semula",
+  "walletMenuRenameTitle": "Namakan semula dompet",
+  "walletMenuDeleteTitle": "Padam {name}?",
+  "walletMenuDeleteBody": "Dompet di rantaian tidak terjejas — sesiapa dengan benih masih boleh memulihkannya kemudian. Hanya rekod di peranti ini dipadam.",
+
   "erc20EmptyHint": "Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.",
   "ercAddCustomTitle": "Tambah token ERC-20 tersuai",
   "ercAddCustomBody": "Tampal alamat kontrak token. Kami akan dapatkan simbol dan perpuluhan dari rantaian.",

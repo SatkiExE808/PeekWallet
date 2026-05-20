@@ -1422,6 +1422,27 @@ class AppLocalizationsId extends AppLocalizations {
   String get showSeedKeysOnlyDisplay => 'Hanya kunci';
 
   @override
+  String get walletMenuShowSeed => 'Tampilkan frasa pemulihan';
+
+  @override
+  String get walletMenuShowSeedBody => 'Cadangkan terpisah dari seed brankas.';
+
+  @override
+  String get walletMenuRename => 'Ganti nama';
+
+  @override
+  String get walletMenuRenameTitle => 'Ganti nama dompet';
+
+  @override
+  String walletMenuDeleteTitle(String name) {
+    return 'Hapus $name?';
+  }
+
+  @override
+  String get walletMenuDeleteBody =>
+      'Dompet di rantai tidak terpengaruh — siapa pun dengan seed bisa memulihkannya lagi. Hanya catatan di perangkat ini yang dihapus.';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketuk \"Tambah token\" untuk melacak ERC-20 lain via alamat kontrak.';
 

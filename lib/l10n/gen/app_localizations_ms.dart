@@ -1427,6 +1427,28 @@ class AppLocalizationsMs extends AppLocalizations {
   String get showSeedKeysOnlyDisplay => 'Kunci sahaja';
 
   @override
+  String get walletMenuShowSeed => 'Tunjuk frasa pemulihan';
+
+  @override
+  String get walletMenuShowSeedBody =>
+      'Sandarkan ini secara berasingan daripada benih bilik kebal.';
+
+  @override
+  String get walletMenuRename => 'Namakan semula';
+
+  @override
+  String get walletMenuRenameTitle => 'Namakan semula dompet';
+
+  @override
+  String walletMenuDeleteTitle(String name) {
+    return 'Padam $name?';
+  }
+
+  @override
+  String get walletMenuDeleteBody =>
+      'Dompet di rantaian tidak terjejas — sesiapa dengan benih masih boleh memulihkannya kemudian. Hanya rekod di peranti ini dipadam.';
+
+  @override
   String get erc20EmptyHint =>
       'Belum ada token — terima USDT/USDC/DAI ke alamat ini atau ketik \"Tambah token\" untuk menjejaki ERC-20 lain melalui alamat kontrak.';
 

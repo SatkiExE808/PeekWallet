@@ -432,6 +432,13 @@
   "showSeedWriteDownWarning": "請寫在紙上並安全保存。任何持有此助記詞的人都能完全控制錢包。請勿截圖 — FLAG_SECURE 也會阻擋。",
   "showSeedKeysOnlyDisplay": "僅金鑰",
 
+  "walletMenuShowSeed": "顯示助記詞",
+  "walletMenuShowSeedBody": "與金庫種子分開備份。",
+  "walletMenuRename": "重新命名",
+  "walletMenuRenameTitle": "重新命名錢包",
+  "walletMenuDeleteTitle": "刪除 {name}?",
+  "walletMenuDeleteBody": "鏈上錢包不受影響 — 持有助記詞的人仍能在日後還原。僅移除此裝置上的紀錄。",
+
   "erc20EmptyHint": "尚未有代幣 — 將 USDT/USDC/DAI 等代幣傳送至此地址,或點擊「新增代幣」以追蹤其他 ERC-20 合約。",
   "ercAddCustomTitle": "新增自訂 ERC-20 代幣",
   "ercAddCustomBody": "貼上代幣合約地址,我們會自動讀取符號與小數位數。",

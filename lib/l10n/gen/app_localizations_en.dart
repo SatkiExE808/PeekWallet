@@ -1425,6 +1425,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showSeedKeysOnlyDisplay => 'Keys only';
 
   @override
+  String get walletMenuShowSeed => 'Show recovery phrase';
+
+  @override
+  String get walletMenuShowSeedBody =>
+      'Back this up separately from the vault seed.';
+
+  @override
+  String get walletMenuRename => 'Rename';
+
+  @override
+  String get walletMenuRenameTitle => 'Rename wallet';
+
+  @override
+  String walletMenuDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get walletMenuDeleteBody =>
+      'The on-chain wallet is not affected — anyone with the seed can still restore it later. Only this device\'s record is removed.';
+
+  @override
   String get erc20EmptyHint =>
       'No tokens yet — receive USDT/USDC/DAI to this address or tap \"Add token\" to track another ERC-20 by contract address.';
 
