@@ -195,14 +195,21 @@ class _BitcoinCoinScreenState extends State<BitcoinCoinScreen> {
   void _showReceiveSheet() {
     final w = _wallet;
     if (w == null) return;
+    // Rotate to the next unused address in the gap-limit window so
+    // each receive flow shows a fresh address (privacy: prevents
+    // a tip-jar or pasted-once address from clustering all incoming
+    // payments under one on-chain identity). Falls back to the
+    // primary address on first open before the wallet's done its
+    // first balance refresh.
     showReceiveSheet(
       context,
       coinId: _symbol,
       coinName: _coinName,
-      address: w.primaryAddress,
+      address: w.nextReceiveAddress,
       derivationHint:
-          'BIP84 native SegWit. Same address every BIP39-compatible wallet '
-          '(Sparrow, Electrum, BlueWallet) derives from this seed.',
+          'BIP84 native SegWit. The same seed produces the same address '
+          'window in Sparrow / Electrum / BlueWallet. The address shown '
+          "rotates after each use; previously-shown addresses still receive.",
     );
   }
 

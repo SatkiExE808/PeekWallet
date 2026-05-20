@@ -96,11 +96,43 @@ class BitcoinWallet {
   final BitcoinChainParams params;
   final BitcoinExplorer _client;
   bool _closed = false;
+  /// Per-address balance snapshot from the most recent [balanceSat]
+  /// call. Used by [nextReceiveAddress] to skip past addresses that
+  /// already have on-chain history — same heuristic Cake / Sparrow /
+  /// Electrum use to rotate receive addresses for privacy. Empty
+  /// before the first refresh; consumers fall back to [primaryAddress].
+  Map<String, AddressBalance> _perAddressBalances = const {};
 
   /// The primary receive address. Index 0 on the external chain.
   /// Same address every other BIP84 wallet produces from the same
   /// BIP39 seed — verified by spec-vector test.
   String get primaryAddress => addresses.first.address;
+
+  /// The next unused receive address from the gap-limit window. An
+  /// address is "unused" when it has never received funds (confirmed
+  /// or mempool). The mempool-client populates [_perAddressBalances]
+  /// on each refresh; this just iterates derivation indices in order
+  /// and returns the first untouched one.
+  ///
+  /// Falls back to [primaryAddress] when:
+  ///   - the wallet hasn't done its first refresh yet (cache empty)
+  ///   - every address in the window has prior activity (rare; user
+  ///     has run through their gap limit)
+  ///
+  /// Rotating per-session matches Cake's UX: each receive sheet open
+  /// shows a fresh address, which prevents a tip jar / pasted-once
+  /// address from clustering all the user's incoming payments under
+  /// one on-chain identity.
+  String get nextReceiveAddress {
+    if (_perAddressBalances.isEmpty) return primaryAddress;
+    for (final addr in addresses) {
+      final bal = _perAddressBalances[addr.address];
+      if (bal == null) continue;
+      final received = bal.confirmedReceivedSat + bal.mempoolReceivedSat;
+      if (received == 0) return addr.address;
+    }
+    return primaryAddress;
+  }
 
   /// All derived addresses (gap-limit window). Used internally for
   /// balance + history aggregation; UI shows just the primary.
@@ -114,6 +146,7 @@ class BitcoinWallet {
     if (_closed) return 0;
     try {
       final b = await _client.multiBalance(watchAddresses);
+      _perAddressBalances = b.perAddress;
       PeekLogger.I.log(params.symbol.toLowerCase(),
           'balance fetched: ${b.totalSat} sat');
       return b.totalSat;
